@@ -1,0 +1,5 @@
+export enum Visibility {
+  NOT_VISIBLE = "NOT_VISIBLE",
+  PARTIALLY_VISIBLE = "PARTIALLY_VISIBLE",
+  VISIBLE = "VISIBLE"
+}
