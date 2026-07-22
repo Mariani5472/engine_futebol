@@ -1,435 +1,177 @@
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚽ MATCH ENGINE — ROADMAP
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ FASE 1 — DOMÍNIO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[x] Player
-[x] Team
-[x] Tactical Formation
-[x] Position Role
-[x] Player Attributes
-[x] Mental Attributes
-[x] Physical Attributes
-[x] Goalkeeper Attributes
-[x] Hidden Attributes
-[x] Languages
-[x] Player Relationships
-[x] Team Cohesion
-[x] Tactical Familiarity
-[x] Language Compatibility
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ FASE 2 — GEOMETRY & PITCH
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[x] Vector2
-[x] Distance
-[x] Angle
-[x] Line Intersection
-[x] Line of Sight
-[x] Ball Trajectory
-[x] Pitch
-[x] Rectangle
-[x] PitchZone
-[x] PitchGrid
-[x] Grid A1–E3
-[x] Zone Neighbour Detection
-[x] Zones Between
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ FASE 3 — MOVEMENT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Markdown
+# ⚽ Match Engine — Project Roadmap
+
+Uma engine de simulação tática e comportamental de futebol focada em sistemas distribuídos de inteligência, física de campo e tomada de decisão determinística.
 
-[x] Player Movement
-[x] Ball Movement
-[x] Velocity
-[x] Target Position
-[x] Player Speed
-[x] Fatigue Modifier
-[x] Facing Direction
-[x] Reach Calculation
-[x] Possession Candidates
-[x] Possession Control Score
-[x] Possession Duel
-
+---
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ FASE 4 — PERCEPTION & COGNITION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📊 Progresso Geral
 
-4.1 — PERCEPTION
-
-[x] Distance
-[x] Angle
-[x] Line of Sight
-[x] Position Zone
-[x] Visibility
+[██████████░░░░░░░░░░░░░░░░░░] 33% Concluído (Fases 1–5 parcialmente implementadas)
+
+
+- **Módulos Concluídos:** Domínio, Geometria, Movimentação, Percepção/Cognição.
+- **Em Desenvolvimento:** Camada de Decisão (Decision Layer).
+- **Próximos Passos:** Camada de Ação e Física da Bola.
 
+---
+
+## 🗺️ Roadmap de Desenvolvimento
+
+<details open>
+<summary><b>✅ Fase 1: Domínio Básicos & Atributos</b> (Concluído)</summary>
+
+- [x] Player & Team Core Structures
+- [x] Tactical Formation & Position Roles
+- [x] Player Attributes (Mental, Physical, Goalkeeper, Hidden)
+- [x] Languages & Player Relationships
+- [x] Team Cohesion & Tactical Familiarity
+- [x] Language Compatibility
+</details>
+
+<details open>
+<summary><b>✅ Fase 2: Geometria & Pitch Layout</b> (Concluído)</summary>
+
+- [x] Vector2, Distance & Angle Math
+- [x] Line Intersection & Line of Sight
+- [x] Ball Trajectory Fundamentals
+- [x] Pitch, Rectangle & PitchZone Boundaries
+- [x] PitchGrid System (Grid A1–E3)
+- [x] Zone Neighbour Detection & Zones Between
+</details>
+
+<details open>
+<summary><b>✅ Fase 3: Movimentação & Posse</b> (Concluído)</summary>
 
-4.2A — AWARENESS
+- [x] Player & Ball Movement Vectorization
+- [x] Velocity & Target Position Systems
+- [x] Player Speed & Fatigue Modifier Calculations
+- [x] Facing Direction & Reach Calculation
+- [x] Possession Candidates & Control Scoring
+- [x] Possession Duel Resolution
+</details>
 
-[x] Short-Term Memory
-[x] Certainty
-[x] Last Seen Tick
-[x] Estimated Position
-[x] Estimated Velocity
-[x] Memory Decay
+<details open>
+<summary><b>✅ Fase 4: Percepção & Cognição (AI)</b> (Concluído)</summary>
 
+#### 4.1 Perception
+- [x] Distance, Angle & Line of Sight Evaluation
+- [x] Position Zone & Visibility Mapping
 
-4.2B — COGNITIVE MODEL
-
-[x] Noise Model
-[x] Spatial Error
-[x] Angular Error
-[x] Perception Accuracy
-
-[x] Prediction Model
-[x] Ball Extrapolation
-[x] Player Extrapolation
-[x] Anticipation
-
-[x] Memory Model
-[x] Exponential Decay
-[x] Increasing Spatial Error
-[x] Concentration Influence
-[x] Vision Influence
-
-[x] Cognitive System
-[x] Noise Integration
-[x] Prediction Integration
-[x] Memory Integration
-[x] Awareness Update
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧠 FASE 5 — DECISION LAYER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-5.1 — DECISION CONTEXT
-
-[x] DecisionContext
-[x] Player Awareness
-[x] Perception Context
-[x] Cognitive Context
-
-
-5.2 — UTILITY SCORE
-
-[x] UtilityContext
-[x] UtilityScore
-[x] UtilityReason
-[x] Base Utility
-[x] Tactical Utility
-[x] Personality Utility
-[x] Risk Utility
-
-
-5.3 — ACTION EVALUATION
-
-[x] ActionEvaluator
-[x] PassEvaluator
-[x] ShotEvaluator
-[x] Decision Candidate Generation
-
-
-5.4 — DECISION SELECTION
-
-[x] Decision Selection
-[x] Best Candidate Selection
-[x] Utility Comparison
-
-
-5.5 — RISK EVALUATION
-
-[x] RiskContext
-[x] RiskScore
-[x] RiskCalculator
-[x] Failure Probability
-[x] Consequence Severity
-[x] Player Risk Tolerance
-[x] Tactical Risk
-[x] Match-State Risk
-[x] Risk Reason
-
-
-5.6 — PERSONALITY INFLUENCE
-
-[ ] Personality Influence
-[ ] Personality Modifiers
-[ ] Decision Bias
-[ ] Personality-Based Risk Tolerance
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚙️ FASE 6 — ACTION LAYER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] ActionFactory
-
-[ ] PassAction
-[ ] ShotAction
-[ ] DribbleAction
-[ ] TackleAction
-[ ] HeaderAction
-[ ] ClearanceAction
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚽ FASE 7 — BALL PHYSICS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] BallPhysicsSystem
-
-[ ] Ball Acceleration
-[ ] Ball Deceleration
-[ ] Ball Velocity
-[ ] Ball Direction
-[ ] Ball Height
-[ ] Ball Flight
-[ ] Bounce
-[ ] Friction
-[ ] Ball Trajectory Resolution
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧠 FASE 8 — TACTICAL ENGINE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Tactical Engine
-
-[ ] Width
-[ ] Depth
-[ ] Compactness
-[ ] Defensive Line
-[ ] Pressing
-[ ] Tempo
-[ ] Counter Attack
-[ ] Overlap
-[ ] Underlap
-[ ] Defensive Shape
-[ ] Attacking Shape
-[ ] Transition Shape
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👥 FASE 9 — TEAM BEHAVIOUR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Team Behaviour System
-
-[ ] Team Shape
-[ ] Player Spacing
-[ ] Role Coordination
-[ ] Defensive Line Coordination
-[ ] Pressing Coordination
-[ ] Cover
-[ ] Marking
-[ ] Support
-[ ] Passing Options
-[ ] Collective Movement
-[ ] Team Cohesion Influence
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧑‍⚖️ FASE 10 — REFEREE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Referee System
-
-[ ] Foul Detection
-[ ] Foul Severity
-[ ] Advantage
-[ ] Yellow Card
-[ ] Second Yellow
-[ ] Direct Red Card
-[ ] Last Defender Rule
-[ ] Serious Foul Play
-[ ] Violent Conduct
-[ ] Dissent
-[ ] Handball
-[ ] Simulation
-[ ] Referee Personality
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔄 FASE 11 — MATCH FLOW
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Kickoff
-[ ] First Half
-[ ] Half-Time
-[ ] Second Half
-[ ] Full-Time
-[ ] Extra Time
-[ ] Stoppage Time
-[ ] Restarts
-[ ] Throw-In
-[ ] Goal Kick
-[ ] Corner
-[ ] Free Kick
-[ ] Penalty
-[ ] Substitutions
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📡 FASE 12 — EVENT ENGINE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Event Engine
-
-[ ] Event Queue
-[ ] Event Dispatcher
-[ ] Event Ordering
-[ ] Event Priority
-[ ] Event Timestamp
-
-[ ] Goal Event
-[ ] Shot Event
-[ ] Card Event
-[ ] Period Start Event
-[ ] Period End Event
-
-[ ] Event Serialization
-[ ] Frontend Event Stream
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 FASE 13 — MATCH REPORT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Match Report
-
-[ ] Final Score
-[ ] Goals
-[ ] Shots
-[ ] Shots on Target
-[ ] Possession
-[ ] Passes
-[ ] Pass Accuracy
-[ ] Tackles
-[ ] Fouls
-[ ] Cards
-[ ] Player Ratings
-[ ] Match Timeline
-[ ] Key Events
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎮 FASE 14 — SIMULATION POLISH
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Weather
-[ ] Rain
-[ ] Pitch Condition
-[ ] Crowd
-[ ] Morale
-[ ] Fatigue
-[ ] Pressure
-[ ] Big Matches
-[ ] Consistency
-[ ] Leadership
-[ ] Adaptability
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🧪 FASE 15 — ENGINE VALIDATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-[ ] Deterministic Random
-[ ] Seeded Simulation
-[ ] Replay System
-[ ] Match Snapshot
-[ ] Debug Timeline
-[ ] Event Replay
-[ ] Scenario Testing
-[ ] Monte Carlo Testing
-[ ] Statistical Validation
-[ ] Regression Tests
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔧 FASE 16 — PRE-RELEASE REFINEMENT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[ ] Action Priority System
-[ ] Contextual Action Weights
-[ ] Position-Based Decision Weights
-[ ] Role-Based Decision Weights
-[ ] Tactical Instruction Influence
-[ ] Game State Influence
-[ ] Scoreline Influence
-[ ] Time Influence
-[ ] Teammate Quality Influence
-[ ] Opponent Quality Influence
-[ ] Decision Hysteresis
-[ ] Decision Cooldown
-
-[ ] Replace Arbitrary Constants
-[ ] Attribute Normalization
-[ ] Attribute Interaction
-[ ] Contextual Attribute Weight
-[ ] Probability Calibration
-[ ] Probability Distribution Testing
-[ ] Extreme Value Testing
-[ ] Monte Carlo Validation
-
-[ ] Real Player Occupancy
-[ ] Player Radius
-[ ] Collision Detection
-[ ] Blocking Volume
-[ ] Passing Lanes
-[ ] Shooting Lanes
-[ ] Defensive Coverage
-[ ] Interception Zones
-[ ] Pressure Radius
-[ ] Marking Distance
-
-[ ] Tactical Shape Validation
-[ ] Formation Transition Validation
-[ ] Role Compatibility
-[ ] Position Occupancy
-[ ] Tactical Overload
-[ ] Numerical Superiority
-[ ] Numerical Inferiority
-[ ] Defensive Cover
-[ ] Space Creation
-[ ] Space Exploitation
-
-[ ] Attribute Interactions
-[ ] Position-Specific Attribute Weights
-[ ] Role-Specific Attribute Weights
-[ ] Attribute Diminishing Returns
-[ ] Attribute Synergy
-[ ] Attribute Weaknesses
-[ ] Current Ability
-[ ] Potential Ability
-[ ] Form
-[ ] Match Sharpness
-[ ] Fitness
-[ ] Injury Status
-
-[ ] Decision Mistakes
-[ ] Panic
-[ ] Confidence
-[ ] Momentum
-[ ] Emotional State
-[ ] Frustration
-[ ] Aggression Changes
-[ ] Risk Changes
-[ ] Concentration Drops
-
-[ ] Deterministic Seed
-[ ] Replayable Matches
-[ ] Debug Mode
-[ ] Event Replay
-[ ] Match Snapshot
-[ ] State Serialization
-[ ] Simulation Logs
-[ ] Statistical Validation
-[ ] Regression Tests
-[ ] Scenario Tests
-
+#### 4.2 Awareness & Cognitive Model
+- [x] Short-Term Memory, Certainty & Memory Decay
+- [x] Last Seen Tick & Estimated Position/Velocity
+- [x] Spatial & Angular Error (Noise Model)
+- [x] Prediction Model (Ball/Player Extrapolation & Anticipation)
+- [x] Memory Decay Model (Exponential Decay, Vision & Concentration Influence)
+- [x] Cognitive System Pipeline Integration
+</details>
+
+<details open>
+<summary><b>🧠 Fase 5: Decision Layer (Em Progresso)</b></summary>
+
+- [x] **5.1 Decision Context:** `DecisionContext`, Player Awareness & Cognitive Pipeline
+- [x] **5.2 Utility Score:** `UtilityContext`, `UtilityScore`, Base/Tactical/Personality Utilities
+- [x] **5.3 Action Evaluation:** `PassEvaluator`, `ShotEvaluator` & Candidate Generation
+- [x] **5.4 Decision Selection:** Best Candidate & Utility Comparison
+- [x] **5.5 Risk Evaluation:** Risk Calculator, Failure Probabilities, Tactical & Match Risk
+- [ ] **5.6 Personality Influence:** Modifiers, Decision Bias & Personality-Based Risk
+</details>
+
+<details>
+<summary><b>⚙️ Fase 6: Action Layer</b> (Pendente)</summary>
+
+- [ ] `ActionFactory`
+- [ ] Actions Core: `PassAction`, `ShotAction`, `DribbleAction`, `TackleAction`, `HeaderAction`, `ClearanceAction`
+</details>
+
+<details>
+<summary><b>⚽ Fase 7: Ball Physics</b> (Pendente)</summary>
+
+- [ ] `BallPhysicsSystem`
+- [ ] Physics Properties: Acceleration, Deceleration, Velocity, Direction & Height
+- [ ] Flight Dynamics, Bounce Resolution, Surface Friction & Trajectory Resolution
+</details>
+
+<details>
+<summary><b>🧠 Fase 8: Tactical Engine</b> (Pendente)</summary>
+
+- [ ] Tactical Systems: Width, Depth, Compactness, Defensive Line & Pressing
+- [ ] Instructions: Tempo, Counter Attack, Overlap & Underlap
+- [ ] Dynamic Team Shapes: Defensive, Attacking & Transition Shapes
+</details>
+
+<details>
+<summary><b>👥 Fase 9: Team Behaviour</b> (Pendente)</summary>
+
+- [ ] Collective Dynamics: Team Shape, Player Spacing & Role Coordination
+- [ ] Defensive Coordination: Line Movement, Pressing, Cover & Marking
+- [ ] Attacking Support: Passing Options & Collective Movement
+- [ ] Team Cohesion Influence
+</details>
+
+<details>
+<summary><b>🧑‍⚖️ Fase 10: Referee System</b> (Pendente)</summary>
+
+- [ ] Foul Detection & Severity Assessment
+- [ ] Card Systems: Yellow, Second Yellow, Direct Red, Last Defender & Violent Conduct
+- [ ] Advantages, Offside, Handball & Simulation
+- [ ] Referee Personality Profiles
+</details>
+
+<details>
+<summary><b>🔄 Fase 11: Match Flow & Rules</b> (Pendente)</summary>
+
+- [ ] Match States: Kickoff, Periods (1st/2nd Half, Extra Time), Stoppage Time
+- [ ] Restarts: Throw-In, Goal Kick, Corner, Free Kick, Penalty
+- [ ] Substitution Management
+</details>
+
+<details>
+<summary><b>📡 Fase 12: Event Engine</b> (Pendente)</summary>
+
+- [ ] Core Engine: Queue, Dispatcher, Priority Ordering & Timestamps
+- [ ] Event Types: Goal, Shot, Card, Period Boundaries
+- [ ] Event Serialization & Frontend Event Stream Pipeline
+</details>
+
+<details>
+<summary><b>📊 Fase 13: Match Report & Analytics</b> (Pendente)</summary>
+
+- [ ] Stats Tracking: Goals, xG, Shots/Target, Possession, Passes & Tackles
+- [ ] Player Performance Ratings & Match Timeline Generation
+</details>
+
+<details>
+<summary><b>🎮 Fase 14: Simulation Polish & Context</b> (Pendente)</summary>
+
+- [ ] Environmental Effects: Weather, Rain & Pitch Condition
+- [ ] Mental & Contextual Drivers: Crowd, Morale, Pressure, Big Match Performance, Leadership
+</details>
+
+<details>
+<summary><b>🧪 Fase 15: Engine Validation & Replayability</b> (Pendente)</summary>
+
+- [ ] Deterministic Simulation & Seeded Random
+- [ ] Replay System: Snapshots, Timelines & Event Replays
+- [ ] Testing Frameworks: Scenario, Monte Carlo & Regression Testing
+</details>
+
+<details>
+<summary><b>🔧 Fase 16: Pre-Release Refinement</b> (Pendente)</summary>
+
+- [ ] **Decision Tuning:** Action Priority Systems, Cooldowns, Weights & State Influences
+- [ ] **Attribute Calibration:** Normalization, Interactions, Probabilities & Diminishing Returns
+- [ ] **Spatial & Collision Accuracy:** Occupancy, Volume Collisions, Interception Zones
+- [ ] **Advanced Tactical Validation:** Overloads, Numerical Superiority/Inferiority, Space Exploitation
+- [ ] **Psychological & Emotional Dynamics:** Panic, Momentum, Aggression & Concentration Drops
+- [ ] **Production Tooling:** Full State Serialization, Simulation Logs & Regression Suites
+</details>
+
+---
+
+## 🛠 Tech Stack & Paradigmas
+
+- **Paradigma:** Event-Driven Architecture, Deterministic Simulation.
+- **Estruturas de Dados:** Vector Spatial Trees, Grids de Ocupação Espacial.
+- **Modelos Matemáticos:** Utility-based AI, Decaimento Exponencial de Memória, Extrapolação Vetorial.
