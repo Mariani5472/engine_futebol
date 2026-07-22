@@ -5,8 +5,7 @@ import { DecisionType } from "../DecisionType";
 import { PlayerMemory } from "../../awareness/memory/PlayerMemory";
 import { UtilityScore } from "../UtilityScore";
 
-export class PassEvaluator
-  implements ActionEvaluator {
+export class PassEvaluator implements ActionEvaluator {
 
   public evaluate(context: DecisionContext): Decision[] {
 
