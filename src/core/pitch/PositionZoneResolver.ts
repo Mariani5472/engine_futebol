@@ -1,6 +1,6 @@
-import { Vector2 } from "./Vector2";
-import { PitchGrid } from "../pitch/PitchGrid";
-import { PitchZone } from "../pitch/PitchZone";
+import { Vector2 } from "../geometry/Vector2";
+import { PitchGrid } from "./PitchGrid";
+import { PitchZone } from "./PitchZone";
 
 export class PositionZoneResolver {
 

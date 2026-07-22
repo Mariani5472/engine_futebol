@@ -3,10 +3,14 @@ import { PlayerMatchState } from "./PlayerMatchState";
 import { PossessionCandidate } from "../../domain";
 import { ReachCalculator } from "./ReachCalculator";
 import { BallState } from "./BallMatchState";
+import { Random } from "../random/Random";
 
 export class PossessionSystem {
 
-  private readonly reachCalculator = new ReachCalculator();
+  constructor(
+    private readonly random: Random,
+    private readonly reachCalculator: ReachCalculator
+  ) {}
 
   public update(
     state: MatchState
@@ -158,7 +162,7 @@ export class PossessionSystem {
     const probability =
       first.score / total;
 
-    return Math.random() < probability
+    return this.random.nextFloat(0, 1) < probability
       ? first.player
       : second.player;
 
