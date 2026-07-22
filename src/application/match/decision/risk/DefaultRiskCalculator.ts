@@ -1,3 +1,4 @@
+import { FieldThird } from "../../../../domain";
 import { DecisionType } from "../DecisionType";
 import { RiskCalculator } from "./RiskCalculator";
 import { RiskContext } from "./RiskContext";
@@ -36,31 +37,15 @@ export class DefaultRiskCalculator
 
   }
 
-  protected calculateConsequenceSeverity(
-    context: RiskContext
-  ): number {
-
-    const player =
-      context.player;
-
-    const zone =
-      player.currentZone;
-
-    switch (zone) {
-
-      case "DEFENSIVE_THIRD":
+  protected calculateConsequenceSeverity(context: RiskContext): number {
+    switch (context.fieldThird) {
+      case FieldThird.DEFENSIVE:
         return 0.9;
-
-      case "MIDDLE_THIRD":
+      case FieldThird.MIDDLE:
         return 0.5;
-
-      case "ATTACKING_THIRD":
+      case FieldThird.ATTACKING:
         return 0.2;
-
-      default:
-        return 0.5;
     }
-
   }
 
   protected calculatePlayerRiskTolerance(

@@ -8,6 +8,16 @@ export type PitchZoneId =
   | "D1" | "D2" | "D3"
   | "E1" | "E2" | "E3";
 
+export enum FieldThird {
+  DEFENSIVE = "DEFENSIVE",
+  MIDDLE = "MIDDLE",
+  ATTACKING = "ATTACKING"
+}
+
+export interface ZoneResolver {
+  resolve(position: Vector2): PitchZone;
+}
+
 export interface PitchZone {
   id: PitchZoneId;
   row: number;
