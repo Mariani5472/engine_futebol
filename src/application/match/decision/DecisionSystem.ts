@@ -1,58 +1,28 @@
+import { ActionEvaluator } from "./ActionEvaluator";
+import { Decision } from "./Decision";
+import { DecisionContext } from "./DecisionContext";
+import { DecisionFilter } from "./DecisionFilter";
+import { DecisionSelector } from "./DecisionSelector";
+
 export class DecisionSystem {
 
   constructor(
-    private readonly evaluators: ActionEvaluator[]
+    private readonly evaluators: ActionEvaluator[],
+    private readonly filter: DecisionFilter = new DecisionFilter(),
+    private readonly selector: DecisionSelector = new DecisionSelector()
   ) {}
 
-  public decide(
-    context: DecisionContext
-  ): Decision {
+  public decide(context: DecisionContext): Decision {
 
-    const decisions: Decision[] = [];
+    const candidates: Decision[] = [];
 
-    for (
-      const evaluator
-      of this.evaluators
-    ) {
+    for (const evaluator of this.evaluators) {
 
-      decisions.push(
-        ...evaluator.evaluate(
-          context
-        )
-      );
-
+      candidates.push(...evaluator.evaluate(context));
     }
 
-    if (
-      decisions.length === 0
-    ) {
+    const validDecisions = this.filter.filter(candidates);
 
-      throw new Error(
-        "No decision candidates available"
-      );
-
-    }
-
-    return decisions.reduce(
-      (best, current) => {
-
-        const bestScore =
-          best.utility -
-          best.risk;
-
-        const currentScore =
-          current.utility -
-          current.risk;
-
-        return currentScore >
-          bestScore
-
-          ? current
-          : best;
-
-      }
-    );
-
+    return this.selector.select(validDecisions);
   }
-
 }
