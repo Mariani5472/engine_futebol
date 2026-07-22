@@ -1,6 +1,6 @@
 import type {
   PlayerMatchState,
-} from "../core/movement/PlayerMatchState";
+} from "./PlayerMatchState";
 
 export type Brand<T, B extends string> = T & { readonly __brand: B; };
 

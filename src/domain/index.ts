@@ -2,7 +2,15 @@ export * from "./common";
 
 export * from "./AttributeRange";
 
+export * from "./TacticalPositions";
+
+export * from "./PositionSuitability";
+
+export * from "./PositionSuitabilityCalculator";
+
 export * from "./PlayerBase";
+
+export * from "./PlayerMatchState";
 
 export * from "./player";
 

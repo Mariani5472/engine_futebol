@@ -1,14 +1,17 @@
 import {
-  PlayerPosition,
   PlayerRole,
 } from "./PlayerBase";
+
+import {
+  TacticalPosition,
+} from "./TacticalPositions";
 
 export class RoleCompatibilityValidator {
 
   private static readonly COMPATIBILITY:
     Readonly<
       Record<
-        PlayerPosition,
+        TacticalPosition,
         readonly PlayerRole[]
       >
     > = {
@@ -17,7 +20,19 @@ export class RoleCompatibilityValidator {
         "GOALKEEPER",
       ],
 
-      DC: [
+      DR: [
+        "FULL_BACK",
+      ],
+
+      DCR: [
+        "CENTRE_BACK",
+      ],
+
+      DCC: [
+        "CENTRE_BACK",
+      ],
+
+      DCE: [
         "CENTRE_BACK",
       ],
 
@@ -25,23 +40,39 @@ export class RoleCompatibilityValidator {
         "FULL_BACK",
       ],
 
-      DR: [
-        "FULL_BACK",
+      WBR: [
+        "WING_BACK",
+      ],
+
+      DMR: [
+        "DEFENSIVE_MIDFIELDER",
+      ],
+
+      DMC: [
+        "DEFENSIVE_MIDFIELDER",
+      ],
+
+      DME: [
+        "DEFENSIVE_MIDFIELDER",
       ],
 
       WBL: [
         "WING_BACK",
       ],
 
-      WBR: [
-        "WING_BACK",
+      MR: [
+        "WIDE_MIDFIELDER",
       ],
 
-      DM: [
-        "DEFENSIVE_MIDFIELDER",
+      MCR: [
+        "CENTRAL_MIDFIELDER",
       ],
 
-      MC: [
+      MCC: [
+        "CENTRAL_MIDFIELDER",
+      ],
+
+      MCL: [
         "CENTRAL_MIDFIELDER",
       ],
 
@@ -49,29 +80,45 @@ export class RoleCompatibilityValidator {
         "WIDE_MIDFIELDER",
       ],
 
-      MR: [
-        "WIDE_MIDFIELDER",
+      WR: [
+        "WINGER",
+        "ATTACKING_MIDFIELDER",
+      ],
+
+      AMR: [
+        "ATTACKING_MIDFIELDER",
+        "WINGER",
       ],
 
       AMC: [
         "ATTACKING_MIDFIELDER",
       ],
 
+      AML: [
+        "ATTACKING_MIDFIELDER",
+        "WINGER",
+      ],
+
       WL: [
         "WINGER",
+        "ATTACKING_MIDFIELDER",
       ],
 
-      WR: [
-        "WINGER",
+      STR: [
+        "STRIKER",
       ],
 
-      ST: [
+      STC: [
+        "STRIKER",
+      ],
+
+      STL: [
         "STRIKER",
       ],
     };
 
   public static isCompatible(
-    position: PlayerPosition,
+    position: TacticalPosition,
     role: PlayerRole
   ): boolean {
 
@@ -83,7 +130,7 @@ export class RoleCompatibilityValidator {
   }
 
   public static assertCompatible(
-    position: PlayerPosition,
+    position: TacticalPosition,
     role: PlayerRole
   ): void {
 
@@ -93,6 +140,7 @@ export class RoleCompatibilityValidator {
         role
       )
     ) {
+
       throw new Error(
         `Role ${role} is not compatible ` +
         `with position ${position}.`
@@ -101,8 +149,9 @@ export class RoleCompatibilityValidator {
   }
 
   public static getCompatibleRoles(
-    position: PlayerPosition
-  ): readonly PlayerRole[] {
+    position: TacticalPosition
+  ):
+    readonly PlayerRole[] {
 
     return this.COMPATIBILITY[
       position

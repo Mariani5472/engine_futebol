@@ -8,45 +8,48 @@ import {
   AttributeRange,
 } from "./AttributeRange";
 
+import {
+  TacticalPosition,
+} from "./TacticalPositions";
+
+import {
+  PositionSuitability,
+  createPositionSuitability,
+} from "./PositionSuitability";
+
 export type PreferredFoot =
   | "LEFT"
   | "RIGHT"
   | "BOTH";
 
 export type PlayerPosition =
-  | "GK"
-  | "DC"
-  | "DL"
-  | "DR"
-  | "WBL"
-  | "WBR"
-  | "DM"
-  | "MC"
-  | "ML"
-  | "MR"
-  | "AMC"
-  | "WL"
-  | "WR"
-  | "ST";
+  TacticalPosition;
 
 export type PlayerRole =
   | "GOALKEEPER"
   | "CENTRE_BACK"
-  | "FULL_BACK"
-  | "WING_BACK"
+  | "LEFT_FULL_BACK"
+  | "RIGHT_FULL_BACK"
+  | "LEFT_WING_BACK"
+  | "RIGHT_WING_BACK"
   | "DEFENSIVE_MIDFIELDER"
   | "CENTRAL_MIDFIELDER"
-  | "WIDE_MIDFIELDER"
+  | "LEFT_WIDE_MIDFIELDER"
+  | "RIGHT_WIDE_MIDFIELDER"
   | "ATTACKING_MIDFIELDER"
-  | "WINGER"
+  | "LEFT_WINGER"
+  | "RIGHT_WINGER"
   | "STRIKER";
 
 export interface PositionFamiliarity {
-  readonly position: PlayerPosition;
+
+  readonly position: TacticalPosition;
+
   readonly familiarity: AttributeValue;
 }
 
 export interface MentalAttributes {
+
   readonly aggression: AttributeValue;
   readonly anticipation: AttributeValue;
   readonly bravery: AttributeValue;
@@ -64,6 +67,7 @@ export interface MentalAttributes {
 }
 
 export interface PhysicalAttributes {
+
   readonly acceleration: AttributeValue;
   readonly agility: AttributeValue;
   readonly balance: AttributeValue;
@@ -75,6 +79,7 @@ export interface PhysicalAttributes {
 }
 
 export interface TechnicalAttributes {
+
   readonly corners: AttributeValue;
   readonly crossing: AttributeValue;
   readonly dribbling: AttributeValue;
@@ -92,6 +97,7 @@ export interface TechnicalAttributes {
 }
 
 export interface GoalkeepingAttributes {
+
   readonly aerialReach: AttributeValue;
   readonly commandOfArea: AttributeValue;
   readonly communication: AttributeValue;
@@ -106,6 +112,7 @@ export interface GoalkeepingAttributes {
 }
 
 export interface HiddenAttributes {
+
   readonly adaptability: AttributeValue;
   readonly ambition: AttributeValue;
   readonly consistency: AttributeValue;
@@ -121,14 +128,20 @@ export interface HiddenAttributes {
 }
 
 export interface PlayerAttributes {
+
   readonly mental: MentalAttributes;
+
   readonly physical: PhysicalAttributes;
+
   readonly technical: TechnicalAttributes;
+
   readonly goalkeeping: GoalkeepingAttributes;
+
   readonly hidden: HiddenAttributes;
 }
 
 export interface PlayerPersonality {
+
   readonly adaptability: AttributeValue;
   readonly ambition: AttributeValue;
   readonly loyalty: AttributeValue;
@@ -139,79 +152,120 @@ export interface PlayerPersonality {
 }
 
 export interface PlayerRelationship {
+
   readonly playerId: PlayerId;
+
   readonly chemistry: AttributeValue;
 }
 
 export interface PlayerBaseProps {
+
   readonly id: PlayerId;
+
   readonly name: string;
+
   readonly age: number;
+
   readonly preferredFoot: PreferredFoot;
-  readonly positions: readonly PlayerPosition[];
-  readonly positionFamiliarity: readonly PositionFamiliarity[];
+
+  readonly positionSuitability:
+  readonly PositionSuitability[];
+
   readonly attributes: PlayerAttributes;
-  readonly languages: readonly LanguageCode[];
+
+  readonly languages:
+  readonly LanguageCode[];
+
   readonly personality: PlayerPersonality;
-  readonly relationships: readonly PlayerRelationship[];
+
+  readonly relationships:
+  readonly PlayerRelationship[];
 }
 
-function deepFreeze<T>(value: T): T {
-  if (value === null || typeof value !== "object") {
+function deepFreeze<T>(
+  value: T
+): T {
+
+  if (
+    value === null ||
+    typeof value !== "object"
+  ) {
     return value;
   }
 
-  Object.freeze(value);
+  Object.freeze(
+    value
+  );
 
-  for (const property of Object.values(value as Record<string, unknown>)) {
+  for (
+    const property
+    of Object.values(
+      value as Record<string, unknown>
+    )
+  ) {
+
     if (
       property !== null &&
       typeof property === "object" &&
       !Object.isFrozen(property)
     ) {
-      deepFreeze(property);
+      deepFreeze(
+        property
+      );
     }
   }
 
   return value;
 }
 
-function cloneAndFreeze<T>(value: T): T {
-  if (value === null || typeof value !== "object") {
+function cloneAndFreeze<T>(
+  value: T
+): T {
+
+  if (
+    value === null ||
+    typeof value !== "object"
+  ) {
     return value;
   }
 
-  if (Array.isArray(value)) {
-    const clonedArray = value.map(item => cloneAndFreeze(item));
-
-    return deepFreeze(clonedArray) as T;
-  }
-
-  const clonedObject = Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .map(([key, property]) => [key, cloneAndFreeze(property)])
-  );
-
-  return deepFreeze(clonedObject) as T;
-}
-
-function validateAttributes(
-  attributes: PlayerAttributes
-): void {
-
-  const values =
-    flattenNumericValues(
-      attributes
-    );
-
-  for (
-    const value
-    of values
+  if (
+    Array.isArray(value)
   ) {
-    AttributeRange.validate(
-      value
-    );
+
+    const clonedArray =
+      value.map(
+        item =>
+          cloneAndFreeze(
+            item
+          )
+      );
+
+    return deepFreeze(
+      clonedArray
+    ) as T;
   }
+
+  const clonedObject =
+    Object.fromEntries(
+      Object.entries(
+        value as Record<string, unknown>
+      ).map(
+        ([
+          key,
+          property,
+        ]) => [
+            key,
+            cloneAndFreeze(
+              property
+            ),
+          ]
+      )
+    );
+
+  return deepFreeze(
+    clonedObject
+  ) as T;
 }
 
 function flattenNumericValues(
@@ -240,6 +294,26 @@ function flattenNumericValues(
   );
 }
 
+function validateAttributes(
+  attributes: PlayerAttributes
+): void {
+
+  const values =
+    flattenNumericValues(
+      attributes
+    );
+
+  for (
+    const value
+    of values
+  ) {
+
+    AttributeRange.validate(
+      value
+    );
+  }
+}
+
 export class PlayerBase {
 
   public readonly id: PlayerId;
@@ -248,19 +322,20 @@ export class PlayerBase {
 
   public readonly age: number;
 
-  public readonly preferredFoot: PreferredFoot;
+  public readonly preferredFoot:
+    PreferredFoot;
 
-  public readonly positions: readonly PlayerPosition[];
+  public readonly positionSuitability:
+    readonly PositionSuitability[];
 
-  public readonly positionFamiliarity:
-    readonly PositionFamiliarity[];
-
-  public readonly attributes: PlayerAttributes;
+  public readonly attributes:
+    PlayerAttributes;
 
   public readonly languages:
     readonly LanguageCode[];
 
-  public readonly personality: PlayerPersonality;
+  public readonly personality:
+    PlayerPersonality;
 
   public readonly relationships:
     readonly PlayerRelationship[];
@@ -281,14 +356,9 @@ export class PlayerBase {
     this.preferredFoot =
       props.preferredFoot;
 
-    this.positions =
+    this.positionSuitability =
       cloneAndFreeze(
-        props.positions
-      );
-
-    this.positionFamiliarity =
-      cloneAndFreeze(
-        props.positionFamiliarity
+        props.positionSuitability
       );
 
     this.attributes =
@@ -337,10 +407,10 @@ export class PlayerBase {
     }
 
     if (
-      props.positions.length === 0
+      props.positionSuitability.length === 0
     ) {
       throw new Error(
-        "Player must have at least one position."
+        "Player must have at least one position suitability."
       );
     }
 
@@ -348,12 +418,31 @@ export class PlayerBase {
       props.attributes
     );
 
+    const uniquePositions =
+      new Set<TacticalPosition>();
+
     for (
-      const familiarity
-      of props.positionFamiliarity
+      const suitability
+      of props.positionSuitability
     ) {
+
+      if (
+        uniquePositions.has(
+          suitability.position
+        )
+      ) {
+        throw new Error(
+          `Duplicate position suitability: ` +
+          `${suitability.position}`
+        );
+      }
+
+      uniquePositions.add(
+        suitability.position
+      );
+
       AttributeRange.validate(
-        familiarity.familiarity
+        suitability.rating
       );
     }
 
@@ -361,6 +450,7 @@ export class PlayerBase {
       const relationship
       of props.relationships
     ) {
+
       AttributeRange.validate(
         relationship.chemistry
       );
@@ -372,27 +462,56 @@ export class PlayerBase {
   }
 
   public getPrimaryPosition():
-    PlayerPosition {
+    TacticalPosition {
 
-    return this.positions[0];
+    return this.positionSuitability
+      .reduce(
+        (
+          best,
+          current
+        ) =>
+          current.rating > best.rating
+            ? current
+            : best
+      )
+      .position;
   }
 
-  public getFamiliarityFor(
-    position: PlayerPosition
-  ): AttributeValue {
+  public getPositionSuitability(
+    position: TacticalPosition
+  ): PositionSuitability {
 
-    const familiarity =
-      this.positionFamiliarity.find(
+    const suitability =
+      this.positionSuitability.find(
         item =>
           item.position === position
       );
 
-    return (
-      familiarity?.familiarity ??
-      AttributeRange.create(
-        1
-      )
+    if (
+      suitability
+    ) {
+      return suitability;
+    }
+
+    return createPositionSuitability(
+      position,
+      1
     );
+  }
+
+  /**
+   * Compatibilidade com a API anterior.
+   *
+   * A diferença é que agora o argumento é um spot tático
+   * específico e não uma posição genérica.
+   */
+  public getFamiliarityFor(
+    position: TacticalPosition
+  ): AttributeValue {
+
+    return this.getPositionSuitability(
+      position
+    ).rating;
   }
 
   public getRelationshipWith(

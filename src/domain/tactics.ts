@@ -3,12 +3,14 @@ import {
 } from "./common";
 
 import {
-  PlayerPosition,
   PlayerRole,
 } from "./PlayerBase";
 
 import {
-  FormationName,
+  TacticalPosition,
+} from "./TacticalPositions";
+
+import {
   FormationValidator,
 } from "./FormationValidator";
 
@@ -45,13 +47,17 @@ export interface TacticalShapeAssignment {
 
   readonly id: string;
 
-  readonly position: PlayerPosition;
+  readonly position:
+  TacticalPosition;
 
-  readonly role: PlayerRole;
+  readonly role:
+  PlayerRole;
 
-  readonly defensiveAnchor: Vector2;
+  readonly defensiveAnchor:
+  Vector2;
 
-  readonly attackingAnchor: Vector2;
+  readonly attackingAnchor:
+  Vector2;
 
   readonly width: number;
 
@@ -63,8 +69,6 @@ export interface TacticalShapeAssignment {
 export interface TacticalShape {
 
   readonly name: string;
-
-  readonly formation?: FormationName;
 
   readonly assignments:
   readonly TacticalShapeAssignment[];
@@ -86,9 +90,11 @@ export interface PlayerTacticalInstructions {
 
 export interface TacticProps {
 
-  readonly defensiveShape: TacticalShape;
+  readonly defensiveShape:
+  TacticalShape;
 
-  readonly attackingShape: TacticalShape;
+  readonly attackingShape:
+  TacticalShape;
 
   readonly teamInstructions:
   TeamTacticalInstructions;
@@ -96,7 +102,8 @@ export interface TacticProps {
   readonly playerInstructions:
   readonly PlayerTacticalInstructions[];
 
-  readonly familiarity: number;
+  readonly familiarity:
+  number;
 }
 
 export class Tactic {
@@ -152,6 +159,7 @@ export class Tactic {
       props.familiarity < 0 ||
       props.familiarity > 100
     ) {
+
       throw new Error(
         "Tactic familiarity must be between 0 and 100."
       );
@@ -167,12 +175,23 @@ export class Tactic {
   ): void {
 
     if (
-      shape.assignments.length === 0
+      shape.assignments.length !== 11
     ) {
+
       throw new Error(
-        "Tactical shape must have at least one assignment."
+        "Tactical shape must contain exactly 11 players."
       );
     }
+
+    const positions =
+      shape.assignments.map(
+        assignment =>
+          assignment.position
+      );
+
+    FormationValidator.assertValid(
+      positions
+    );
 
     for (
       const assignment
@@ -183,22 +202,36 @@ export class Tactic {
         assignment.position,
         assignment.role
       );
-    }
 
-    if (
-      shape.formation
-    ) {
+      if (
+        assignment.width < 0 ||
+        assignment.width > 100
+      ) {
 
-      const positions =
-        shape.assignments.map(
-          assignment =>
-            assignment.position
+        throw new Error(
+          "Assignment width must be between 0 and 100."
         );
+      }
 
-      FormationValidator.assertValid(
-        shape.formation,
-        positions
-      );
+      if (
+        assignment.depth < 0 ||
+        assignment.depth > 100
+      ) {
+
+        throw new Error(
+          "Assignment depth must be between 0 and 100."
+        );
+      }
+
+      if (
+        assignment.freedom < 0 ||
+        assignment.freedom > 100
+      ) {
+
+        throw new Error(
+          "Assignment freedom must be between 0 and 100."
+        );
+      }
     }
   }
 }

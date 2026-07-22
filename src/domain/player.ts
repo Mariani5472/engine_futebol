@@ -17,7 +17,7 @@ import {
 
 import {
   PlayerMatchState,
-} from "../core/movement/PlayerMatchState";
+} from "./PlayerMatchState";
 
 export {
   PlayerBase,

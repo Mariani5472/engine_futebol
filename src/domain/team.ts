@@ -13,38 +13,50 @@ export type TeamSide =
 
 export interface TeamProps {
 
-  readonly id: TeamId;
+  readonly id:
+  TeamId;
 
-  readonly name: string;
+  readonly name:
+  string;
 
-  readonly players: readonly Player[];
+  readonly players:
+  readonly Player[];
 }
 
 export interface TeamInstructions {
 
-  readonly pressingIntensity: number;
+  readonly pressingIntensity:
+  number;
 
-  readonly defensiveLineHeight: number;
+  readonly defensiveLineHeight:
+  number;
 
-  readonly tempo: number;
+  readonly tempo:
+  number;
 
-  readonly width: number;
+  readonly width:
+  number;
 
-  readonly riskTaking: number;
+  readonly riskTaking:
+  number;
 }
 
 export interface TeamChemistry {
 
-  readonly familiarity: number;
+  readonly familiarity:
+  number;
 
-  readonly tacticalFamiliarity: number;
+  readonly tacticalFamiliarity:
+  number;
 }
 
 export class Team {
 
-  public readonly id: TeamId;
+  public readonly id:
+    TeamId;
 
-  public readonly name: string;
+  public readonly name:
+    string;
 
   private readonly roster:
     readonly Player[];
@@ -60,11 +72,9 @@ export class Team {
       props.name;
 
     this.roster =
-      Object.freeze(
-        [
-          ...props.players,
-        ]
-      );
+      Object.freeze([
+        ...props.players,
+      ]);
   }
 
   public static create(
@@ -74,6 +84,7 @@ export class Team {
     if (
       !props.name.trim()
     ) {
+
       throw new Error(
         "Team name cannot be empty."
       );
@@ -82,6 +93,7 @@ export class Team {
     if (
       props.players.length === 0
     ) {
+
       throw new Error(
         "Team must have at least one player."
       );
@@ -100,6 +112,7 @@ export class Team {
           player.id
         )
       ) {
+
         throw new Error(
           `Duplicate player id found in team: ` +
           `${String(player.id)}`
@@ -124,7 +137,8 @@ export class Team {
 
   public getPlayerById(
     playerId: PlayerId
-  ): Player | undefined {
+  ):
+    Player | undefined {
 
     return this.roster.find(
       player =>
@@ -151,5 +165,49 @@ export class Team {
       player =>
         player.id === playerId
     );
+  }
+
+  public getStartingEleven(
+    playerIds:
+      readonly PlayerId[]
+  ):
+    readonly Player[] {
+
+    const players =
+      playerIds.map(
+        playerId =>
+          this.getPlayerById(
+            playerId
+          )
+      );
+
+    if (
+      players.some(
+        player =>
+          !player
+      )
+    ) {
+
+      throw new Error(
+        "Starting eleven contains a player " +
+        "who does not belong to this team."
+      );
+    }
+
+    const uniqueIds =
+      new Set(
+        playerIds
+      );
+
+    if (
+      uniqueIds.size !== 11
+    ) {
+
+      throw new Error(
+        "Starting eleven must contain exactly 11 unique players."
+      );
+    }
+
+    return players as Player[];
   }
 }
