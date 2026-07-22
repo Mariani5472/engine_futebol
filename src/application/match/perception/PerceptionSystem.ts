@@ -37,11 +37,10 @@ export class PerceptionSystem {
 
     for (const player of players) {
 
-      const perception =
-        this.buildPlayerPerception(
-          player,
-          state
-        );
+      const perception = this.buildPlayerPerception(
+        player,
+        state
+      );
 
       perceptions.set(
         player.player.id,
