@@ -1,5 +1,20 @@
-import { Vector2 } from "./common";
-import { PlayerPosition, PlayerRole } from "./player";
+import {
+  Vector2,
+} from "./common";
+
+import {
+  PlayerPosition,
+  PlayerRole,
+} from "./PlayerBase";
+
+import {
+  FormationName,
+  FormationValidator,
+} from "./FormationValidator";
+
+import {
+  RoleCompatibilityValidator,
+} from "./RoleCompatibilityValidator";
 
 export type TacticalPhase =
   | "DEFENDING"
@@ -27,66 +42,163 @@ export type PlayerInstructionKey =
   | "DROP_DEEP";
 
 export interface TacticalShapeAssignment {
+
   readonly id: string;
+
   readonly position: PlayerPosition;
+
   readonly role: PlayerRole;
+
   readonly defensiveAnchor: Vector2;
+
   readonly attackingAnchor: Vector2;
+
   readonly width: number;
+
   readonly depth: number;
+
   readonly freedom: number;
 }
 
 export interface TacticalShape {
+
   readonly name: string;
-  readonly assignments: readonly TacticalShapeAssignment[];
+
+  readonly formation?: FormationName;
+
+  readonly assignments:
+  readonly TacticalShapeAssignment[];
 }
 
 export interface TeamTacticalInstructions {
-  readonly instructions: readonly TeamInstructionKey[];
+
+  readonly instructions:
+  readonly TeamInstructionKey[];
 }
 
 export interface PlayerTacticalInstructions {
+
   readonly playerId: string;
-  readonly instructions: readonly PlayerInstructionKey[];
+
+  readonly instructions:
+  readonly PlayerInstructionKey[];
 }
 
 export interface TacticProps {
+
   readonly defensiveShape: TacticalShape;
+
   readonly attackingShape: TacticalShape;
-  readonly teamInstructions: TeamTacticalInstructions;
-  readonly playerInstructions: readonly PlayerTacticalInstructions[];
-  readonly familiarity: number; // 0-100
+
+  readonly teamInstructions:
+  TeamTacticalInstructions;
+
+  readonly playerInstructions:
+  readonly PlayerTacticalInstructions[];
+
+  readonly familiarity: number;
 }
 
 export class Tactic {
-  public readonly defensiveShape: TacticalShape;
-  public readonly attackingShape: TacticalShape;
-  public readonly teamInstructions: TeamTacticalInstructions;
-  public readonly playerInstructions: readonly PlayerTacticalInstructions[];
-  public readonly familiarity: number;
 
-  private constructor(props: TacticProps) {
-    this.defensiveShape = props.defensiveShape;
-    this.attackingShape = props.attackingShape;
-    this.teamInstructions = props.teamInstructions;
-    this.playerInstructions = props.playerInstructions;
-    this.familiarity = props.familiarity;
+  public readonly defensiveShape:
+    TacticalShape;
+
+  public readonly attackingShape:
+    TacticalShape;
+
+  public readonly teamInstructions:
+    TeamTacticalInstructions;
+
+  public readonly playerInstructions:
+    readonly PlayerTacticalInstructions[];
+
+  public readonly familiarity:
+    number;
+
+  private constructor(
+    props: TacticProps
+  ) {
+
+    this.defensiveShape =
+      props.defensiveShape;
+
+    this.attackingShape =
+      props.attackingShape;
+
+    this.teamInstructions =
+      props.teamInstructions;
+
+    this.playerInstructions =
+      props.playerInstructions;
+
+    this.familiarity =
+      props.familiarity;
   }
 
-  public static create(props: TacticProps): Tactic {
-    if (!props.defensiveShape.assignments.length) {
-      throw new Error("Defensive shape must have at least one assignment.");
+  public static create(
+    props: TacticProps
+  ): Tactic {
+
+    this.validateShape(
+      props.defensiveShape
+    );
+
+    this.validateShape(
+      props.attackingShape
+    );
+
+    if (
+      props.familiarity < 0 ||
+      props.familiarity > 100
+    ) {
+      throw new Error(
+        "Tactic familiarity must be between 0 and 100."
+      );
     }
 
-    if (!props.attackingShape.assignments.length) {
-      throw new Error("Attacking shape must have at least one assignment.");
+    return new Tactic(
+      props
+    );
+  }
+
+  private static validateShape(
+    shape: TacticalShape
+  ): void {
+
+    if (
+      shape.assignments.length === 0
+    ) {
+      throw new Error(
+        "Tactical shape must have at least one assignment."
+      );
     }
 
-    if (props.familiarity < 0 || props.familiarity > 100) {
-      throw new Error("Tactic familiarity must be between 0 and 100.");
+    for (
+      const assignment
+      of shape.assignments
+    ) {
+
+      RoleCompatibilityValidator.assertCompatible(
+        assignment.position,
+        assignment.role
+      );
     }
 
-    return new Tactic(props);
+    if (
+      shape.formation
+    ) {
+
+      const positions =
+        shape.assignments.map(
+          assignment =>
+            assignment.position
+        );
+
+      FormationValidator.assertValid(
+        shape.formation,
+        positions
+      );
+    }
   }
 }

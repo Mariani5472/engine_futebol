@@ -1,14 +1,14 @@
-import { PlayerMatchState } from "../core/movement/PlayerMatchState";
+import type {
+  PlayerMatchState,
+} from "../core/movement/PlayerMatchState";
 
-export type Brand<T, B extends string> = T & { readonly __brand: B };
+export type Brand<T, B extends string> = T & { readonly __brand: B; };
 
 export type TeamId = Brand<string, "TeamId">;
 export type PlayerId = Brand<string, "PlayerId">;
 export type MatchId = Brand<string, "MatchId">;
 export type RefereeId = Brand<string, "RefereeId">;
-
 export type LanguageCode = Brand<string, "LanguageCode">;
-
 export type Seconds = Brand<number, "Seconds">;
 export type Milliseconds = Brand<number, "Milliseconds">;
 export type AttributeValue = Brand<number, "AttributeValue">;
@@ -36,17 +36,37 @@ export interface PossessionCandidate {
   score: number;
 }
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+export function clamp(
+  value: number,
+  min: number,
+  max: number
+): number {
+  return Math.max(min, Math.min(
+    max,
+    value
+  )
+  );
 }
 
-export function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
+export function isFiniteNumber(
+  value: unknown
+): value is number {
+  return (typeof value === "number" && Number.isFinite(value));
 }
 
-export function createAttributeValue(value: number): AttributeValue {
-  if (!Number.isInteger(value) || value < 1 || value > 20) {
-    throw new Error(`AttributeValue must be an integer between 1 and 20. Received: ${value}`);
+export function createAttributeValue(
+  value: number
+): AttributeValue {
+
+  if (
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > 20
+  ) {
+    throw new Error(
+      `AttributeValue must be an integer between 1 and 20. ` +
+      `Received: ${value}`
+    );
   }
 
   return value as AttributeValue;
@@ -57,17 +77,26 @@ export function createVector2(x: number, y: number): Vector2 {
     throw new Error("Vector2 coordinates must be finite numbers.");
   }
 
-  return { x, y };
+  return { x, y, };
 }
 
-export function createRect(x: number, y: number, width: number, height: number): Rect {
-  if (![x, y, width, height].every(isFiniteNumber)) {
-    throw new Error("Rect values must be finite numbers.");
+export function createRect(
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): Rect {
+  if (![x, y, width, height,].every(isFiniteNumber)) {
+    throw new Error(
+      "Rect values must be finite numbers."
+    );
   }
 
   if (width <= 0 || height <= 0) {
-    throw new Error("Rect width and height must be greater than zero.");
+    throw new Error(
+      "Rect width and height must be greater than zero."
+    );
   }
 
-  return { x, y, width, height };
+  return { x, y, width, height, };
 }

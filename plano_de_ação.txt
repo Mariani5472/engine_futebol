@@ -1,0 +1,488 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚽ MATCH ENGINE — ROADMAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ FASE 1 — DOMÍNIO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[x] Player
+[x] Team
+[x] Tactical Formation
+[x] Position Role
+[x] Player Attributes
+[x] Mental Attributes
+[x] Physical Attributes
+[x] Goalkeeper Attributes
+[x] Hidden Attributes
+[x] Languages
+[x] Player Relationships
+[x] Team Cohesion
+[x] Tactical Familiarity
+[x] Language Compatibility
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ FASE 2 — GEOMETRY & PITCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[x] Vector2
+[x] Distance
+[x] Angle
+[x] Line Intersection
+[x] Line of Sight
+[x] Ball Trajectory
+[x] Pitch
+[x] Rectangle
+[x] PitchZone
+[x] PitchGrid
+[x] Grid A1–E3
+[x] Zone Neighbour Detection
+[x] Zones Between
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ FASE 3 — MOVEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[x] Player Movement
+[x] Ball Movement
+[x] Velocity
+[x] Target Position
+[x] Player Speed
+[x] Fatigue Modifier
+[x] Facing Direction
+[x] Reach Calculation
+[x] Possession Candidates
+[x] Possession Control Score
+[x] Possession Duel
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ FASE 4 — PERCEPTION & COGNITION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4.1 — PERCEPTION
+
+[x] Distance
+[x] Angle
+[x] Line of Sight
+[x] Position Zone
+[x] Visibility
+
+
+4.2A — AWARENESS
+
+[x] Short-Term Memory
+[x] Certainty
+[x] Last Seen Tick
+[x] Estimated Position
+[x] Estimated Velocity
+[x] Memory Decay
+
+
+4.2B — COGNITIVE MODEL
+
+[x] Noise Model
+[x] Spatial Error
+[x] Angular Error
+[x] Perception Accuracy
+
+[x] Prediction Model
+[x] Ball Extrapolation
+[x] Player Extrapolation
+[x] Anticipation
+
+[x] Memory Model
+[x] Exponential Decay
+[x] Increasing Spatial Error
+[x] Concentration Influence
+[x] Vision Influence
+
+[x] Cognitive System
+[x] Noise Integration
+[x] Prediction Integration
+[x] Memory Integration
+[x] Awareness Update
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧠 FASE 5 — DECISION LAYER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5.1 — DECISION CONTEXT
+
+[x] DecisionContext
+[x] Player Awareness
+[x] Perception Context
+[x] Cognitive Context
+
+
+5.2 — UTILITY SCORE
+
+[x] UtilityContext
+[x] UtilityScore
+[x] UtilityReason
+[x] Base Utility
+[x] Tactical Utility
+[x] Personality Utility
+[x] Risk Utility
+
+
+5.3 — ACTION EVALUATION
+
+[x] ActionEvaluator
+[x] PassEvaluator
+[x] ShotEvaluator
+[x] Decision Candidate Generation
+
+
+5.4 — DECISION SELECTION
+
+[x] Decision Selection
+[x] Best Candidate Selection
+[x] Utility Comparison
+
+
+5.5 — RISK EVALUATION
+
+[x] RiskContext
+[x] RiskScore
+[x] RiskCalculator
+[x] Failure Probability
+[x] Consequence Severity
+[x] Player Risk Tolerance
+[x] Tactical Risk
+[x] Match-State Risk
+[x] Risk Reason
+
+
+5.6 — PERSONALITY INFLUENCE
+
+[ ] Personality Influence
+[ ] Personality Modifiers
+[ ] Decision Bias
+[ ] Personality-Based Risk Tolerance
+
+5.6.1
+[ ] PersonalityContext
+[ ] PersonalityBias
+[ ] PersonalityModifier
+[ ] DefaultPersonalityModifier
+[ ] Utility modification
+[ ] Risk tolerance modification
+
+PHASE 5.7 — DECISION INTEGRATION
+5.7.1 — Memory Refresh
+[ ] Perceived player updates PlayerMemory
+[ ] Perceived ball updates BallMemory
+[ ] lastSeenTick works
+[ ] lastUpdatedTick works
+[ ] MemoryDecay is actually used
+5.7.2 — Prediction Cleanup
+[ ] Remove PredictionFactory empty file
+[ ] Remove PredictionResult if unused
+[ ] Define prediction horizon
+[ ] Anticipation controls horizon instead of velocity multiplier
+5.7.3 — Decision Architecture
+[ ] Decide whether UtilityScore or number crosses evaluator boundary
+[ ] Preserve UtilityScore until selection
+[ ] Integrate RiskCalculator
+[ ] Use EvaluatedDecision
+[ ] Remove duplicated risk calculation from UtilityCalculator
+5.7.4 — Decision Validity
+[ ] DecisionFilter validates legal actions
+[ ] Utility does not decide whether action is legal
+[ ] Empty candidate list has fallback decision
+[ ] Decision selection handles ties
+5.7.5 — Risk Model
+[ ] Separate objective risk from risk tolerance
+[ ] Risk tolerance modifies risk acceptance
+[ ] Risk tolerance never makes objective risk zero
+[ ] Add match-state risk
+[ ] Add tactical risk
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ FASE 6 — ACTION LAYER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] ActionFactory
+
+[ ] PassAction
+[ ] ShotAction
+[ ] DribbleAction
+[ ] TackleAction
+[ ] HeaderAction
+[ ] ClearanceAction
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚽ FASE 7 — BALL PHYSICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] BallPhysicsSystem
+
+[ ] Ball Acceleration
+[ ] Ball Deceleration
+[ ] Ball Velocity
+[ ] Ball Direction
+[ ] Ball Height
+[ ] Ball Flight
+[ ] Bounce
+[ ] Friction
+[ ] Ball Trajectory Resolution
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧠 FASE 8 — TACTICAL ENGINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Tactical Engine
+
+[ ] Width
+[ ] Depth
+[ ] Compactness
+[ ] Defensive Line
+[ ] Pressing
+[ ] Tempo
+[ ] Counter Attack
+[ ] Overlap
+[ ] Underlap
+[ ] Defensive Shape
+[ ] Attacking Shape
+[ ] Transition Shape
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👥 FASE 9 — TEAM BEHAVIOUR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Team Behaviour System
+
+[ ] Team Shape
+[ ] Player Spacing
+[ ] Role Coordination
+[ ] Defensive Line Coordination
+[ ] Pressing Coordination
+[ ] Cover
+[ ] Marking
+[ ] Support
+[ ] Passing Options
+[ ] Collective Movement
+[ ] Team Cohesion Influence
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧑‍⚖️ FASE 10 — REFEREE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Referee System
+
+[ ] Foul Detection
+[ ] Foul Severity
+[ ] Advantage
+[ ] Yellow Card
+[ ] Second Yellow
+[ ] Direct Red Card
+[ ] Last Defender Rule
+[ ] Serious Foul Play
+[ ] Violent Conduct
+[ ] Dissent
+[ ] Handball
+[ ] Simulation
+[ ] Referee Personality
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔄 FASE 11 — MATCH FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Kickoff
+[ ] First Half
+[ ] Half-Time
+[ ] Second Half
+[ ] Full-Time
+[ ] Extra Time
+[ ] Stoppage Time
+[ ] Restarts
+[ ] Throw-In
+[ ] Goal Kick
+[ ] Corner
+[ ] Free Kick
+[ ] Penalty
+[ ] Substitutions
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📡 FASE 12 — EVENT ENGINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Event Engine
+
+[ ] Event Queue
+[ ] Event Dispatcher
+[ ] Event Ordering
+[ ] Event Priority
+[ ] Event Timestamp
+
+[ ] Goal Event
+[ ] Shot Event
+[ ] Card Event
+[ ] Period Start Event
+[ ] Period End Event
+
+[ ] Event Serialization
+[ ] Frontend Event Stream
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 FASE 13 — MATCH REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Match Report
+
+[ ] Final Score
+[ ] Goals
+[ ] Shots
+[ ] Shots on Target
+[ ] Possession
+[ ] Passes
+[ ] Pass Accuracy
+[ ] Tackles
+[ ] Fouls
+[ ] Cards
+[ ] Player Ratings
+[ ] Match Timeline
+[ ] Key Events
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎮 FASE 14 — SIMULATION POLISH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Weather
+[ ] Rain
+[ ] Pitch Condition
+[ ] Crowd
+[ ] Morale
+[ ] Fatigue
+[ ] Pressure
+[ ] Big Matches
+[ ] Consistency
+[ ] Leadership
+[ ] Adaptability
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧪 FASE 15 — ENGINE VALIDATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Deterministic Random
+[ ] Seeded Simulation
+[ ] Replay System
+[ ] Match Snapshot
+[ ] Debug Timeline
+[ ] Event Replay
+[ ] Scenario Testing
+[ ] Monte Carlo Testing
+[ ] Statistical Validation
+[ ] Regression Tests
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 FASE 16 — PRE-RELEASE REFINEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[ ] Separar RawPerception de CognitivePerception
+[ ] Não mutar percepção original
+[ ] Action Priority System
+[ ] Contextual Action Weights
+[ ] Position-Based Decision Weights
+[ ] Role-Based Decision Weights
+[ ] Tactical Instruction Influence
+[ ] Game State Influence
+[ ] Scoreline Influence
+[ ] Time Influence
+[ ] Teammate Quality Influence
+[ ] Opponent Quality Influence
+[ ] Decision Hysteresis
+[ ] Decision Cooldown
+[ ] Make Perception immutable
+[ ] Separate RawPerception from CognitivePerception
+[ ] Remove mutation from NoiseSystem
+[ ] Separate Prediction Horizon from Prediction Accuracy
+[ ] Add action-specific prediction
+[ ] Add acceleration prediction
+[ ] Add trajectory prediction
+[ ] Multi-player possession contest
+[ ] Team possession advantage
+[ ] Ball ownership inertia
+[ ] First touch quality
+[ ] Physical duel
+[ ] Interception vs control
+
+[ ] Replace Arbitrary Constants
+[ ] Attribute Normalization
+[ ] Attribute Interaction
+[ ] Contextual Attribute Weight
+[ ] Probability Calibration
+[ ] Probability Distribution Testing
+[ ] Extreme Value Testing
+[ ] Monte Carlo Validation
+
+[ ] Real Player Occupancy
+[ ] Player Radius
+[ ] Collision Detection
+[ ] Blocking Volume
+[ ] Passing Lanes
+[ ] Shooting Lanes
+[ ] Defensive Coverage
+[ ] Interception Zones
+[ ] Pressure Radius
+[ ] Marking Distance
+
+[ ] Tactical Shape Validation
+[ ] Formation Transition Validation
+[ ] Role Compatibility
+[ ] Position Occupancy
+[ ] Tactical Overload
+[ ] Numerical Superiority
+[ ] Numerical Inferiority
+[ ] Defensive Cover
+[ ] Space Creation
+[ ] Space Exploitation
+
+[ ] Attribute Interactions
+[ ] Position-Specific Attribute Weights
+[ ] Role-Specific Attribute Weights
+[ ] Attribute Diminishing Returns
+[ ] Attribute Synergy
+[ ] Attribute Weaknesses
+[ ] Current Ability
+[ ] Potential Ability
+[ ] Form
+[ ] Match Sharpness
+[ ] Fitness
+[ ] Injury Status
+
+[ ] Decision Mistakes
+[ ] Panic
+[ ] Confidence
+[ ] Momentum
+[ ] Emotional State
+[ ] Frustration
+[ ] Aggression Changes
+[ ] Risk Changes
+[ ] Concentration Drops
+
+[ ] Deterministic Seed
+[ ] Replayable Matches
+[ ] Debug Mode
+[ ] Event Replay
+[ ] Match Snapshot
+[ ] State Serialization
+[ ] Simulation Logs
+[ ] Statistical Validation
+[ ] Regression Tests
+[ ] Scenario Tests
+
