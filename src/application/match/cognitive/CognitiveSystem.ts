@@ -14,7 +14,7 @@ export class CognitiveSystem {
     context: CognitiveContext
   ): void {
     this.noise.update(context);
-    this.prediction.update(context);
     this.memory.update(context);
+    this.prediction.update(context);
   }
 }
