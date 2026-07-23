@@ -1,112 +1,213 @@
 import {
-  AttributeValue,
-} from "./common";
-import {
   PlayerAttributes,
 } from "./PlayerBase";
+
 export type RoleAttribute =
   keyof PlayerAttributes["mental"]
   | keyof PlayerAttributes["physical"]
   | keyof PlayerAttributes["technical"]
   | keyof PlayerAttributes["goalkeeping"];
+
 export type TacticalPhase =
   | "IN_POSSESSION"
   | "OUT_OF_POSSESSION";
+
 export type TacticalRole =
-  // Goalkeeper
+  // ============================================================
+  // GOALKEEPER
+  // ============================================================
+
   | "GOALKEEPER"
   | "SWEEPER_KEEPER"
+  | "DIRECT_GOALKEEPER"
   | "LINE_GOALKEEPER"
-  // Centre-back
+
+  // ============================================================
+  // CENTRE-BACK
+  // ============================================================
+
   | "CENTRE_BACK"
   | "BALL_PLAYING_CENTRE_BACK"
   | "DIRECT_CENTRE_BACK"
-  | "COVER_CENTRE_BACK"
   | "WIDE_CENTRE_BACK"
-  // Full-back
+  | "ADVANCED_CENTRE_BACK"
+  | "OVERLAPPING_CENTRE_BACK"
+
+  // Out of possession
+  | "COVER_CENTRE_BACK"
+  | "DEFENSIVE_CENTRE_BACK"
+  | "WIDE_COVER_CENTRE_BACK"
+
+  // ============================================================
+  // FULL-BACK
+  // ============================================================
+
   | "FULL_BACK"
   | "INVERTED_FULL_BACK"
   | "WING_BACK"
   | "PLAYMAKING_WING_BACK"
   | "ATTACKING_WING_BACK"
-  // Defensive midfield
+
+  // Out of possession
+  | "DEFENSIVE_FULL_BACK"
+  | "PRESSING_FULL_BACK"
+
+  // ============================================================
+  // WING-BACK
+  // ============================================================
+
+  | "DEFENSIVE_WING_BACK"
+  | "PRESSING_WING_BACK"
+
+  // ============================================================
+  // DEFENSIVE MIDFIELDER
+  // ============================================================
+
   | "DEFENSIVE_MIDFIELDER"
   | "BOX_TO_BOX_MIDFIELDER"
   | "DEEP_LYING_PLAYMAKER"
   | "HALF_BACK"
-  // Central midfield
+
+  // Out of possession
+  | "DISPOSSESSING_DEFENSIVE_MIDFIELDER"
+  | "PRESSING_DEFENSIVE_MIDFIELDER"
+  | "PROTECTIVE_DEFENSIVE_MIDFIELDER"
+  | "WIDE_COVER_DEFENSIVE_MIDFIELDER"
+
+  // ============================================================
+  // CENTRAL MIDFIELDER
+  // ============================================================
+
   | "CENTRAL_MIDFIELDER"
   | "ADVANCED_PLAYMAKER"
   | "MEZZALA"
   | "WIDE_CENTRAL_MIDFIELDER"
-  // Wide midfield / attacking midfield
+
+  // Out of possession
+  | "PRESSING_CENTRAL_MIDFIELDER"
+  | "PROTECTIVE_CENTRAL_MIDFIELDER"
+  | "WIDE_COVER_CENTRAL_MIDFIELDER"
+
+  // ============================================================
+  // WIDE MIDFIELDER
+  // ============================================================
+
   | "WIDE_MIDFIELDER"
+
+  // Out of possession
+  | "TRACKING_WIDE_MIDFIELDER"
+  | "WIDE_OUTLET_MIDFIELDER"
+
+  // ============================================================
+  // WIDE MIDFIELDER / ATTACKING MIDFIELDER
+  // ============================================================
+
   | "INSIDE_FORWARD"
   | "WIDE_PLAYMAKER"
   | "WINGER"
-  // Attacking midfield
+
+  // Out of possession
+  | "INSIDE_OUTLET_WINGER"
+  | "TRACKING_WINGER"
+  | "WIDE_OUTLET_WINGER"
+
+  // ============================================================
+  // ATTACKING MIDFIELDER
+  // ============================================================
+
   | "ATTACKING_MIDFIELDER"
   | "ENGANCHE"
   | "TREQUARTISTA"
   | "SHADOW_STRIKER"
-  // Striker
+
+  // Out of possession
+  | "CENTRAL_OUTLET_ATTACKING_MIDFIELDER"
+  | "SPLITTING_OUTLET_ATTACKING_MIDFIELDER"
+  | "TRACKING_ATTACKING_MIDFIELDER"
+
+  // ============================================================
+  // STRIKER
+  // ============================================================
+
   | "CENTRE_FORWARD"
   | "CHANNEL_FORWARD"
   | "DEEP_LYING_FORWARD"
   | "FALSE_NINE"
   | "POACHER"
-  | "TARGET_FORWARD";
+  | "TARGET_FORWARD"
+
+  // Out of possession
+  | "CENTRAL_OUTLET_CENTRE_FORWARD"
+  | "SPLITTING_OUTLET_CENTRE_FORWARD"
+  | "TRACKING_CENTRE_FORWARD";
+
 export interface RoleAttributeMapping {
-  readonly key:
-  readonly RoleAttribute[];
-  readonly preferred:
-  readonly RoleAttribute[];
-  readonly unnecessary:
-  readonly RoleAttribute[];
+  readonly key: readonly RoleAttribute[];
+  readonly preferred: readonly RoleAttribute[];
+  readonly unnecessary: readonly RoleAttribute[];
 }
+
 export interface RoleDefinition {
-  readonly role:
-  TacticalRole;
-  readonly phase:
-  TacticalPhase;
-  readonly attributes:
-  RoleAttributeMapping;
+  readonly role: TacticalRole;
+  readonly phase: TacticalPhase;
+  readonly attributes: RoleAttributeMapping;
 }
+
 const role = (
-  phase: TacticalPhase,
   key: readonly RoleAttribute[],
   preferred: readonly RoleAttribute[] = [],
   unnecessary: readonly RoleAttribute[] = []
-): RoleAttributeMapping => {
-  return {
-    key,
-    preferred,
-    unnecessary,
-  };
-};
-export const ROLE_ATTRIBUTE_MAPPINGS:
-  Readonly<
-    Record<
-      TacticalPhase,
-      Readonly<
-        Partial<
-          Record<
-            TacticalRole,
-            RoleAttributeMapping
-          >
-        >
+): RoleAttributeMapping => ({
+  key,
+  preferred,
+  unnecessary,
+});
+
+export const ROLE_ATTRIBUTE_MAPPINGS: Readonly<
+  Record<
+    TacticalPhase,
+    Readonly<
+      Partial<
+        Record<TacticalRole, RoleAttributeMapping>
       >
     >
-  > = {
+  >
+> = {
+
+
   IN_POSSESSION: {
+
+
     GOALKEEPER: role(
-      "IN_POSSESSION",
       [
         "aerialReach",
         "commandOfArea",
         "communication",
         "kicking",
-        "handling",
+        "reflexes",
+        "agility",
+        "concentration",
+        "positioning",
+      ],
+      [
+        "finishing",
+        "oneOnOnes",
+        "throwing",
+        "anticipation",
+        "decisions",
+      ],
+      [
+        "eccentricity",
+      ]
+    ),
+
+    SWEEPER_KEEPER: role(
+      [
+        "aerialReach",
+        "commandOfArea",
+        "communication",
+        "kicking",
+        "finishing",
         "reflexes",
         "agility",
         "concentration",
@@ -122,37 +223,20 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "passing",
       ]
     ),
-    SWEEPER_KEEPER: role(
-      "IN_POSSESSION",
+
+    DIRECT_GOALKEEPER: role(
       [
-        "rushingOut",
-        "anticipation",
-        "decisions",
-        "kicking",
-        "passing",
-        "composure",
-        "positioning",
-      ],
-      [
-        "firstTouch",
-        "technique",
-        "vision",
-        "agility",
-        "pace",
-      ]
-    ),
-    LINE_GOALKEEPER: role(
-      "IN_POSSESSION",
-      [
-        "handling",
-        "reflexes",
-        "positioning",
-        "concentration",
         "aerialReach",
+        "commandOfArea",
+        "communication",
+        "kicking",
+        "reflexes",
+        "agility",
+        "concentration",
+        "positioning",
       ],
       [
         "oneOnOnes",
-        "communication",
         "anticipation",
         "decisions",
       ],
@@ -161,8 +245,12 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "passing",
       ]
     ),
+
+    // ==========================================================
+    // CENTRE-BACK
+    // ==========================================================
+
     CENTRE_BACK: role(
-      "IN_POSSESSION",
       [
         "heading",
         "marking",
@@ -184,8 +272,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "passing",
       ]
     ),
+
     BALL_PLAYING_CENTRE_BACK: role(
-      "IN_POSSESSION",
       [
         "heading",
         "marking",
@@ -211,8 +299,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     DIRECT_CENTRE_BACK: role(
-      "IN_POSSESSION",
       [
         "heading",
         "marking",
@@ -233,8 +321,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "composure",
       ]
     ),
+
     WIDE_CENTRE_BACK: role(
-      "IN_POSSESSION",
       [
         "heading",
         "marking",
@@ -261,8 +349,67 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "passing",
       ]
     ),
+
+    ADVANCED_CENTRE_BACK: role(
+      [
+        "heading",
+        "marking",
+        "passing",
+        "tackling",
+        "technique",
+        "anticipation",
+        "composure",
+        "decisions",
+        "positioning",
+        "teamwork",
+        "jumpingReach",
+        "strength",
+      ],
+      [
+        "dribbling",
+        "firstTouch",
+        "aggression",
+        "bravery",
+        "concentration",
+        "vision",
+        "pace",
+        "stamina",
+      ]
+    ),
+
+    OVERLAPPING_CENTRE_BACK: role(
+      [
+        "crossing",
+        "heading",
+        "marking",
+        "tackling",
+        "anticipation",
+        "workRate",
+        "jumpingReach",
+        "pace",
+        "stamina",
+        "strength",
+      ],
+      [
+        "dribbling",
+        "technique",
+        "aggression",
+        "bravery",
+        "composure",
+        "concentration",
+        "decisions",
+        "offTheBall",
+        "positioning",
+        "acceleration",
+        "agility",
+      ]
+    ),
+
+    // ==========================================================
+    // FULL-BACK
+    // ==========================================================
+
     FULL_BACK: role(
-      "IN_POSSESSION",
       [
         "marking",
         "tackling",
@@ -284,9 +431,35 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     INVERTED_FULL_BACK: role(
-      "IN_POSSESSION",
       [
+        "heading",
+        "marking",
+        "tackling",
+        "anticipation",
+        "positioning",
+        "strength",
+      ],
+      [
+        "dribbling",
+        "aggression",
+        "bravery",
+        "composure",
+        "concentration",
+        "decisions",
+        "workRate",
+        "acceleration",
+        "agility",
+        "jumpingReach",
+        "pace",
+        "stamina",
+      ]
+    ),
+
+    WING_BACK: role(
+      [
+        "firstTouch",
         "passing",
         "tackling",
         "anticipation",
@@ -297,7 +470,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "acceleration",
       ],
       [
-        "firstTouch",
+        "crossing",
+        "dribbling",
         "marking",
         "technique",
         "concentration",
@@ -307,34 +481,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
-    WING_BACK: role(
-      "IN_POSSESSION",
-      [
-        "crossing",
-        "dribbling",
-        "technique",
-        "offTheBall",
-        "teamwork",
-        "workRate",
-        "acceleration",
-        "agility",
-        "pace",
-        "stamina",
-      ],
-      [
-        "firstTouch",
-        "marking",
-        "passing",
-        "tackling",
-        "anticipation",
-        "decisions",
-        "flair",
-        "positioning",
-        "balance",
-      ]
-    ),
+
     PLAYMAKING_WING_BACK: role(
-      "IN_POSSESSION",
       [
         "firstTouch",
         "passing",
@@ -360,8 +508,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     ATTACKING_WING_BACK: role(
-      "IN_POSSESSION",
       [
         "crossing",
         "dribbling",
@@ -386,8 +534,12 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "balance",
       ]
     ),
+
+    // ==========================================================
+    // DEFENSIVE MIDFIELD
+    // ==========================================================
+
     DEFENSIVE_MIDFIELDER: role(
-      "IN_POSSESSION",
       [
         "tackling",
         "anticipation",
@@ -407,8 +559,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "strength",
       ]
     ),
+
     BOX_TO_BOX_MIDFIELDER: role(
-      "IN_POSSESSION",
       [
         "passing",
         "tackling",
@@ -434,8 +586,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "strength",
       ]
     ),
+
     DEEP_LYING_PLAYMAKER: role(
-      "IN_POSSESSION",
       [
         "firstTouch",
         "passing",
@@ -456,12 +608,13 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     HALF_BACK: role(
-      "IN_POSSESSION",
       [
-        "anticipation",
+        "heading",
         "marking",
         "tackling",
+        "anticipation",
         "concentration",
         "positioning",
         "teamwork",
@@ -479,8 +632,12 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
+    // ==========================================================
+    // CENTRAL MIDFIELD
+    // ==========================================================
+
     CENTRAL_MIDFIELDER: role(
-      "IN_POSSESSION",
       [
         "firstTouch",
         "passing",
@@ -500,8 +657,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     ADVANCED_PLAYMAKER: role(
-      "IN_POSSESSION",
       [
         "firstTouch",
         "passing",
@@ -521,8 +678,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "agility",
       ]
     ),
+
     MEZZALA: role(
-      "IN_POSSESSION",
       [
         "firstTouch",
         "passing",
@@ -544,8 +701,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     WIDE_CENTRAL_MIDFIELDER: role(
-      "IN_POSSESSION",
       [
         "firstTouch",
         "passing",
@@ -568,8 +725,12 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
+    // ==========================================================
+    // WIDE MIDFIELD
+    // ==========================================================
+
     WIDE_MIDFIELDER: role(
-      "IN_POSSESSION",
       [
         "crossing",
         "passing",
@@ -590,8 +751,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "agility",
       ]
     ),
+
     INSIDE_FORWARD: role(
-      "IN_POSSESSION",
       [
         "dribbling",
         "firstTouch",
@@ -615,8 +776,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     WIDE_PLAYMAKER: role(
-      "IN_POSSESSION",
       [
         "crossing",
         "dribbling",
@@ -639,8 +800,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     WINGER: role(
-      "IN_POSSESSION",
       [
         "crossing",
         "dribbling",
@@ -661,8 +822,12 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
+    // ==========================================================
+    // ATTACKING MIDFIELD
+    // ==========================================================
+
     ATTACKING_MIDFIELDER: role(
-      "IN_POSSESSION",
       [
         "firstTouch",
         "longShots",
@@ -683,8 +848,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "agility",
       ]
     ),
+
     ENGANCHE: role(
-      "IN_POSSESSION",
       [
         "crossing",
         "firstTouch",
@@ -707,8 +872,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     TREQUARTISTA: role(
-      "IN_POSSESSION",
       [
         "dribbling",
         "firstTouch",
@@ -729,8 +894,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "agility",
       ]
     ),
+
     SHADOW_STRIKER: role(
-      "IN_POSSESSION",
       [
         "finishing",
         "firstTouch",
@@ -752,8 +917,12 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
+    // ==========================================================
+    // STRIKER
+    // ==========================================================
+
     CENTRE_FORWARD: role(
-      "IN_POSSESSION",
       [
         "finishing",
         "firstTouch",
@@ -775,8 +944,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "pace",
       ]
     ),
+
     CHANNEL_FORWARD: role(
-      "IN_POSSESSION",
       [
         "dribbling",
         "finishing",
@@ -799,8 +968,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "stamina",
       ]
     ),
+
     DEEP_LYING_FORWARD: role(
-      "IN_POSSESSION",
       [
         "finishing",
         "firstTouch",
@@ -819,8 +988,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "balance",
       ]
     ),
+
     FALSE_NINE: role(
-      "IN_POSSESSION",
       [
         "dribbling",
         "firstTouch",
@@ -841,8 +1010,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "balance",
       ]
     ),
+
     POACHER: role(
-      "IN_POSSESSION",
       [
         "finishing",
         "heading",
@@ -859,8 +1028,8 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
         "balance",
       ]
     ),
+
     TARGET_FORWARD: role(
-      "IN_POSSESSION",
       [
         "finishing",
         "heading",
@@ -880,135 +1049,235 @@ export const ROLE_ATTRIBUTE_MAPPINGS:
       ]
     ),
   },
+
+  // ============================================================
+  // OUT OF POSSESSION
+  // ============================================================
+
   OUT_OF_POSSESSION: {
-    LINE_GOALKEEPER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "positioning",
-        "concentration",
-      ]
-    ),
-    SWEEPER_KEEPER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "rushingOut",
-        "anticipation",
-        "decisions",
-      ]
-    ),
-    COVER_CENTRE_BACK: role(
-      "OUT_OF_POSSESSION",
-      [
-        "anticipation",
-        "pace",
-        "marking",
-      ]
-    ),
-    CENTRE_BACK: role(
-      "OUT_OF_POSSESSION",
-      [
-        "aggression",
-        "tackling",
-        "strength",
-      ]
-    ),
-    WIDE_CENTRE_BACK: role(
-      "OUT_OF_POSSESSION",
-      [
-        "anticipation",
-        "pace",
-        "marking",
-      ]
-    ),
-    FULL_BACK: role(
-      "OUT_OF_POSSESSION",
-      [
-        "positioning",
-        "concentration",
-        "marking",
-      ]
-    ),
-    WING_BACK: role(
-      "OUT_OF_POSSESSION",
-      [
-        "aggression",
-        "workRate",
-        "anticipation",
-      ]
-    ),
-    DEFENSIVE_MIDFIELDER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "positioning",
-        "decisions",
-        "anticipation",
-      ]
-    ),
-    CENTRAL_MIDFIELDER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "aggression",
-        "workRate",
-        "anticipation",
-      ]
-    ),
-    WIDE_MIDFIELDER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "marking",
-        "workRate",
-        "stamina",
-      ]
-    ),
-    ATTACKING_MIDFIELDER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "marking",
-        "workRate",
-        "stamina",
-      ]
-    ),
-    WINGER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "marking",
-        "workRate",
-        "stamina",
-      ]
-    ),
-    SHADOW_STRIKER: role(
-      "OUT_OF_POSSESSION",
-      [
-        "marking",
-        "workRate",
-        "stamina",
-      ]
-    ),
-    CENTRE_FORWARD: role(
-      "OUT_OF_POSSESSION",
-      [
-        "offTheBall",
-        "decisions",
-        "anticipation",
-      ]
-    ),
+
+    // ==========================================================
+    // GOALKEEPER
+    // ==========================================================
+
+    LINE_GOALKEEPER: role([
+      "positioning",
+      "concentration",
+    ]),
+
+    SWEEPER_KEEPER: role([
+      "rushingOut",
+      "anticipation",
+      "decisions",
+    ]),
+
+    // ==========================================================
+    // CENTRE-BACK
+    // ==========================================================
+
+    COVER_CENTRE_BACK: role([
+      "anticipation",
+      "pace",
+      "marking",
+    ]),
+
+    CENTRE_BACK: role([
+      "aggression",
+      "tackling",
+      "strength",
+    ]),
+
+    WIDE_CENTRE_BACK: role([
+      "anticipation",
+      "pace",
+      "marking",
+    ]),
+
+    // ==========================================================
+    // FULL-BACK
+    // ==========================================================
+
+    DEFENSIVE_FULL_BACK: role([
+      "positioning",
+      "concentration",
+      "marking",
+    ]),
+
+    PRESSING_FULL_BACK: role([
+      "aggression",
+      "workRate",
+      "anticipation",
+    ]),
+
+    // ==========================================================
+    // WING-BACK
+    // ==========================================================
+
+    DEFENSIVE_WING_BACK: role([
+      "positioning",
+      "concentration",
+      "marking",
+    ]),
+
+    PRESSING_WING_BACK: role([
+      "aggression",
+      "workRate",
+      "anticipation",
+    ]),
+
+    // ==========================================================
+    // DEFENSIVE MIDFIELDER
+    // ==========================================================
+
+    DEFENSIVE_MIDFIELDER: role([
+      "positioning",
+      "decisions",
+      "anticipation",
+    ]),
+
+    DISPOSSESSING_DEFENSIVE_MIDFIELDER: role([
+      "positioning",
+      "decisions",
+      "anticipation",
+    ]),
+
+    PRESSING_DEFENSIVE_MIDFIELDER: role([
+      "aggression",
+      "workRate",
+      "anticipation",
+    ]),
+
+    PROTECTIVE_DEFENSIVE_MIDFIELDER: role([
+      "positioning",
+      "concentration",
+      "marking",
+    ]),
+
+    WIDE_COVER_DEFENSIVE_MIDFIELDER: role([
+      "anticipation",
+      "pace",
+      "workRate",
+    ]),
+
+    // ==========================================================
+    // CENTRAL MIDFIELDER
+    // ==========================================================
+
+    PRESSING_CENTRAL_MIDFIELDER: role([
+      "aggression",
+      "workRate",
+      "anticipation",
+    ]),
+
+    PROTECTIVE_CENTRAL_MIDFIELDER: role([
+      "positioning",
+      "concentration",
+      "marking",
+    ]),
+
+    WIDE_COVER_CENTRAL_MIDFIELDER: role([
+      "anticipation",
+      "pace",
+      "workRate",
+    ]),
+
+    // ==========================================================
+    // WIDE MIDFIELDER
+    // ==========================================================
+
+    TRACKING_WIDE_MIDFIELDER: role([
+      "marking",
+      "workRate",
+      "stamina",
+    ]),
+
+    WIDE_OUTLET_MIDFIELDER: role([
+      "offTheBall",
+      "pace",
+      "anticipation",
+    ]),
+
+    // ==========================================================
+    // WIDE / ATTACKING MIDFIELDER
+    // ==========================================================
+
+    INSIDE_OUTLET_WINGER: role([
+      "offTheBall",
+      "decisions",
+      "anticipation",
+    ]),
+
+    TRACKING_WINGER: role([
+      "marking",
+      "workRate",
+      "stamina",
+    ]),
+
+    WIDE_OUTLET_WINGER: role([
+      "offTheBall",
+      "pace",
+      "anticipation",
+    ]),
+
+    // ==========================================================
+    // ATTACKING MIDFIELDER
+    // ==========================================================
+
+    CENTRAL_OUTLET_ATTACKING_MIDFIELDER: role([
+      "offTheBall",
+      "decisions",
+      "anticipation",
+    ]),
+
+    SPLITTING_OUTLET_ATTACKING_MIDFIELDER: role([
+      "offTheBall",
+      "pace",
+      "anticipation",
+    ]),
+
+    TRACKING_ATTACKING_MIDFIELDER: role([
+      "marking",
+      "workRate",
+      "stamina",
+    ]),
+
+    // ==========================================================
+    // STRIKER
+    // ==========================================================
+
+    CENTRAL_OUTLET_CENTRE_FORWARD: role([
+      "offTheBall",
+      "decisions",
+      "anticipation",
+    ]),
+
+    SPLITTING_OUTLET_CENTRE_FORWARD: role([
+      "offTheBall",
+      "pace",
+      "anticipation",
+    ]),
+
+    TRACKING_CENTRE_FORWARD: role([
+      "marking",
+      "workRate",
+      "stamina",
+    ]),
   },
 };
+
 export function getRoleDefinition(
   phase: TacticalPhase,
   roleName: TacticalRole
 ): RoleDefinition {
   const attributes =
-    ROLE_ATTRIBUTE_MAPPINGS[
-    phase
-    ][
-    roleName
-    ];
+    ROLE_ATTRIBUTE_MAPPINGS[phase][roleName];
+
   if (!attributes) {
     throw new Error(
       `Role ${roleName} is not defined for phase ${phase}.`
     );
   }
+
   return {
     role: roleName,
     phase,
