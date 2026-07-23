@@ -3,9 +3,8 @@ import { Decision } from "../Decision";
 import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
-export class ShotEvaluator
-  implements ActionEvaluator {
-  public evaluate(context: DecisionContext): Decision[] {
+export class ShotEvaluator implements ActionEvaluator {
+  public generate(context: DecisionContext): Decision[] {
     const score = this.calculateUtility(context);
     return [
       new Decision(
@@ -22,7 +21,6 @@ export class ShotEvaluator
     const base = finishing * 2 + composure;
     return new UtilityScore(
       base,
-      0,
       0,
       0,
       [

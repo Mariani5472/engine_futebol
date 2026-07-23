@@ -5,7 +5,7 @@ import { DecisionType } from "../DecisionType";
 import { PlayerMemory } from "../../awareness/memory/PlayerMemory";
 import { UtilityScore } from "../UtilityScore";
 export class PassEvaluator implements ActionEvaluator {
-  public evaluate(context: DecisionContext): Decision[] {
+  public generate(context: DecisionContext): Decision[] {
     const decisions: Decision[] = [];
     for (const teammate of context.awareness.teammates.values()) {
       const score = this.calculateUtility(
@@ -37,7 +37,6 @@ export class PassEvaluator implements ActionEvaluator {
     const base = vision * 2 + distanceUtility;
     return new UtilityScore(
       base,
-      0,
       0,
       0,
       [

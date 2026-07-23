@@ -1,4 +1,4 @@
-import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import { PlayerMatchState } from "../../../domain";
 import { PlayerAwareness } from "../awareness/memory/PlayerAwareness";
 import { PlayerPerception } from "../perception/PlayerPerception";
 export interface CognitiveContext {

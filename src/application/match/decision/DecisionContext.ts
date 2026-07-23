@@ -1,11 +1,12 @@
-import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
-import { MatchState } from "../../../domain";
+import { PlayerMatchState } from "../../../domain";
 import { PlayerAwareness } from "../awareness/memory/PlayerAwareness";
+import { CognitiveContext } from "../cognitive/CognitiveContext";
+
 export class DecisionContext {
   constructor(
-    public readonly match: MatchState,
     public readonly player: PlayerMatchState,
     public readonly awareness: PlayerAwareness,
+    public readonly cognitive: CognitiveContext,
     public readonly currentTick: number,
     public readonly deltaTime: number
   ) {}
