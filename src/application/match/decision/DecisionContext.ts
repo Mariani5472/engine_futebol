@@ -1,5 +1,5 @@
+import { MatchState } from "../../../core/movement/MatchState";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
-import { MatchState } from "../../../domain";
 import { PlayerAwareness } from "../awareness/memory/PlayerAwareness";
 
 export class DecisionContext {
