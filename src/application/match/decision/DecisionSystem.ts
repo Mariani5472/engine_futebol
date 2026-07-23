@@ -4,6 +4,7 @@ import { Decision } from "./Decision";
 import { DecisionContext } from "./DecisionContext";
 import { DecisionFilter } from "./DecisionFilter";
 import { DecisionSelector } from "./DecisionSelector";
+import { DecisionType } from "./DecisionType";
 import { EvaluatedDecision } from "./EvaluatedDecision";
 import { DefaultPersonalityModifier } from "./personality/DefaultPersonalityModifier";
 import { PersonalityModifier } from "./personality/PersonalityModifier";

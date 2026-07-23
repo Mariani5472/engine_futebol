@@ -57,11 +57,12 @@ export interface MatchResult {
 export class MatchEngine {
 
   private readonly initializer = new MatchInitializer();
+  private DELTA_TIME = DEFAULT_DELTA_TIME;
 
   public simulate(config: SimulationConfig): MatchResult {
+    this.DELTA_TIME = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
 
     const rng = new SeededRandom(config.seed);
-    const DELTA_TIME = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
     const MATCH_DURATION_SECONDS = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
     const HALF_TIME_SECONDS = MATCH_DURATION_SECONDS / 2;
 
@@ -138,7 +139,7 @@ export class MatchEngine {
       }
 
       this.accumulateFatigue(state);
-      state.currentSecond += DELTA_TIME;
+      state.currentSecond += this.DELTA_TIME;
       tick++;
     }
 
@@ -189,7 +190,7 @@ export class MatchEngine {
         player,
         awareness,
         perception,
-        deltaTime: DELTA_TIME,
+        deltaTime: this.DELTA_TIME,
         tick
       } satisfies CognitiveContext);
     }
@@ -199,7 +200,7 @@ export class MatchEngine {
       const awareness = awarenessMap.get(player.player.id);
       if (!awareness) continue;
 
-      const decisionCtx = new DecisionContext(state, player, awareness, tick, DELTA_TIME);
+      const decisionCtx = new DecisionContext(state, player, awareness, tick, this.DELTA_TIME);
       const decision = decisionSystem.decide(decisionCtx);
 
       const isHome = state.home.players.includes(player);
@@ -212,7 +213,7 @@ export class MatchEngine {
         pitch: state.pitch,
         random: rng,
         tick,
-        deltaTime: DELTA_TIME,
+        deltaTime: this.DELTA_TIME,
         teamSide: isHome ? "HOME" : "AWAY",
         attackingDirection: teamState.attackingDirection,
         matchSecond: state.currentSecond
@@ -223,7 +224,7 @@ export class MatchEngine {
     }
 
     // 4. Ball physics — apply gravity, friction, bounce.
-    ballPhysics.update(state, DELTA_TIME);
+    ballPhysics.update(state, this.DELTA_TIME);
 
     // 5. Tactical engine — set tactical target positions for all players.
     tacticalEngine.update(state);
@@ -232,7 +233,7 @@ export class MatchEngine {
     teamBehaviour.update(state);
 
     // 7. Movement — advance players toward their targets.
-    movementSystem.update(state, DELTA_TIME);
+    movementSystem.update(state, this.DELTA_TIME);
 
     // 8. Possession — award ball to nearest eligible player.
     possessionSystem.update(state);
@@ -265,7 +266,7 @@ export class MatchEngine {
       const workRate = player.player.attributes.mental.workRate / 20;
       const speed = player.velocity.magnitude();
       const activityFactor = 0.3 + speed * 0.05 + workRate * 0.2;
-      player.fatigue = Math.min(100, player.fatigue + FATIGUE_RATE * activityFactor * DELTA_TIME);
+      player.fatigue = Math.min(100, player.fatigue + FATIGUE_RATE * activityFactor * this.DELTA_TIME);
     }
   }
 
