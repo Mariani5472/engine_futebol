@@ -24,24 +24,34 @@ export const TACTICAL_POSITIONS = [
   "STC",
   "STL",
 ] as const;
-export type TacticalPosition = typeof TACTICAL_POSITIONS[number];
+export type TacticalPosition =
+  typeof TACTICAL_POSITIONS[number];
 export type PositionFamily =
   | "GOALKEEPER"
   | "CENTRE_BACK"
-  | "LEFT_FULL_BACK"
   | "RIGHT_FULL_BACK"
-  | "LEFT_WING_BACK"
+  | "LEFT_FULL_BACK"
   | "RIGHT_WING_BACK"
+  | "LEFT_WING_BACK"
   | "DEFENSIVE_MIDFIELDER"
   | "CENTRAL_MIDFIELDER"
-  | "LEFT_WIDE_MIDFIELDER"
   | "RIGHT_WIDE_MIDFIELDER"
+  | "LEFT_WIDE_MIDFIELDER"
   | "ATTACKING_MIDFIELDER"
-  | "LEFT_WINGER"
   | "RIGHT_WINGER"
+  | "LEFT_WINGER"
   | "STRIKER";
+export type TacticalSide =
+  | "LEFT"
+  | "RIGHT"
+  | "CENTRE";
 export const POSITION_FAMILY_BY_SPOT:
-  Readonly<Record<TacticalPosition, PositionFamily>> = {
+  Readonly<
+    Record<
+      TacticalPosition,
+      PositionFamily
+    >
+  > = {
   GK: "GOALKEEPER",
   DR: "RIGHT_FULL_BACK",
   DCR: "CENTRE_BACK",
@@ -52,7 +62,7 @@ export const POSITION_FAMILY_BY_SPOT:
   DMR: "DEFENSIVE_MIDFIELDER",
   DMC: "DEFENSIVE_MIDFIELDER",
   DME: "DEFENSIVE_MIDFIELDER",
-  WBL: "LEFT_FULL_BACK",
+  WBL: "LEFT_WING_BACK",
   MR: "RIGHT_WIDE_MIDFIELDER",
   MCR: "CENTRAL_MIDFIELDER",
   MCC: "CENTRAL_MIDFIELDER",
@@ -67,7 +77,45 @@ export const POSITION_FAMILY_BY_SPOT:
   STC: "STRIKER",
   STL: "STRIKER",
 };
-export const POSITION_FAMILY_SPOTS: Readonly<Record<PositionFamily, readonly TacticalPosition[]>> = {
+export const POSITION_SIDE_BY_SPOT:
+  Readonly<
+    Record<
+      TacticalPosition,
+      TacticalSide
+    >
+  > = {
+  GK: "CENTRE",
+  DR: "RIGHT",
+  DCR: "RIGHT",
+  DCC: "CENTRE",
+  DCE: "LEFT",
+  DL: "LEFT",
+  WBR: "RIGHT",
+  DMR: "RIGHT",
+  DMC: "CENTRE",
+  DME: "LEFT",
+  WBL: "LEFT",
+  MR: "RIGHT",
+  MCR: "RIGHT",
+  MCC: "CENTRE",
+  MCL: "LEFT",
+  ML: "LEFT",
+  WR: "RIGHT",
+  AMR: "RIGHT",
+  AMC: "CENTRE",
+  AML: "LEFT",
+  WL: "LEFT",
+  STR: "RIGHT",
+  STC: "CENTRE",
+  STL: "LEFT",
+};
+export const POSITION_FAMILY_SPOTS:
+  Readonly<
+    Record<
+      PositionFamily,
+      readonly TacticalPosition[]
+    >
+  > = {
   GOALKEEPER: [
     "GK",
   ],
@@ -76,17 +124,17 @@ export const POSITION_FAMILY_SPOTS: Readonly<Record<PositionFamily, readonly Tac
     "DCC",
     "DCE",
   ],
-  LEFT_FULL_BACK: [
-    "DL",
-  ],
   RIGHT_FULL_BACK: [
     "DR",
   ],
-  LEFT_WING_BACK: [
-    "WBL",
+  LEFT_FULL_BACK: [
+    "DL",
   ],
   RIGHT_WING_BACK: [
     "WBR",
+  ],
+  LEFT_WING_BACK: [
+    "WBL",
   ],
   DEFENSIVE_MIDFIELDER: [
     "DMR",
@@ -98,22 +146,22 @@ export const POSITION_FAMILY_SPOTS: Readonly<Record<PositionFamily, readonly Tac
     "MCC",
     "MCL",
   ],
-  LEFT_WIDE_MIDFIELDER: [
-    "ML",
-  ],
   RIGHT_WIDE_MIDFIELDER: [
     "MR",
+  ],
+  LEFT_WIDE_MIDFIELDER: [
+    "ML",
   ],
   ATTACKING_MIDFIELDER: [
     "AMR",
     "AMC",
     "AML",
   ],
-  LEFT_WINGER: [
-    "WL",
-  ],
   RIGHT_WINGER: [
     "WR",
+  ],
+  LEFT_WINGER: [
+    "WL",
   ],
   STRIKER: [
     "STR",
@@ -121,13 +169,52 @@ export const POSITION_FAMILY_SPOTS: Readonly<Record<PositionFamily, readonly Tac
     "STL",
   ],
 };
-export function isTacticalPosition(value: string): value is TacticalPosition {
-  return (TACTICAL_POSITIONS.includes(
+export function isTacticalPosition(
+  value: string
+): value is TacticalPosition {
+  return TACTICAL_POSITIONS.includes(
     value as TacticalPosition
-  ));
+  );
 }
 export function getPositionFamily(
   position: TacticalPosition
 ): PositionFamily {
-  return POSITION_FAMILY_BY_SPOT[position];
+  return POSITION_FAMILY_BY_SPOT[
+    position
+  ];
+}
+export function getPositionSide(
+  position: TacticalPosition
+): TacticalSide {
+  return POSITION_SIDE_BY_SPOT[
+    position
+  ];
+}
+export function areSamePositionFamily(
+  first: TacticalPosition,
+  second: TacticalPosition
+): boolean {
+  return (
+    getPositionFamily(first) ===
+    getPositionFamily(second)
+  );
+}
+export function areOppositeSides(
+  first: TacticalPosition,
+  second: TacticalPosition
+): boolean {
+  const firstSide =
+    getPositionSide(first);
+  const secondSide =
+    getPositionSide(second);
+  return (
+    (
+      firstSide === "LEFT" &&
+      secondSide === "RIGHT"
+    ) ||
+    (
+      firstSide === "RIGHT" &&
+      secondSide === "LEFT"
+    )
+  );
 }

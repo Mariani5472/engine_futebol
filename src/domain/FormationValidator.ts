@@ -1,13 +1,10 @@
 import {
   TacticalPosition,
+  isTacticalPosition,
 } from "./TacticalPositions";
-export interface FormationDefinition {
-  readonly name?: string;
-  readonly positions:
-  readonly TacticalPosition[];
-}
 export interface FormationValidationResult {
-  readonly valid: boolean;
+  readonly valid:
+  boolean;
   readonly errors:
   readonly string[];
 }
@@ -15,8 +12,7 @@ export class FormationValidator {
   public static validate(
     positions:
       readonly TacticalPosition[]
-  ):
-    FormationValidationResult {
+  ): FormationValidationResult {
     const errors:
       string[] = [];
     if (
@@ -38,28 +34,31 @@ export class FormationValidator {
         "A formation must contain exactly one goalkeeper."
       );
     }
-    const outfieldPlayers =
+    const invalidPositions =
       positions.filter(
         position =>
-          position !== "GK"
+          !isTacticalPosition(
+            position
+          )
       );
     if (
-      outfieldPlayers.length > 10
+      invalidPositions.length > 0
     ) {
       errors.push(
-        "A formation cannot contain more than 10 outfield players."
+        `Invalid tactical positions: ` +
+        `${invalidPositions.join(", ")}`
       );
     }
-    const duplicatePositions =
+    const duplicates =
       this.findDuplicatePositions(
         positions
       );
     for (
-      const position
-      of duplicatePositions
+      const duplicate
+      of duplicates
     ) {
       errors.push(
-        `Tactical position ${position} ` +
+        `Tactical position ${duplicate} ` +
         "cannot be occupied by more than one player."
       );
     }

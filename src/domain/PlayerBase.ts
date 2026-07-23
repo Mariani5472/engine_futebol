@@ -6,38 +6,10 @@ import {
 import {
   AttributeRange,
 } from "./AttributeRange";
-import {
-  TacticalPosition,
-} from "./TacticalPositions";
-import {
-  PositionSuitability,
-  createPositionSuitability,
-} from "./PositionSuitability";
 export type PreferredFoot =
   | "LEFT"
   | "RIGHT"
   | "BOTH";
-export type PlayerPosition =
-  TacticalPosition;
-export type PlayerRole =
-  | "GOALKEEPER"
-  | "CENTRE_BACK"
-  | "LEFT_FULL_BACK"
-  | "RIGHT_FULL_BACK"
-  | "LEFT_WING_BACK"
-  | "RIGHT_WING_BACK"
-  | "DEFENSIVE_MIDFIELDER"
-  | "CENTRAL_MIDFIELDER"
-  | "LEFT_WIDE_MIDFIELDER"
-  | "RIGHT_WIDE_MIDFIELDER"
-  | "ATTACKING_MIDFIELDER"
-  | "LEFT_WINGER"
-  | "RIGHT_WINGER"
-  | "STRIKER";
-export interface PositionFamiliarity {
-  readonly position: TacticalPosition;
-  readonly familiarity: AttributeValue;
-}
 export interface MentalAttributes {
   readonly aggression: AttributeValue;
   readonly anticipation: AttributeValue;
@@ -132,14 +104,10 @@ export interface PlayerBaseProps {
   readonly name: string;
   readonly age: number;
   readonly preferredFoot: PreferredFoot;
-  readonly positionSuitability:
-  readonly PositionSuitability[];
   readonly attributes: PlayerAttributes;
-  readonly languages:
-  readonly LanguageCode[];
+  readonly languages: readonly LanguageCode[];
   readonly personality: PlayerPersonality;
-  readonly relationships:
-  readonly PlayerRelationship[];
+  readonly relationships: readonly PlayerRelationship[];
 }
 function deepFreeze<T>(
   value: T
@@ -150,9 +118,7 @@ function deepFreeze<T>(
   ) {
     return value;
   }
-  Object.freeze(
-    value
-  );
+  Object.freeze(value);
   for (
     const property
     of Object.values(
@@ -164,9 +130,7 @@ function deepFreeze<T>(
       typeof property === "object" &&
       !Object.isFrozen(property)
     ) {
-      deepFreeze(
-        property
-      );
+      deepFreeze(property);
     }
   }
   return value;
@@ -183,15 +147,11 @@ function cloneAndFreeze<T>(
   if (
     Array.isArray(value)
   ) {
-    const clonedArray =
+    return deepFreeze(
       value.map(
         item =>
-          cloneAndFreeze(
-            item
-          )
-      );
-    return deepFreeze(
-      clonedArray
+          cloneAndFreeze(item)
+      )
     ) as T;
   }
   const clonedObject =
@@ -204,9 +164,7 @@ function cloneAndFreeze<T>(
           property,
         ]) => [
             key,
-            cloneAndFreeze(
-              property
-            ),
+            cloneAndFreeze(property),
           ]
       )
     );
@@ -253,13 +211,14 @@ function validateAttributes(
   }
 }
 export class PlayerBase {
-  public readonly id: PlayerId;
-  public readonly name: string;
-  public readonly age: number;
+  public readonly id:
+    PlayerId;
+  public readonly name:
+    string;
+  public readonly age:
+    number;
   public readonly preferredFoot:
     PreferredFoot;
-  public readonly positionSuitability:
-    readonly PositionSuitability[];
   public readonly attributes:
     PlayerAttributes;
   public readonly languages:
@@ -279,10 +238,6 @@ export class PlayerBase {
       props.age;
     this.preferredFoot =
       props.preferredFoot;
-    this.positionSuitability =
-      cloneAndFreeze(
-        props.positionSuitability
-      );
     this.attributes =
       cloneAndFreeze(
         props.attributes
@@ -321,39 +276,9 @@ export class PlayerBase {
         "Player age must be between 14 and 50."
       );
     }
-    if (
-      props.positionSuitability.length === 0
-    ) {
-      throw new Error(
-        "Player must have at least one position suitability."
-      );
-    }
     validateAttributes(
       props.attributes
     );
-    const uniquePositions =
-      new Set<TacticalPosition>();
-    for (
-      const suitability
-      of props.positionSuitability
-    ) {
-      if (
-        uniquePositions.has(
-          suitability.position
-        )
-      ) {
-        throw new Error(
-          `Duplicate position suitability: ` +
-          `${suitability.position}`
-        );
-      }
-      uniquePositions.add(
-        suitability.position
-      );
-      AttributeRange.validate(
-        suitability.rating
-      );
-    }
     for (
       const relationship
       of props.relationships
@@ -366,50 +291,30 @@ export class PlayerBase {
       props
     );
   }
-  public getPrimaryPosition():
-    TacticalPosition {
-    return this.positionSuitability
-      .reduce(
-        (
-          best,
-          current
-        ) =>
-          current.rating > best.rating
-            ? current
-            : best
-      )
-      .position;
-  }
-  public getPositionSuitability(
-    position: TacticalPosition
-  ): PositionSuitability {
-    const suitability =
-      this.positionSuitability.find(
-        item =>
-          item.position === position
-      );
-    if (
-      suitability
-    ) {
-      return suitability;
-    }
-    return createPositionSuitability(
-      position,
-      1
-    );
-  }
-  /**
-   * Compatibilidade com a API anterior.
-   *
-   * A diferença é que agora o argumento é um spot tático
-   * específico e não uma posição genérica.
-   */
-  public getFamiliarityFor(
-    position: TacticalPosition
+  public getAttribute(
+    attribute: string
   ): AttributeValue {
-    return this.getPositionSuitability(
-      position
-    ).rating;
+    const groups = [
+      this.attributes.mental,
+      this.attributes.physical,
+      this.attributes.technical,
+      this.attributes.goalkeeping,
+    ];
+    for (
+      const group
+      of groups
+    ) {
+      if (
+        attribute in group
+      ) {
+        return group[
+          attribute as keyof typeof group
+        ];
+      }
+    }
+    throw new Error(
+      `Unknown player attribute: ${attribute}`
+    );
   }
   public getRelationshipWith(
     playerId: PlayerId

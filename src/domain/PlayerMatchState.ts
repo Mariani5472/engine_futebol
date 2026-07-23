@@ -1,6 +1,14 @@
-import { createVector2, PlayerId, Vector2 } from "./common";
-import { PlayerRole } from "./PlayerBase";
-import { TacticalPosition } from "./TacticalPositions";
+import {
+  createVector2,
+  PlayerId,
+  Vector2,
+} from "./common";
+import {
+  TacticalPosition,
+} from "./TacticalPositions";
+import {
+  TacticalRole,
+} from "./RoleAttributeMapping";
 export type InjuryStatus =
   | "HEALTHY"
   | "MINOR"
@@ -18,21 +26,28 @@ export type BodyOrientation =
   | "WEST"
   | "NORTH_WEST";
 export interface PlayerMatchStateProps {
-  readonly playerId: PlayerId;
-  readonly position: Vector2;
-  readonly velocity: Vector2;
+  readonly playerId:
+  PlayerId;
+  readonly position:
+  Vector2;
+  readonly velocity:
+  Vector2;
   readonly tacticalPosition:
   TacticalPosition;
   readonly currentRole:
-  PlayerRole;
-  readonly fatigue: number;
-  readonly condition: number;
-  readonly fitness: number;
+  TacticalRole;
+  readonly fatigue:
+  number;
+  readonly condition:
+  number;
+  readonly fitness:
+  number;
   readonly injuryStatus:
   InjuryStatus;
   readonly suspensionStatus:
   SuspensionStatus;
-  readonly currentStamina: number;
+  readonly currentStamina:
+  number;
   readonly bodyOrientation:
   BodyOrientation;
 }
@@ -46,7 +61,7 @@ export class PlayerMatchState {
   public tacticalPosition:
     TacticalPosition;
   public currentRole:
-    PlayerRole;
+    TacticalRole;
   public fatigue:
     number;
   public condition:
@@ -143,7 +158,7 @@ export class PlayerMatchState {
       position;
   }
   public setRole(
-    role: PlayerRole
+    role: TacticalRole
   ): void {
     this.currentRole =
       role;
@@ -152,7 +167,7 @@ export class PlayerMatchState {
     fatigue: number
   ): void {
     this.fatigue =
-      PlayerMatchState.clampPercentage(
+      this.clampPercentage(
         fatigue
       );
   }
@@ -160,7 +175,7 @@ export class PlayerMatchState {
     condition: number
   ): void {
     this.condition =
-      PlayerMatchState.clampPercentage(
+      this.clampPercentage(
         condition
       );
   }
@@ -168,7 +183,7 @@ export class PlayerMatchState {
     fitness: number
   ): void {
     this.fitness =
-      PlayerMatchState.clampPercentage(
+      this.clampPercentage(
         fitness
       );
   }
@@ -176,7 +191,7 @@ export class PlayerMatchState {
     stamina: number
   ): void {
     this.currentStamina =
-      PlayerMatchState.clampPercentage(
+      this.clampPercentage(
         stamina
       );
   }
@@ -208,7 +223,7 @@ export class PlayerMatchState {
       );
     }
   }
-  private static clampPercentage(
+  private clampPercentage(
     value: number
   ): number {
     return Math.max(

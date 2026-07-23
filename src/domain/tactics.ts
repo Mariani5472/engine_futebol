@@ -1,23 +1,10 @@
 import {
-  Vector2,
-} from "./common";
+  TacticalSetup,
+} from "./TacticalSetup";
 import {
-  PlayerRole,
-} from "./PlayerBase";
-import {
-  TacticalPosition,
-} from "./TacticalPositions";
-import {
-  FormationValidator,
-} from "./FormationValidator";
-import {
-  RoleCompatibilityValidator,
-} from "./RoleCompatibilityValidator";
-export type TacticalPhase =
-  | "DEFENDING"
-  | "TRANSITION_TO_ATTACK"
-  | "ATTACKING"
-  | "TRANSITION_TO_DEFENSE";
+  TacticalPhase,
+  TacticalRole,
+} from "./RoleAttributeMapping";
 export type TeamInstructionKey =
   | "HIGH_PRESS"
   | "LOW_BLOCK"
@@ -35,39 +22,19 @@ export type PlayerInstructionKey =
   | "TAKE_MORE_RISKS"
   | "RISK_AVERSE"
   | "DROP_DEEP";
-export interface TacticalShapeAssignment {
-  readonly id: string;
-  readonly position:
-  TacticalPosition;
-  readonly role:
-  PlayerRole;
-  readonly defensiveAnchor:
-  Vector2;
-  readonly attackingAnchor:
-  Vector2;
-  readonly width: number;
-  readonly depth: number;
-  readonly freedom: number;
-}
-export interface TacticalShape {
-  readonly name: string;
-  readonly assignments:
-  readonly TacticalShapeAssignment[];
-}
 export interface TeamTacticalInstructions {
   readonly instructions:
   readonly TeamInstructionKey[];
 }
 export interface PlayerTacticalInstructions {
-  readonly playerId: string;
+  readonly playerId:
+  string;
   readonly instructions:
   readonly PlayerInstructionKey[];
 }
 export interface TacticProps {
-  readonly defensiveShape:
-  TacticalShape;
-  readonly attackingShape:
-  TacticalShape;
+  readonly setup:
+  TacticalSetup;
   readonly teamInstructions:
   TeamTacticalInstructions;
   readonly playerInstructions:
@@ -76,10 +43,8 @@ export interface TacticProps {
   number;
 }
 export class Tactic {
-  public readonly defensiveShape:
-    TacticalShape;
-  public readonly attackingShape:
-    TacticalShape;
+  public readonly setup:
+    TacticalSetup;
   public readonly teamInstructions:
     TeamTacticalInstructions;
   public readonly playerInstructions:
@@ -89,26 +54,20 @@ export class Tactic {
   private constructor(
     props: TacticProps
   ) {
-    this.defensiveShape =
-      props.defensiveShape;
-    this.attackingShape =
-      props.attackingShape;
+    this.setup =
+      props.setup;
     this.teamInstructions =
       props.teamInstructions;
     this.playerInstructions =
-      props.playerInstructions;
+      Object.freeze([
+        ...props.playerInstructions,
+      ]);
     this.familiarity =
       props.familiarity;
   }
   public static create(
     props: TacticProps
   ): Tactic {
-    this.validateShape(
-      props.defensiveShape
-    );
-    this.validateShape(
-      props.attackingShape
-    );
     if (
       props.familiarity < 0 ||
       props.familiarity > 100
@@ -121,56 +80,18 @@ export class Tactic {
       props
     );
   }
-  private static validateShape(
-    shape: TacticalShape
-  ): void {
-    if (
-      shape.assignments.length !== 11
-    ) {
-      throw new Error(
-        "Tactical shape must contain exactly 11 players."
-      );
-    }
-    const positions =
-      shape.assignments.map(
-        assignment =>
-          assignment.position
-      );
-    FormationValidator.assertValid(
-      positions
-    );
-    for (
-      const assignment
-      of shape.assignments
-    ) {
-      RoleCompatibilityValidator.assertCompatible(
-        assignment.position,
-        assignment.role
-      );
-      if (
-        assignment.width < 0 ||
-        assignment.width > 100
-      ) {
-        throw new Error(
-          "Assignment width must be between 0 and 100."
-        );
-      }
-      if (
-        assignment.depth < 0 ||
-        assignment.depth > 100
-      ) {
-        throw new Error(
-          "Assignment depth must be between 0 and 100."
-        );
-      }
-      if (
-        assignment.freedom < 0 ||
-        assignment.freedom > 100
-      ) {
-        throw new Error(
-          "Assignment freedom must be between 0 and 100."
-        );
-      }
-    }
+  public getRoleForPlayer(
+    phase: TacticalPhase,
+    playerId: string
+  ):
+    TacticalRole | undefined {
+    const assignment =
+      phase === "IN_POSSESSION"
+        ? this.setup.inPossession.assignments
+        : this.setup.outOfPossession.assignments;
+    return assignment.find(
+      item =>
+        item.playerId === playerId
+    )?.role;
   }
 }
