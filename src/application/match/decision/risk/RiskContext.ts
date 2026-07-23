@@ -2,7 +2,6 @@ import { DecisionContext } from "../DecisionContext";
 import { Decision } from "../Decision";
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import { FieldThird } from "../../../../domain";
-
 export class RiskContext {
   constructor(
     public readonly decision: Decision,

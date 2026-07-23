@@ -1,5 +1,4 @@
 import { DecisionType } from "./DecisionType";
-
 export class Decision {
   constructor(
     public readonly type: DecisionType,
@@ -7,4 +6,3 @@ export class Decision {
     public readonly targetId?: string
   ) {}
 }
-

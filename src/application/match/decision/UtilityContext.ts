@@ -1,5 +1,4 @@
 import { DecisionContext } from "./DecisionContext";
-
 export class UtilityContext {
   constructor(
     public readonly decision: DecisionContext,

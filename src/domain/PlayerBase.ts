@@ -3,28 +3,22 @@ import {
   LanguageCode,
   PlayerId,
 } from "./common";
-
 import {
   AttributeRange,
 } from "./AttributeRange";
-
 import {
   TacticalPosition,
 } from "./TacticalPositions";
-
 import {
   PositionSuitability,
   createPositionSuitability,
 } from "./PositionSuitability";
-
 export type PreferredFoot =
   | "LEFT"
   | "RIGHT"
   | "BOTH";
-
 export type PlayerPosition =
   TacticalPosition;
-
 export type PlayerRole =
   | "GOALKEEPER"
   | "CENTRE_BACK"
@@ -40,16 +34,11 @@ export type PlayerRole =
   | "LEFT_WINGER"
   | "RIGHT_WINGER"
   | "STRIKER";
-
 export interface PositionFamiliarity {
-
   readonly position: TacticalPosition;
-
   readonly familiarity: AttributeValue;
 }
-
 export interface MentalAttributes {
-
   readonly aggression: AttributeValue;
   readonly anticipation: AttributeValue;
   readonly bravery: AttributeValue;
@@ -65,9 +54,7 @@ export interface MentalAttributes {
   readonly vision: AttributeValue;
   readonly workRate: AttributeValue;
 }
-
 export interface PhysicalAttributes {
-
   readonly acceleration: AttributeValue;
   readonly agility: AttributeValue;
   readonly balance: AttributeValue;
@@ -77,9 +64,7 @@ export interface PhysicalAttributes {
   readonly strength: AttributeValue;
   readonly stamina: AttributeValue;
 }
-
 export interface TechnicalAttributes {
-
   readonly corners: AttributeValue;
   readonly crossing: AttributeValue;
   readonly dribbling: AttributeValue;
@@ -95,9 +80,7 @@ export interface TechnicalAttributes {
   readonly tackling: AttributeValue;
   readonly technique: AttributeValue;
 }
-
 export interface GoalkeepingAttributes {
-
   readonly aerialReach: AttributeValue;
   readonly commandOfArea: AttributeValue;
   readonly communication: AttributeValue;
@@ -110,9 +93,7 @@ export interface GoalkeepingAttributes {
   readonly tendencyToPunch: AttributeValue;
   readonly throwing: AttributeValue;
 }
-
 export interface HiddenAttributes {
-
   readonly adaptability: AttributeValue;
   readonly ambition: AttributeValue;
   readonly consistency: AttributeValue;
@@ -126,22 +107,14 @@ export interface HiddenAttributes {
   readonly temperament: AttributeValue;
   readonly versatility: AttributeValue;
 }
-
 export interface PlayerAttributes {
-
   readonly mental: MentalAttributes;
-
   readonly physical: PhysicalAttributes;
-
   readonly technical: TechnicalAttributes;
-
   readonly goalkeeping: GoalkeepingAttributes;
-
   readonly hidden: HiddenAttributes;
 }
-
 export interface PlayerPersonality {
-
   readonly adaptability: AttributeValue;
   readonly ambition: AttributeValue;
   readonly loyalty: AttributeValue;
@@ -150,60 +123,42 @@ export interface PlayerPersonality {
   readonly sportsmanship: AttributeValue;
   readonly temperament: AttributeValue;
 }
-
 export interface PlayerRelationship {
-
   readonly playerId: PlayerId;
-
   readonly chemistry: AttributeValue;
 }
-
 export interface PlayerBaseProps {
-
   readonly id: PlayerId;
-
   readonly name: string;
-
   readonly age: number;
-
   readonly preferredFoot: PreferredFoot;
-
   readonly positionSuitability:
   readonly PositionSuitability[];
-
   readonly attributes: PlayerAttributes;
-
   readonly languages:
   readonly LanguageCode[];
-
   readonly personality: PlayerPersonality;
-
   readonly relationships:
   readonly PlayerRelationship[];
 }
-
 function deepFreeze<T>(
   value: T
 ): T {
-
   if (
     value === null ||
     typeof value !== "object"
   ) {
     return value;
   }
-
   Object.freeze(
     value
   );
-
   for (
     const property
     of Object.values(
       value as Record<string, unknown>
     )
   ) {
-
     if (
       property !== null &&
       typeof property === "object" &&
@@ -214,25 +169,20 @@ function deepFreeze<T>(
       );
     }
   }
-
   return value;
 }
-
 function cloneAndFreeze<T>(
   value: T
 ): T {
-
   if (
     value === null ||
     typeof value !== "object"
   ) {
     return value;
   }
-
   if (
     Array.isArray(value)
   ) {
-
     const clonedArray =
       value.map(
         item =>
@@ -240,12 +190,10 @@ function cloneAndFreeze<T>(
             item
           )
       );
-
     return deepFreeze(
       clonedArray
     ) as T;
   }
-
   const clonedObject =
     Object.fromEntries(
       Object.entries(
@@ -262,16 +210,13 @@ function cloneAndFreeze<T>(
           ]
       )
     );
-
   return deepFreeze(
     clonedObject
   ) as T;
 }
-
 function flattenNumericValues(
   value: unknown
 ): number[] {
-
   if (
     typeof value === "number"
   ) {
@@ -279,113 +224,85 @@ function flattenNumericValues(
       value,
     ];
   }
-
   if (
     value === null ||
     typeof value !== "object"
   ) {
     return [];
   }
-
   return Object.values(
     value as Record<string, unknown>
   ).flatMap(
     flattenNumericValues
   );
 }
-
 function validateAttributes(
   attributes: PlayerAttributes
 ): void {
-
   const values =
     flattenNumericValues(
       attributes
     );
-
   for (
     const value
     of values
   ) {
-
     AttributeRange.validate(
       value
     );
   }
 }
-
 export class PlayerBase {
-
   public readonly id: PlayerId;
-
   public readonly name: string;
-
   public readonly age: number;
-
   public readonly preferredFoot:
     PreferredFoot;
-
   public readonly positionSuitability:
     readonly PositionSuitability[];
-
   public readonly attributes:
     PlayerAttributes;
-
   public readonly languages:
     readonly LanguageCode[];
-
   public readonly personality:
     PlayerPersonality;
-
   public readonly relationships:
     readonly PlayerRelationship[];
-
   private constructor(
     props: PlayerBaseProps
   ) {
-
     this.id =
       props.id;
-
     this.name =
       props.name;
-
     this.age =
       props.age;
-
     this.preferredFoot =
       props.preferredFoot;
-
     this.positionSuitability =
       cloneAndFreeze(
         props.positionSuitability
       );
-
     this.attributes =
       cloneAndFreeze(
         props.attributes
       );
-
     this.languages =
       cloneAndFreeze(
         props.languages
       );
-
     this.personality =
       cloneAndFreeze(
         props.personality
       );
-
     this.relationships =
       cloneAndFreeze(
         props.relationships
       );
   }
-
   public static create(
     props: PlayerBaseProps
   ): PlayerBase {
-
     if (
       !props.name.trim()
     ) {
@@ -393,7 +310,6 @@ export class PlayerBase {
         "Player name cannot be empty."
       );
     }
-
     if (
       !Number.isInteger(
         props.age
@@ -405,7 +321,6 @@ export class PlayerBase {
         "Player age must be between 14 and 50."
       );
     }
-
     if (
       props.positionSuitability.length === 0
     ) {
@@ -413,19 +328,15 @@ export class PlayerBase {
         "Player must have at least one position suitability."
       );
     }
-
     validateAttributes(
       props.attributes
     );
-
     const uniquePositions =
       new Set<TacticalPosition>();
-
     for (
       const suitability
       of props.positionSuitability
     ) {
-
       if (
         uniquePositions.has(
           suitability.position
@@ -436,34 +347,27 @@ export class PlayerBase {
           `${suitability.position}`
         );
       }
-
       uniquePositions.add(
         suitability.position
       );
-
       AttributeRange.validate(
         suitability.rating
       );
     }
-
     for (
       const relationship
       of props.relationships
     ) {
-
       AttributeRange.validate(
         relationship.chemistry
       );
     }
-
     return new PlayerBase(
       props
     );
   }
-
   public getPrimaryPosition():
     TacticalPosition {
-
     return this.positionSuitability
       .reduce(
         (
@@ -476,29 +380,24 @@ export class PlayerBase {
       )
       .position;
   }
-
   public getPositionSuitability(
     position: TacticalPosition
   ): PositionSuitability {
-
     const suitability =
       this.positionSuitability.find(
         item =>
           item.position === position
       );
-
     if (
       suitability
     ) {
       return suitability;
     }
-
     return createPositionSuitability(
       position,
       1
     );
   }
-
   /**
    * Compatibilidade com a API anterior.
    *
@@ -508,27 +407,22 @@ export class PlayerBase {
   public getFamiliarityFor(
     position: TacticalPosition
   ): AttributeValue {
-
     return this.getPositionSuitability(
       position
     ).rating;
   }
-
   public getRelationshipWith(
     playerId: PlayerId
   ):
     PlayerRelationship | undefined {
-
     return this.relationships.find(
       relationship =>
         relationship.playerId === playerId
     );
   }
-
   public hasLanguage(
     language: LanguageCode
   ): boolean {
-
     return this.languages.includes(
       language
     );

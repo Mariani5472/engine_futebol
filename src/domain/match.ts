@@ -4,12 +4,10 @@ import { Pitch } from "./pitch";
 import { Referee } from "./referee";
 import { Team } from "./team";
 import { MatchEvent, MatchPeriod } from "./match-events";
-
 export interface MatchScore {
   readonly homeGoals: number;
   readonly awayGoals: number;
 }
-
 export interface MatchConfig {
   readonly id: MatchId;
   readonly homeTeam: Team;
@@ -19,13 +17,11 @@ export interface MatchConfig {
   readonly seed: number;
   readonly durationMs?: Milliseconds;
 }
-
 export interface TeamMatchState {
   readonly teamId: TeamId;
   readonly side: "HOME" | "AWAY";
   readonly tacticId?: string;
 }
-
 export interface MatchState {
   readonly currentTimeMs: Milliseconds;
   readonly period: MatchPeriod;
@@ -37,14 +33,12 @@ export interface MatchState {
   readonly score: MatchScore;
   readonly events: readonly MatchEvent[];
 }
-
 export interface MatchReport {
   readonly matchId: MatchId;
   readonly config: MatchConfig;
   readonly finalState: MatchState;
   readonly events: readonly MatchEvent[];
 }
-
 export class Match {
   public readonly id: MatchId;
   public readonly homeTeam: Team;
@@ -53,7 +47,6 @@ export class Match {
   public readonly referee: Referee;
   public readonly seed: number;
   public readonly durationMs: Milliseconds;
-
   private constructor(config: MatchConfig) {
     this.id = config.id;
     this.homeTeam = config.homeTeam;
@@ -63,12 +56,10 @@ export class Match {
     this.seed = config.seed;
     this.durationMs = (config.durationMs ?? (90 * 60 * 1000)) as Milliseconds;
   }
-
   public static create(config: MatchConfig): Match {
     if (config.homeTeam.id === config.awayTeam.id) {
       throw new Error("Home team and away team must be different.");
     }
-
     return new Match(config);
   }
 }

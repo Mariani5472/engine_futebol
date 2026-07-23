@@ -1,6 +1,5 @@
 1. PHASE 1 — DOMAIN (Prioridade CRÍTICA)
 Tarefas:
-
 Criar PlayerBase.ts (imutável) com atributos base, preferredFoot, languages, relationships, etc.
 Criar PlayerMatchState.ts contendo: position, velocity, fatigue, condition, fitness, injuryStatus, suspensionStatus, currentStamina, bodyOrientation, etc.
 Refatorar Player.ts para ser um container que une PlayerBase + PlayerMatchState.
@@ -8,16 +7,11 @@ Adicionar AttributeValidator com range 1–20 e normalização.
 Implementar validadores simples de Formation + Role compatibility.
 Resolver possíveis circular dependencies (usar interfaces ou Dependency Injection).
 Garantir que Team só acesse Player via métodos controlados (evitar mutação direta).
-
 Entregáveis:
-
 PlayerBase, PlayerMatchState, AttributeRange, FormationValidator
 Testes de invariantes (ranges, formação válida, etc.)
-
-
 2. PHASE 5.7 — DECISION INTEGRATION (Prioridade CRÍTICA)
 Tarefas:
-
 Criar/Completar EvaluatedDecision.ts (mantém UtilityScore + RiskScore + Reason).
 Implementar DecisionFilter (validação de legalidade separada da Utility).
 Completar Memory Refresh no CognitiveSystem (PlayerMemory + BallMemory).
@@ -27,56 +21,38 @@ Integrar PersonalityModifier corretamente (sem double-counting).
 Adicionar DecisionCooldown / DecisionHysteresis no DecisionSystem.
 Garantir fallback robusto quando não há candidatos.
 Remover acessos diretos ao world state (forçar uso de Awareness/CognitiveContext).
-
 Entregáveis:
-
 Pipeline limpa: Awareness → Legal Candidates → Utility+Risk+Personality → Selection → Intent
-
-
 3. PHASE 3 — MOVEMENT
 Tarefas:
-
 Adicionar Acceleration, Deceleration, TurningSpeed no PlayerMovement.
 Implementar MovementIntent (targetPosition + urgency + type).
 Criar PossessionState (enum + transition rules: None → Contesting → Controlled → FirstTouch).
 Melhorar ReachCalculation com física real.
 Adicionar colisão básica (evitar overlap excessivo).
 Tornar fatigue mais sofisticado (não apenas multiplicador).
-
 Entregáveis:
-
 Movimento determinístico e frame-rate independent.
 Testes de possession duels e boundary conditions.
-
-
 4. PHASE 4 — PERCEPTION & COGNITION
 Tarefas:
-
 Garantir que Perception produza immutable snapshots (PerceptionSnapshot).
 Melhorar MemoryDecay para ser frame-rate independent (baseado em deltaTime).
 Separar claramente responsabilidades de Vision e Concentration.
 Adicionar ObservationTimestamp e UncertaintyRadius.
 Melhorar Prediction (horizon controlado por Anticipation).
 Tratar visibilidade como contínua (não apenas binária).
-
 Entregáveis:
-
 Cognitive belief confiável e isolado do world state.
-
-
 5. PHASE 2 — GEOMETRY & PITCH
 Tarefas:
-
 Definir sistema canônico de coordenadas (metros).
 Criar funções de conversão explícitas (toGrid(), toWorld(), toTeamRelative()).
 Adicionar GeometryUtils com epsilon, clamping, circle/rect/segment intersection.
 Melhorar ZonesBetween e vizinhança (suportar diagonais).
 Dar significado semântico mais forte às zonas (AttackThird, DefenseThird, etc.).
-
-
 6. CONSOLIDAÇÃO E TESTES
 Tarefas:
-
 Adicionar testes unitários + integration para todos os fluxos principais.
 Property-based testing para invariantes (posição dentro do campo, certainty 0-1, etc.).
 Criar EngineSanityTest que roda um tick completo e verifica consistência.

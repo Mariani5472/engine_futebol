@@ -1,12 +1,9 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚽ MATCH ENGINE — ROADMAP
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FASE 1 — DOMÍNIO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [x] Player
 [x] Team
 [x] Tactical Formation
@@ -21,12 +18,9 @@
 [x] Team Cohesion
 [x] Tactical Familiarity
 [x] Language Compatibility
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FASE 2 — GEOMETRY & PITCH
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [x] Vector2
 [x] Distance
 [x] Angle
@@ -40,12 +34,9 @@
 [x] Grid A1–E3
 [x] Zone Neighbour Detection
 [x] Zones Between
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FASE 3 — MOVEMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [x] Player Movement
 [x] Ball Movement
 [x] Velocity
@@ -57,70 +48,50 @@
 [x] Possession Candidates
 [x] Possession Control Score
 [x] Possession Duel
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ FASE 4 — PERCEPTION & COGNITION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 4.1 — PERCEPTION
-
 [x] Distance
 [x] Angle
 [x] Line of Sight
 [x] Position Zone
 [x] Visibility
-
-
 4.2A — AWARENESS
-
 [x] Short-Term Memory
 [x] Certainty
 [x] Last Seen Tick
 [x] Estimated Position
 [x] Estimated Velocity
 [x] Memory Decay
-
-
 4.2B — COGNITIVE MODEL
-
 [x] Noise Model
 [x] Spatial Error
 [x] Angular Error
 [x] Perception Accuracy
-
 [x] Prediction Model
 [x] Ball Extrapolation
 [x] Player Extrapolation
 [x] Anticipation
-
 [x] Memory Model
 [x] Exponential Decay
 [x] Increasing Spatial Error
 [x] Concentration Influence
 [x] Vision Influence
-
 [x] Cognitive System
 [x] Noise Integration
 [x] Prediction Integration
 [x] Memory Integration
 [x] Awareness Update
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🧠 FASE 5 — DECISION LAYER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 5.1 — DECISION CONTEXT
-
 [x] DecisionContext
 [x] Player Awareness
 [x] Perception Context
 [x] Cognitive Context
-
-
 5.2 — UTILITY SCORE
-
 [x] UtilityContext
 [x] UtilityScore
 [x] UtilityReason
@@ -128,25 +99,16 @@
 [x] Tactical Utility
 [x] Personality Utility
 [x] Risk Utility
-
-
 5.3 — ACTION EVALUATION
-
 [x] ActionEvaluator
 [x] PassEvaluator
 [x] ShotEvaluator
 [x] Decision Candidate Generation
-
-
 5.4 — DECISION SELECTION
-
 [x] Decision Selection
 [x] Best Candidate Selection
 [x] Utility Comparison
-
-
 5.5 — RISK EVALUATION
-
 [x] RiskContext
 [x] RiskScore
 [x] RiskCalculator
@@ -156,15 +118,11 @@
 [x] Tactical Risk
 [x] Match-State Risk
 [x] Risk Reason
-
-
 5.6 — PERSONALITY INFLUENCE
-
 [ ] Personality Influence
 [ ] Personality Modifiers
 [ ] Decision Bias
 [ ] Personality-Based Risk Tolerance
-
 5.6.1
 [ ] PersonalityContext
 [ ] PersonalityBias
@@ -172,7 +130,6 @@
 [ ] DefaultPersonalityModifier
 [ ] Utility modification
 [ ] Risk tolerance modification
-
 PHASE 5.7 — DECISION INTEGRATION
 5.7.1 — Memory Refresh
 [ ] Perceived player updates PlayerMemory
@@ -202,28 +159,20 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Risk tolerance never makes objective risk zero
 [ ] Add match-state risk
 [ ] Add tactical risk
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚙️ FASE 6 — ACTION LAYER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] ActionFactory
-
 [ ] PassAction
 [ ] ShotAction
 [ ] DribbleAction
 [ ] TackleAction
 [ ] HeaderAction
 [ ] ClearanceAction
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚽ FASE 7 — BALL PHYSICS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] BallPhysicsSystem
-
 [ ] Ball Acceleration
 [ ] Ball Deceleration
 [ ] Ball Velocity
@@ -233,14 +182,10 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Bounce
 [ ] Friction
 [ ] Ball Trajectory Resolution
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🧠 FASE 8 — TACTICAL ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Tactical Engine
-
 [ ] Width
 [ ] Depth
 [ ] Compactness
@@ -253,14 +198,10 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Defensive Shape
 [ ] Attacking Shape
 [ ] Transition Shape
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👥 FASE 9 — TEAM BEHAVIOUR
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Team Behaviour System
-
 [ ] Team Shape
 [ ] Player Spacing
 [ ] Role Coordination
@@ -272,14 +213,10 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Passing Options
 [ ] Collective Movement
 [ ] Team Cohesion Influence
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🧑‍⚖️ FASE 10 — REFEREE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Referee System
-
 [ ] Foul Detection
 [ ] Foul Severity
 [ ] Advantage
@@ -293,12 +230,9 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Handball
 [ ] Simulation
 [ ] Referee Personality
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔄 FASE 11 — MATCH FLOW
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Kickoff
 [ ] First Half
 [ ] Half-Time
@@ -313,36 +247,26 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Free Kick
 [ ] Penalty
 [ ] Substitutions
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📡 FASE 12 — EVENT ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Event Engine
-
 [ ] Event Queue
 [ ] Event Dispatcher
 [ ] Event Ordering
 [ ] Event Priority
 [ ] Event Timestamp
-
 [ ] Goal Event
 [ ] Shot Event
 [ ] Card Event
 [ ] Period Start Event
 [ ] Period End Event
-
 [ ] Event Serialization
 [ ] Frontend Event Stream
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📊 FASE 13 — MATCH REPORT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Match Report
-
 [ ] Final Score
 [ ] Goals
 [ ] Shots
@@ -356,12 +280,9 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Player Ratings
 [ ] Match Timeline
 [ ] Key Events
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎮 FASE 14 — SIMULATION POLISH
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Weather
 [ ] Rain
 [ ] Pitch Condition
@@ -373,11 +294,9 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Consistency
 [ ] Leadership
 [ ] Adaptability
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🧪 FASE 15 — ENGINE VALIDATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 [ ] Deterministic Random
 [ ] Seeded Simulation
 [ ] Replay System
@@ -388,8 +307,6 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Monte Carlo Testing
 [ ] Statistical Validation
 [ ] Regression Tests
-
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔧 FASE 16 — PRE-RELEASE REFINEMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -420,7 +337,6 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] First touch quality
 [ ] Physical duel
 [ ] Interception vs control
-
 [ ] Replace Arbitrary Constants
 [ ] Attribute Normalization
 [ ] Attribute Interaction
@@ -429,7 +345,6 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Probability Distribution Testing
 [ ] Extreme Value Testing
 [ ] Monte Carlo Validation
-
 [ ] Real Player Occupancy
 [ ] Player Radius
 [ ] Collision Detection
@@ -440,7 +355,6 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Interception Zones
 [ ] Pressure Radius
 [ ] Marking Distance
-
 [ ] Tactical Shape Validation
 [ ] Formation Transition Validation
 [ ] Role Compatibility
@@ -451,7 +365,6 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Defensive Cover
 [ ] Space Creation
 [ ] Space Exploitation
-
 [ ] Attribute Interactions
 [ ] Position-Specific Attribute Weights
 [ ] Role-Specific Attribute Weights
@@ -464,7 +377,6 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Match Sharpness
 [ ] Fitness
 [ ] Injury Status
-
 [ ] Decision Mistakes
 [ ] Panic
 [ ] Confidence
@@ -474,7 +386,6 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Aggression Changes
 [ ] Risk Changes
 [ ] Concentration Drops
-
 [ ] Deterministic Seed
 [ ] Replayable Matches
 [ ] Debug Mode
@@ -485,4 +396,3 @@ PHASE 5.7 — DECISION INTEGRATION
 [ ] Statistical Validation
 [ ] Regression Tests
 [ ] Scenario Tests
-

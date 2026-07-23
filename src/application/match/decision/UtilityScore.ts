@@ -1,5 +1,4 @@
 import { UtilityReason } from "./UtilityReason";
-
 export class UtilityScore {
   constructor(
     public readonly base: number,
@@ -8,7 +7,6 @@ export class UtilityScore {
     public readonly risk: number,
     public readonly reasons: UtilityReason[]
   ) {}
-
   public get total(): number {
     return (
       this.base +

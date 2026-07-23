@@ -1,7 +1,6 @@
 import { PitchZoneId } from "../../../domain";
 import { BallPerception } from "./BallPerception";
 import { PerceivedEntity } from "./PerceivedEntity";
-
 export interface PlayerPerception {
   playerId: string;
   currentZone: PitchZoneId;

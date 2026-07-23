@@ -1,7 +1,5 @@
 import { DecisionType } from "./DecisionType";
-
 export class DecisionPriority {
-
   private readonly priorities: Record<DecisionType, number> = {
     [DecisionType.NONE]: 0,
     [DecisionType.PASS]: 2,
@@ -16,7 +14,6 @@ export class DecisionPriority {
     [DecisionType.MOVE]: 0,
     [DecisionType.RECEIVE]: 0,
   };
-
   public get(type: DecisionType): number {
     return this.priorities[type] ?? 0;
   }

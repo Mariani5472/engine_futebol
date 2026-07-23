@@ -1,0 +1,953 @@
+No Football Manager 26, entender os atributos principais de cada função é uma das partes mais importantes para construir uma tática bem-sucedida. Cada posição exige uma combinação específica de qualidades técnicas, mentais e físicas, e saber quais realmente importam pode te dar uma grande vantagem ao contratar, treinar ou desenvolver jogadores.
+Este guia lista os atributos Chave, Preferenciais e Desnecessários para cada função do jogo, ajudando você a identificar em que focar ao observar ou aprimorar seu esquadrão.
+[GK] GOLEIRO
+Em Posse
+Goleiro
+Chave:
+Alcance Aéreo
+Comando da Área
+Comunicação
+Dirigibilidade
+Reflexos
+Agilidade
+Concentração
+Posicionamento
+Preferencial:
+Chutando
+Um a um
+Arremesso
+Expectativa
+Decisões
+Desnecessário:
+Excentricidade
+Goleiro com bola
+Chave:
+Alcance Aéreo
+Comando da Área
+Comunicação
+Dirigibilidade
+Chutando
+Reflexos
+Agilidade
+Concentração
+Posicionamento
+Preferencial:
+Excentricidade
+Um a um
+Arremesso
+Expectativa
+Compostura
+Decisões
+Passagem
+Goleiro Direto
+Chave:
+Alcance Aéreo
+Comando da Área
+Comunicação
+Dirigibilidade
+Reflexos
+Agilidade
+Concentração
+Posicionamento
+Preferencial:
+Um a um
+Expectativa
+Decisões
+Desnecessário:
+Excentricidade
+Passagem
+Sem Posse
+Guardião de Linha
+Chave:
+Posicionamento
+Concentração
+Guardião Varredor
+Chave:
+Correndo para fora
+Expectativa
+Decisões
+[D] Centro Defensor
+Em Posse
+Defensor Central
+Chave:
+Rumo
+Marcação
+Tackles
+Expectativa
+Posicionamento
+Pulando
+Força
+Preferencial:
+Agressividade
+Coragem
+Compostura
+Concentração
+Decisões
+Ritmo
+Desnecessário:
+Passagem
+Zagueiro central com bola
+Chave:
+Rumo
+Marcação
+Passagem
+Tackles
+Expectativa
+Compostura
+Posicionamento
+Pulando
+Força
+Preferencial:
+Primeiro Toque
+Técnica
+Agressividade
+Coragem
+Concentração
+Decisões
+Visão
+Ritmo
+Zagueiro Direto
+Chave:
+Rumo
+Marcação
+Tackles
+Expectativa
+Posicionamento
+Pulando
+Força
+Preferencial:
+Agressividade
+Coragem
+Concentração
+Ritmo
+Desnecessário:
+Passagem
+Compostura
+Zagueiro central largo
+Chave:
+Rumo
+Marcação
+Tackles
+Expectativa
+Posicionamento
+Pulando
+Força
+Preferencial:
+Drible
+Agressividade
+Coragem
+Compostura
+Concentração
+Decisões
+Ritmo de Trabalho
+Aceleração
+Agilidade
+Ritmo
+Resistência
+Desnecessário:
+Passagem
+Zagueiro Central Avançado
+Chave:
+Rumo
+Marcação
+Passagem
+Tackles
+Técnica
+Expectativa
+Compostura
+Decisões
+Posicionamento
+Trabalho em Equipe
+Pulando
+Força
+Preferencial:
+Drible
+Primeiro Toque
+Agressividade
+Coragem
+Concentração
+Visão
+Ritmo
+Resistência
+Defensor Central Sobreposto
+Chave:
+Travessia
+Rumo
+Marcação
+Tackles
+Expectativa
+Ritmo de Trabalho
+Pulando
+Ritmo
+Resistência
+Força
+Preferencial:
+Drible
+Técnica
+Agressividade
+Coragem
+Compostura
+Concentração
+Decisões
+Fora da Bola
+Posicionamento
+Aceleração
+Agilidade
+Sem Posse
+Defesa central de cobertura
+Chave:
+Expectativa
+Ritmo
+Marcação
+Defesa central
+Chave:
+Agressividade
+Tackles
+Força
+Cobertura de Defesa Central Larga
+Chave:
+Expectativa
+Ritmo
+Marcação
+Defesa Lateral Lateral
+Chave:
+Agressividade
+Tackles
+Força
+[D] Defensor Direita/ Esquerda
+Em Posse
+Lateral
+Chave:
+Marcação
+Tackles
+Expectativa
+Concentração
+Posicionamento
+Trabalho em Equipe
+Aceleração
+Preferencial:
+Travessia
+Drible
+Passagem
+Técnica
+Decisões
+Ritmo de Trabalho
+Agilidade
+Ritmo
+Resistência
+Lateral Interior
+Chave:
+Rumo
+Marcação
+Tackles
+Expectativa
+Posicionamento
+Força
+Preferencial:
+Drible
+Agressividade
+Coragem
+Compostura
+Concentração
+Decisões
+Ritmo de Trabalho
+Aceleração
+Agilidade
+Pulando
+Ritmo
+Resistência
+Sem Posse
+Lateral Defensor Defensivo
+Chave:
+Posicionamento
+Concentração
+Marcação
+Pressionando como Lateral
+Chave:
+Agressividade
+Ritmo de Trabalho
+Expectativa
+[D/ WB] Defensor/Lateral (Direito/Esquerdo)
+Em Posse
+Lateral Interior
+Chave:
+Passagem
+Tackles
+Expectativa
+Compostura
+Decisões
+Posicionamento
+Trabalho em Equipe
+Aceleração
+Preferencial:
+Primeiro Toque
+Marcação
+Técnica
+Concentração
+Ritmo de Trabalho
+Agilidade
+Ritmo
+Resistência
+Ala Criador de Jogadas
+Chave:
+Primeiro Toque
+Passagem
+Tackles
+Técnica
+Compostura
+Decisões
+Posicionamento
+Trabalho em Equipe
+Visão
+Aceleração
+Preferencial:
+Travessia
+Drible
+Marcação
+Expectativa
+Concentração
+Fora da Bola
+Posicionamento
+Ritmo de Trabalho
+Agilidade
+Ritmo
+Resistência
+Lateral de ponta
+Chave:
+Travessia
+Marcação
+Tackles
+Trabalho em Equipe
+Ritmo de Trabalho
+Aceleração
+Ritmo
+Resistência
+Preferencial:
+Drible
+Primeiro Toque
+Passagem
+Técnica
+Expectativa
+Concentração
+Decisões
+Fora da Bola
+Posicionamento
+Agilidade
+Equilíbrio
+[WB] Lateral de ponta (Direito/Esquerdo)
+Em Posse
+Lateral Avançado
+Chave:
+Travessia
+Drible
+Técnica
+Fora da Bola
+Trabalho em Equipe
+Ritmo de Trabalho
+Aceleração
+Agilidade
+Ritmo
+Resistência
+Preferencial:
+Primeiro Toque
+Marcação
+Passagem
+Tackles
+Expectativa
+Decisões
+Flair
+Posicionamento
+Equilíbrio
+Sem Posse
+Defesa Lateral
+Chave:
+Posicionamento
+Concentração
+Marcação
+Pressionando o Lateral Lateral
+Chave:
+Agressividade
+Ritmo de Trabalho
+Expectativa
+[DM] Meio-campista defensivo
+Em Posse
+Meio-Campo Defensivo
+Chave:
+Tackles
+Expectativa
+Concentração
+Posicionamento
+Trabalho em Equipe
+Preferencial:
+Primeiro Toque
+Marcação
+Passagem
+Agressividade
+Compostura
+Decisões
+Ritmo de Trabalho
+Resistência
+Força
+Meio-campista box-to-box
+Chave:
+Passagem
+Tackles
+Fora da Bola
+Trabalho em Equipe
+Ritmo de Trabalho
+Resistência
+Preferencial:
+Drible
+Finalização
+Primeiro Toque
+Tiros Ardilargos
+Técnica
+Agressividade
+Expectativa
+Compostura
+Decisões
+Posicionamento
+Aceleração
+Equilíbrio
+Ritmo
+Força
+Criador de Jogo Box-to-Box
+Chave:
+Primeiro Toque
+Passagem
+Técnica
+Compostura
+Decisões
+Fora da Bola
+Trabalho em Equipe
+Visão
+Ritmo de Trabalho
+Resistência
+Preferencial:
+Drible
+Marcação
+Tackles
+Expectativa
+Posicionamento
+Aceleração
+Agilidade
+Equilíbrio
+Ritmo
+Criador de Jogo Profundo
+Chave:
+Primeiro Toque
+Passagem
+Técnica
+Compostura
+Decisões
+Fora da Bola
+Trabalho em Equipe
+Visão
+Preferencial:
+Marcação
+Tackles
+Expectativa
+Concentração
+Fora da Bola
+Posicionamento
+Ritmo de Trabalho
+Equilíbrio
+Resistência
+Half-Back
+Chave:
+Rumo
+Marcação
+Tackles
+Expectativa
+Concentração
+Posicionamento
+Trabalho em Equipe
+Pulando
+Força
+Preferencial:
+Primeiro Toque
+Passagem
+Agressividade
+Coragem
+Compostura
+Decisões
+Ritmo de Trabalho
+Resistência
+Sem Posse
+Dispensando o meio-campista defensivo
+Chave:
+Posicionamento
+Decisões
+Expectativa
+Pressionando o Defensive Fighter
+Chave:
+Agressividade
+Ritmo de Trabalho
+Expectativa
+Meio-campista defensivo de proteção
+Chave:
+Posicionamento
+Concentração
+Marcação
+Meio-campista defensivo de cobertura aberta
+Chave:
+Expectativa
+Ritmo
+Ritmo de Trabalho
+[M] Meio-campista (Centro)
+Em Posse
+Meio-campista central
+Chave:
+Primeiro Toque
+Passagem
+Tackles
+Decisões
+Trabalho em Equipe
+Preferencial:
+Técnica
+Expectativa
+Compostura
+Concentração
+Fora da Bola
+Posicionamento
+Visão
+Ritmo de Trabalho
+Resistência
+Criador de Jogadas Avançado
+Chave:
+Primeiro Toque
+Passagem
+Técnica
+Compostura
+Decisões
+Fora da Bola
+Trabalho em Equipe
+Visão
+Preferencial:
+Travessia
+Drible
+Expectativa
+Flair
+Aceleração
+Agilidade
+Meio-campista
+Chave:
+Primeiro Toque
+Passagem
+Técnica
+Compostura
+Decisões
+Fora da Bola
+Trabalho em Equipe
+Visão
+Preferencial:
+Drible
+Tackles
+Expectativa
+Flair
+Posicionamento
+Ritmo de Trabalho
+Agilidade
+Resistência
+Meio-campista central largo
+Chave:
+Primeiro Toque
+Passagem
+Tackles
+Decisões
+Trabalho em Equipe
+Preferencial:
+Travessia
+Drible
+Técnica
+Expectativa
+Compostura
+Concentração
+Fora da Bola
+Posicionamento
+Visão
+Ritmo de Trabalho
+Agilidade
+Resistência
+Sem Posse
+Meio-campista central pressionador
+Chave:
+Agressividade
+Ritmo de Trabalho
+Expectativa
+Meio-campista central de proteção
+Chave:
+Posicionamento
+Concentração
+Marcação
+Meio-campista central com cobertura lateral
+Chave:
+Expectativa
+Ritmo
+Ritmo de Trabalho
+[M] Meio-campista (Direita/Esquerda)
+Em Posse
+Meio-campista aberto
+Chave:
+Travessia
+Passagem
+Técnica
+Trabalho em Equipe
+Ritmo de Trabalho
+Ritmo
+Resistência
+Preferencial:
+Drible
+Primeiro Toque
+Expectativa
+Compostura
+Fora da Bola
+Visão
+Aceleração
+Agilidade
+Sem Posse
+Acompanhando o meio-campista largo
+Chave:
+Marcação
+Ritmo de Trabalho
+Resistência
+Meio-campista Wide Outlet
+Chave:
+Fora da Bola
+Ritmo
+Expectativa
+[M/ AM] Meio-campista/ Meio-campista ofensivo (Direita/Esquerda)
+Em Posse
+Ponta interior
+Chave:
+Drible
+Primeiro Toque
+Técnica
+Compostura
+Trabalho em Equipe
+Aceleração
+Agilidade
+Preferencial:
+Travessia
+Tiros Ardilargos
+Passagem
+Expectativa
+Flair
+Fora da Bola
+Visão
+Ritmo de Trabalho
+Equilíbrio
+Ritmo
+Resistência
+Ponta Criador de Jogo
+Chave:
+Travessia
+Drible
+Primeiro Toque
+Passagem
+Técnica
+Compostura
+Decisões
+Fora da Bola
+Trabalho em Equipe
+Visão
+Aceleração
+Preferencial:
+Expectativa
+Flair
+Ritmo de Trabalho
+Agilidade
+Ritmo
+Resistência
+Ponta
+Chave:
+Travessia
+Drible
+Técnica
+Trabalho em Equipe
+Aceleração
+Agilidade
+Ritmo
+Preferencial:
+Primeiro Toque
+Passagem
+Expectativa
+Flair
+Fora da Bola
+Ritmo de Trabalho
+Equilíbrio
+Resistência
+[M/ AM] Meio-campista/ Meio-campista ofensivo (Centro)
+Em Posse
+Meio-campista ofensivo
+Chave:
+Primeiro Toque
+Tiros Ardilargos
+Passagem
+Técnica
+Compostura
+Flair
+Fora da Bola
+Preferencial:
+Travessia
+Drible
+Finalização
+Expectativa
+Decisões
+Visão
+Aceleração
+Agilidade
+[AM] Meio-campista ofensivo (Centro)
+Em Posse
+Meio-campista do Canal
+Chave:
+Travessia
+Primeiro Toque
+Passagem
+Técnica
+Compostura
+Fora da Bola
+Ritmo de Trabalho
+Aceleração
+Preferencial:
+Drible
+Tiros Ardilargos
+Expectativa
+Decisões
+Flair
+Visão
+Agilidade
+Ritmo
+Resistência
+Papel Livre
+Chave:
+Drible
+Primeiro Toque
+Tiros Ardilargos
+Passagem
+Técnica
+Compostura
+Flair
+Fora da Bola
+Visão
+Preferencial:
+Travessia
+Finalização
+Expectativa
+Decisões
+Aceleração
+Agilidade
+Segundo Atacante
+Chave:
+Finalização
+Primeiro Toque
+Expectativa
+Compostura
+Fora da Bola
+Aceleração
+Preferencial:
+Drible
+Tiros Ardilargos
+Passagem
+Técnica
+Concentração
+Decisões
+Ritmo de Trabalho
+Agilidade
+Ritmo
+Resistência
+Sem Posse
+Meio-campista ofensivo Central Outlet
+Chave:
+Fora da Bola
+Decisões
+Expectativa
+Meio-campista ofensivo da Splitting Outlet
+Chave:
+Fora da Bola
+Ritmo
+Expectativa
+Rastreando meio-campista ofensivo
+Chave:
+Marcação
+Ritmo de Trabalho
+Resistência
+[WR] Ponta (Direita/Esquerda)
+Em Posse
+Atacante aberto
+Chave:
+Drible
+Primeiro Toque
+Técnica
+Expectativa
+Fora da Bola
+Aceleração
+Agilidade
+Ritmo
+Preferencial:
+Travessia
+Finalização
+Passagem
+Compostura
+Flair
+Ritmo de Trabalho
+Equilíbrio
+Resistência
+Atacante Interior
+Chave:
+Drible
+Primeiro Toque
+Técnica
+Expectativa
+Compostura
+Fora da Bola
+Aceleração
+Agilidade
+Preferencial:
+Travessia
+Finalização
+Tiros Ardilargos
+Passagem
+Flair
+Visão
+Ritmo de Trabalho
+Equilíbrio
+Ritmo
+Resistência
+Sem Posse
+Asa de saída interna
+Chave:
+Fora da Bola
+Decisões
+Expectativa
+Ponta de Tracking
+Chave:
+Marcação
+Ritmo de Trabalho
+Resistência
+Ala de saída larga
+Chave:
+Fora da Bola
+Ritmo
+Expectativa
+[ST] Atacante (Centro)
+Em Posse
+Centroavante
+Chave:
+Finalização
+Primeiro Toque
+Rumo
+Técnica
+Compostura
+Fora da Bola
+Aceleração
+Força
+Preferencial:
+Drible
+Passagem
+Expectativa
+Decisões
+Agilidade
+Equilíbrio
+Pulando
+Ritmo
+Encaminhamento por canal
+Chave:
+Drible
+Finalização
+Primeiro Toque
+Técnica
+Compostura
+Fora da Bola
+Ritmo de Trabalho
+Aceleração
+Preferencial:
+Travessia
+Rumo
+Passagem
+Expectativa
+Decisões
+Agilidade
+Equilíbrio
+Ritmo
+Resistência
+Avançado Profundo
+Chave:
+Finalização
+Primeiro Toque
+Técnica
+Compostura
+Fora da Bola
+Força
+Preferencial:
+Drible
+Passagem
+Expectativa
+Decisões
+Trabalho em Equipe
+Visão
+Equilíbrio
+Falso Nove
+Chave:
+Drible
+Primeiro Toque
+Passagem
+Técnica
+Compostura
+Decisões
+Fora da Bola
+Trabalho em Equipe
+Visão
+Aceleração
+Preferencial:
+Finalização
+Expectativa
+Flair
+Agilidade
+Equilíbrio
+Caçador furtivo
+Chave:
+Finalização
+Rumo
+Expectativa
+Compostura
+Concentração
+Fora da Bola
+Aceleração
+Preferencial:
+Primeiro Toque
+Técnica
+Decisões
+Equilíbrio
+Alvo Avançado
+Chave:
+Finalização
+Rumo
+Agressividade
+Coragem
+Compostura
+Fora da Bola
+Equilíbrio
+Pulando
+Força
+Preferencial:
+Primeiro Toque
+Expectativa
+Decisões
+Trabalho em Equipe
+Sem Posse
+Central Outlet Centroavante
+Chave:
+Fora da Bola
+Decisões
+Expectativa
+Splitting Outlet Centro Avantavante
+Chave:
+Fora da Bola
+Ritmo
+Expectativa
+Acompanhamento de centroavante
+Chave:
+Marcação
+Ritmo de Trabalho
+Resistência

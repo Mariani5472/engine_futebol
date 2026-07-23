@@ -1,5 +1,4 @@
 import { Vector2 } from "../../../../core/geometry/Vector2";
-
 export class BallMemory {
   constructor(
     public estimatedPosition: Vector2,
@@ -9,7 +8,6 @@ export class BallMemory {
     public lastUpdatedTick: number,
     public spatialError: number
   ) {}
-
   public static create(): BallMemory {
     return new BallMemory(
       Vector2.zero(),
