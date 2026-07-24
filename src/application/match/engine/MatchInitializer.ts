@@ -34,11 +34,19 @@ export class MatchInitializer {
       true
     );
 
+    // ── Kickoff: give ball to the home team's most forward outfield player ──
+    const kickoffPlayer = this.findKickoffPlayer(homeState.players);
+    const kickoffPosition = new Vector2(pitch.length / 2, pitch.width / 2);
+
+    kickoffPlayer.position = kickoffPosition;
+    kickoffPlayer.targetPosition = kickoffPosition;
+    kickoffPlayer.hasBall = true;
+
     const ball = new BallMatchState(
-      new Vector2(pitch.length / 2, pitch.width / 2),
+      kickoffPosition,
       Vector2.zero(),
-      null,
-      BallState.FREE,
+      kickoffPlayer,
+      BallState.CONTROLLED,
       0
     );
 
@@ -48,7 +56,7 @@ export class MatchInitializer {
       ball,
       pitch,
       0,
-      homeState, // home attacks first by convention
+      homeState,
       awayState
     );
 
@@ -58,6 +66,33 @@ export class MatchInitializer {
     }
 
     return { state, awarenessMap };
+  }
+
+  /**
+   * Returns the most forward outfield player (striker > attacking mid > midfielder)
+   * to receive the kickoff ball.
+   */
+  private findKickoffPlayer(players: PlayerMatchState[]): PlayerMatchState {
+    const priority: Record<string, number> = {
+      STRIKER: 10, FALSE_NINE: 10,
+      ATTACKING_MIDFIELDER: 8, WINGER: 7, WIDE_MIDFIELDER: 7,
+      BOX_TO_BOX: 5, CENTRAL_MIDFIELDER: 4,
+      DEFENSIVE_MIDFIELDER: 3, WING_BACK: 2,
+      FULL_BACK: 1, CENTRE_BACK: 0, GOALKEEPER: -1
+    };
+
+    let best = players[0];
+    let bestPriority = -99;
+
+    for (const p of players) {
+      const prio = priority[p.currentRole] ?? 3;
+      if (prio > bestPriority) {
+        bestPriority = prio;
+        best = p;
+      }
+    }
+
+    return best;
   }
 
   private initTeam(

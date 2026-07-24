@@ -1,0 +1,198 @@
+{
+  "titulo": "Guia de Atributos por Função - Football Manager 26",
+  "descricao": "Lista dos atributos Chave, Preferenciais e Desnecessários para cada função no FM26.",
+  "posicoes": {
+    "GK": {
+      "nome": "Goleiro",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Goleiro",
+            "chave": ["Alcance Aéreo", "Comando da Área", "Comunicação", "Dirigibilidade", "Reflexos", "Agilidade", "Concentração", "Posicionamento"],
+            "preferencial": ["Chutando", "Um a um", "Arremesso", "Expectativa", "Decisões"],
+            "desnecessario": ["Excentricidade"]
+          },
+          {
+            "funcao": "Goleiro com bola",
+            "chave": ["Alcance Aéreo", "Comando da Área", "Comunicação", "Dirigibilidade", "Chutando", "Reflexos", "Agilidade", "Concentração", "Posicionamento"],
+            "preferencial": ["Excentricidade", "Um a um", "Arremesso", "Expectativa", "Compostura", "Decisões", "Passagem"],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Goleiro Direto",
+            "chave": ["Alcance Aéreo", "Comando da Área", "Comunicação", "Dirigibilidade", "Reflexos", "Agilidade", "Concentração", "Posicionamento"],
+            "preferencial": ["Um a um", "Expectativa", "Decisões"],
+            "desnecessario": ["Excentricidade", "Passagem"]
+          }
+        ],
+        "Sem Posse": [
+          {
+            "funcao": "Guardião de Linha",
+            "chave": ["Posicionamento", "Concentração"],
+            "preferencial": [],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Guardião Varredor",
+            "chave": ["Correndo para fora", "Expectativa", "Decisões"],
+            "preferencial": [],
+            "desnecessario": []
+          }
+        ]
+      }
+    },
+    "DC": {
+      "nome": "Centro Defensor",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Defensor Central",
+            "chave": ["Rumo", "Marcação", "Tackles", "Expectativa", "Posicionamento", "Pulando", "Força"],
+            "preferencial": ["Agressividade", "Coragem", "Compostura", "Concentração", "Decisões", "Ritmo"],
+            "desnecessario": ["Passagem"]
+          },
+          {
+            "funcao": "Zagueiro central com bola",
+            "chave": ["Rumo", "Marcação", "Passagem", "Tackles", "Expectativa", "Compostura", "Posicionamento", "Pulando", "Força"],
+            "preferencial": ["Primeiro Toque", "Técnica", "Agressividade", "Coragem", "Concentração", "Decisões", "Visão", "Ritmo"],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Zagueiro Direto",
+            "chave": ["Rumo", "Marcação", "Tackles", "Expectativa", "Posicionamento", "Pulando", "Força"],
+            "preferencial": ["Agressividade", "Coragem", "Concentração", "Ritmo"],
+            "desnecessario": ["Passagem", "Compostura"]
+          },
+          {
+            "funcao": "Zagueiro central largo",
+            "chave": ["Rumo", "Marcação", "Tackles", "Expectativa", "Posicionamento", "Pulando", "Força"],
+            "preferencial": ["Drible", "Agressividade", "Coragem", "Compostura", "Concentração", "Decisões", "Ritmo de Trabalho", "Aceleração", "Agilidade", "Ritmo", "Resistência"],
+            "desnecessario": ["Passagem"]
+          },
+          {
+            "funcao": "Zagueiro Central Avançado",
+            "chave": ["Rumo", "Marcação", "Passagem", "Tackles", "Técnica", "Expectativa", "Compostura", "Decisões", "Posicionamento", "Trabalho em Equipe", "Pulando", "Força"],
+            "preferencial": ["Drible", "Primeiro Toque", "Agressividade", "Coragem", "Concentração", "Visão", "Ritmo", "Resistência"],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Defensor Central Sobreposto",
+            "chave": ["Travessia", "Rumo", "Marcação", "Tackles", "Expectativa", "Ritmo de Trabalho", "Pulando", "Ritmo", "Resistência", "Força"],
+            "preferencial": ["Drible", "Técnica", "Agressividade", "Coragem", "Compostura", "Concentração", "Decisões", "Fora da Bola", "Posicionamento", "Aceleração", "Agilidade"],
+            "desnecessario": []
+          }
+        ],
+        "Sem Posse": [
+          {
+            "funcao": "Defesa central de cobertura",
+            "chave": ["Expectativa", "Ritmo", "Marcação"],
+            "preferencial": [],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Defesa central",
+            "chave": ["Agressividade", "Tackles", "Força"],
+            "preferencial": [],
+            "desnecessario": []
+          }
+        ]
+      }
+    },
+    "DL_DR": {
+      "nome": "Defensor Direito/Esquerdo",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Lateral",
+            "chave": ["Marcação", "Tackles", "Expectativa", "Concentração", "Posicionamento", "Trabalho em Equipe", "Aceleração"],
+            "preferencial": ["Travessia", "Drible", "Passagem", "Técnica", "Decisões", "Ritmo de Trabalho", "Agilidade", "Ritmo", "Resistência"],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Lateral Interior",
+            "chave": ["Rumo", "Marcação", "Tackles", "Expectativa", "Posicionamento", "Força"],
+            "preferencial": ["Drible", "Agressividade", "Coragem", "Compostura", "Concentração", "Decisões", "Ritmo de Trabalho", "Aceleração", "Agilidade", "Pulando", "Ritmo", "Resistência"],
+            "desnecessario": []
+          }
+        ]
+      }
+    },
+    "WB": {
+      "nome": "Lateral de Ponta (Wing-Back)",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Lateral Avançado",
+            "chave": ["Travessia", "Drible", "Técnica", "Fora da Bola", "Trabalho em Equipe", "Ritmo de Trabalho", "Aceleração", "Agilidade", "Ritmo", "Resistência"],
+            "preferencial": ["Primeiro Toque", "Marcação", "Passagem", "Tackles", "Expectativa", "Decisões", "Flair", "Posicionamento", "Equilíbrio"],
+            "desnecessario": []
+          }
+        ]
+      }
+    },
+    "DM": {
+      "nome": "Meio-campista Defensivo",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Meio-Campo Defensivo",
+            "chave": ["Tackles", "Expectativa", "Concentração", "Posicionamento", "Trabalho em Equipe"],
+            "preferencial": ["Primeiro Toque", "Marcação", "Passagem", "Agressividade", "Compostura", "Decisões", "Ritmo de Trabalho", "Resistência", "Força"],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Meio-campista box-to-box",
+            "chave": ["Passagem", "Tackles", "Fora da Bola", "Trabalho em Equipe", "Ritmo de Trabalho", "Resistência"],
+            "preferencial": ["Drible", "Finalização", "Primeiro Toque", "Tiros Ardilargos", "Técnica", "Agressividade", "Expectativa", "Compostura", "Decisões", "Posicionamento", "Aceleração", "Equilíbrio", "Ritmo", "Força"],
+            "desnecessario": []
+          }
+        ]
+      }
+    },
+    "MC": {
+      "nome": "Meio-campista Central",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Meio-campista central",
+            "chave": ["Primeiro Toque", "Passagem", "Tackles", "Decisões", "Trabalho em Equipe"],
+            "preferencial": ["Técnica", "Expectativa", "Compostura", "Concentração", "Fora da Bola", "Posicionamento", "Visão", "Ritmo de Trabalho", "Resistência"],
+            "desnecessario": []
+          }
+        ]
+      }
+    },
+    "AML_AMR": {
+      "nome": "Meio-campista Ofensivo (Direita/Esquerda)",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Ponta interior",
+            "chave": ["Drible", "Primeiro Toque", "Técnica", "Compostura", "Trabalho em Equipe", "Aceleração", "Agilidade"],
+            "preferencial": ["Travessia", "Tiros Ardilargos", "Passagem", "Expectativa", "Flair", "Fora da Bola", "Visão", "Ritmo de Trabalho", "Equilíbrio", "Ritmo", "Resistência"],
+            "desnecessario": []
+          }
+        ]
+      }
+    },
+    "ST": {
+      "nome": "Atacante (Centro)",
+      "situacoes": {
+        "Em Posse": [
+          {
+            "funcao": "Centroavante",
+            "chave": ["Finalização", "Primeiro Toque", "Rumo", "Técnica", "Compostura", "Fora da Bola", "Aceleração", "Força"],
+            "preferencial": ["Drible", "Passagem", "Expectativa", "Decisões", "Agilidade", "Equilíbrio", "Pulando", "Ritmo"],
+            "desnecessario": []
+          },
+          {
+            "funcao": "Falso Nove",
+            "chave": ["Drible", "Primeiro Toque", "Passagem", "Técnica", "Compostura", "Decisões", "Fora da Bola", "Trabalho em Equipe", "Visão", "Aceleração"],
+            "preferencial": ["Finalização", "Expectativa", "Flair", "Agilidade", "Equilíbrio"],
+            "desnecessario": []
+          }
+        ]
+      }
+    }
+  }
+} 

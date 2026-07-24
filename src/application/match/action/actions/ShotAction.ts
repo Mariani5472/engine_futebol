@@ -5,6 +5,7 @@ import { GoalEvent, Milliseconds, PlayerId, ShotEvent, TeamId } from "../../../.
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
+import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 
 /** Ball speed at launch when shooting (m/s). */
 const SHOT_POWER = 30;
@@ -32,7 +33,7 @@ export class ShotAction {
     const onTargetProb = this.calculateOnTargetProb(context, player, goalCenter);
     const isOnTarget = random.nextFloat(0, 1) < onTargetProb;
 
-    const shotId = `shot-${player.player.id}-${Date.now()}`;
+    const shotId = `shot-${player.player.id}-${matchSecond.toFixed(1)}`;
     const teamId = (teamSide === "HOME" ? match.home.team.id : match.away.team.id) as TeamId;
     const playerId = player.player.id as PlayerId;
 
@@ -42,12 +43,12 @@ export class ShotAction {
 
     if (!isOnTarget) {
       // Off target: random direction around goal.
-      const missAngle = random.nextFloat(-0.5, 0.5);
+      const missAngle = random.nextFloat(-0.6, 0.6);
       const missDir = aimPoint.subtract(player.position).normalize().rotate(missAngle);
-      (match.ball as { velocity: Vector2 }).velocity = missDir.multiply(SHOT_POWER);
-      (match.ball as { height: number }).height = random.nextFloat(1.5, 3.5);
-      (match.ball as { state: BallState }).state = BallState.IN_FLIGHT;
-      (match.ball as { owner: null }).owner = null;
+      match.ball.velocity = missDir.multiply(SHOT_POWER);
+      match.ball.height = random.nextFloat(1.5, 3.5);
+      match.ball.state = BallState.IN_FLIGHT;
+      match.ball.owner = null;
 
       const shot: ShotEvent = {
         id: shotId,
@@ -70,10 +71,10 @@ export class ShotAction {
 
     // Launch ball toward goal.
     const direction = aimPoint.subtract(player.position).normalize();
-    (match.ball as { velocity: Vector2 }).velocity = direction.multiply(SHOT_POWER);
-    (match.ball as { height: number }).height = SHOT_HEIGHT;
-    (match.ball as { state: BallState }).state = BallState.IN_FLIGHT;
-    (match.ball as { owner: null }).owner = null;
+    match.ball.velocity = direction.multiply(SHOT_POWER);
+    match.ball.height = SHOT_HEIGHT;
+    match.ball.state = BallState.IN_FLIGHT;
+    match.ball.owner = null;
 
     if (isSaved) {
       const shot: ShotEvent = {
@@ -94,14 +95,12 @@ export class ShotAction {
     const scoringTeam = teamSide === "HOME" ? match.home : match.away;
     scoringTeam.score++;
 
-    // Reset ball to center.
-    (match.ball as { position: Vector2 }).position = new Vector2(
-      match.pitch.length / 2,
-      match.pitch.width / 2
-    );
-    (match.ball as { velocity: Vector2 }).velocity = Vector2.zero();
-    (match.ball as { state: BallState }).state = BallState.FREE;
-    (match.ball as { height: number }).height = 0;
+    // Reset ball to centre for kickoff.
+    match.ball.position = new Vector2(match.pitch.length / 2, match.pitch.width / 2);
+    match.ball.velocity = Vector2.zero();
+    match.ball.state = BallState.FREE;
+    match.ball.height = 0;
+    match.ball.owner = null;
 
     const shotEvent: ShotEvent = {
       id: shotId,
@@ -116,7 +115,7 @@ export class ShotAction {
     };
 
     const goalEvent: GoalEvent = {
-      id: `goal-${player.player.id}-${Date.now()}`,
+      id: `goal-${player.player.id}-${matchSecond.toFixed(1)}`,
       type: "GOAL",
       timestamp: (matchSecond * 1000) as Milliseconds,
       period,
@@ -131,7 +130,6 @@ export class ShotAction {
       success: true,
       events: [shotEvent, goalEvent]
     };
-
   }
 
   private calculateOnTargetProb(
@@ -145,31 +143,35 @@ export class ShotAction {
     const composure = attrs.mental.composure / 20;
     const technique = attrs.technical.technique / 20;
 
-    const distance = shooter.position.distanceTo(goalCenter);
-    const distancePenalty = Math.min(1, distance / 35);
+    // Position influence: strikers are much more accurate than defenders.
+    const roleQuality = PositionInfluenceCalculator.shootingQuality(shooter.currentRole);
 
-    // Count nearby opponents for pressure.
+    const distance = shooter.position.distanceTo(goalCenter);
+    // Closer = easier to get on target.
+    const distanceFactor = Math.max(0.2, 1 - distance / 50);
+
+    // Pressure from nearby opponents.
     const opponents = context.match.home.players.includes(shooter)
       ? context.match.away.players
       : context.match.home.players;
 
-    let pressure = 0;
+    let pressureCount = 0;
     for (const opp of opponents) {
-      if (shooter.position.distanceTo(opp.position) < 4) {
-        pressure += 0.2;
+      if (shooter.position.distanceTo(opp.position) < 3.5) {
+        pressureCount++;
       }
     }
-    pressure = Math.min(0.6, pressure);
+    const pressurePenalty = Math.min(0.50, pressureCount * 0.15);
 
-    const fatigue = 1 - (shooter.fatigue / 100) * 0.2;
+    const fatiguePenalty = 1 - (shooter.fatigue / 100) * 0.15;
 
-    const raw = (finishing * 0.5 + composure * 0.3 + technique * 0.2)
-      * (1 - distancePenalty * 0.5)
-      * (1 - pressure)
-      * fatigue;
+    const raw = (finishing * 0.55 + composure * 0.30 + technique * 0.15)
+      * roleQuality
+      * distanceFactor
+      * (1 - pressurePenalty)
+      * fatiguePenalty;
 
-    return Math.max(0.05, Math.min(0.92, raw));
-
+    return Math.max(0.05, Math.min(0.88, raw));
   }
 
   private calculateGkSaveProb(
@@ -177,12 +179,11 @@ export class ShotAction {
     goalCenter: Vector2
   ): number {
 
-    // Find the goalkeeper of the defending team.
     const isHome = context.match.home.players.includes(context.player);
     const defendingTeam = isHome ? context.match.away : context.match.home;
     const gk = defendingTeam.players.find(p => p.currentRole === "GOALKEEPER");
 
-    if (!gk) return 0.05; // No goalkeeper — very low save chance.
+    if (!gk) return 0.05;
 
     const attrs = gk.player.attributes;
     const reflexes = attrs.goalkeeping.reflexes / 20;
@@ -190,11 +191,17 @@ export class ShotAction {
     const positioning = attrs.mental.positioning / 20;
 
     const gkDistToGoal = gk.position.distanceTo(goalCenter);
-    const positionBonus = Math.max(0, 1 - gkDistToGoal / 5); // Better positioned = higher save prob.
+    // Goalkeeper close to their line = better positioned.
+    const positionBonus = Math.max(0, 1 - gkDistToGoal / 6);
 
-    const raw = (reflexes * 0.5 + handling * 0.3 + positioning * 0.2) * (0.7 + positionBonus * 0.3);
-    return Math.max(0.05, Math.min(0.88, raw));
+    // Shooter distance: closer shots are harder to save.
+    const shooterDist = context.player.position.distanceTo(goalCenter);
+    const distanceSavabilityBonus = Math.min(0.20, shooterDist / 80);
 
+    const raw = (reflexes * 0.45 + handling * 0.30 + positioning * 0.25)
+      * (0.65 + positionBonus * 0.25)
+      + distanceSavabilityBonus;
+
+    return Math.max(0.05, Math.min(0.85, raw));
   }
-
 }
