@@ -63,8 +63,9 @@ export class MatchEngine {
     this.DELTA_TIME = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
 
     const rng = new SeededRandom(config.seed);
-    const MATCH_DURATION_SECONDS = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
-    const HALF_TIME_SECONDS = MATCH_DURATION_SECONDS / 2;
+    const deltaTime = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
+    const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
+    const halfTime = matchDuration / 2;
 
     // Build all systems.
     const pitchGrid = PitchGrid.create(config.pitch);
@@ -111,10 +112,10 @@ export class MatchEngine {
     allEvents.push(this.makePeriodStarted("FIRST_HALF", 0));
 
     // Main simulation loop.
-    while (state.currentSecond < MATCH_DURATION_SECONDS) {
+    while (state.currentSecond < matchDuration) {
 
       // Handle half time transition.
-      if (!halfTimeHandled && state.currentSecond >= HALF_TIME_SECONDS) {
+      if (!halfTimeHandled && state.currentSecond >= halfTime) {
         allEvents.push(this.makePeriodEnded("FIRST_HALF", state.currentSecond));
         period = "SECOND_HALF";
         halfTimeHandled = true;
@@ -123,7 +124,7 @@ export class MatchEngine {
       }
 
       const tickEvents = this.runTick(
-        state, awarenessMap, rng,
+        state, awarenessMap, rng, deltaTime,
         perceptionSystem, cognitiveSystem, decisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
         teamBehaviour, movementSystem, possessionSystem,
@@ -138,8 +139,8 @@ export class MatchEngine {
         }
       }
 
-      this.accumulateFatigue(state);
-      state.currentSecond += this.DELTA_TIME;
+      this.accumulateFatigue(state, deltaTime);
+      state.currentSecond += deltaTime;
       tick++;
     }
 
@@ -162,6 +163,7 @@ export class MatchEngine {
     state: MatchState,
     awarenessMap: Map<string, PlayerAwareness>,
     rng: Random,
+    deltaTime: number,
     perceptionSystem: PerceptionSystem,
     cognitiveSystem: CognitiveSystem,
     decisionSystem: DecisionSystem,
@@ -190,7 +192,7 @@ export class MatchEngine {
         player,
         awareness,
         perception,
-        deltaTime: this.DELTA_TIME,
+        deltaTime,
         tick
       } satisfies CognitiveContext);
     }
@@ -200,7 +202,7 @@ export class MatchEngine {
       const awareness = awarenessMap.get(player.player.id);
       if (!awareness) continue;
 
-      const decisionCtx = new DecisionContext(state, player, awareness, tick, this.DELTA_TIME);
+      const decisionCtx = new DecisionContext(state, player, awareness, tick, deltaTime);
       const decision = decisionSystem.decide(decisionCtx);
 
       const isHome = state.home.players.includes(player);
@@ -213,7 +215,7 @@ export class MatchEngine {
         pitch: state.pitch,
         random: rng,
         tick,
-        deltaTime: this.DELTA_TIME,
+        deltaTime,
         teamSide: isHome ? "HOME" : "AWAY",
         attackingDirection: teamState.attackingDirection,
         matchSecond: state.currentSecond
@@ -224,7 +226,7 @@ export class MatchEngine {
     }
 
     // 4. Ball physics — apply gravity, friction, bounce.
-    ballPhysics.update(state, this.DELTA_TIME);
+    ballPhysics.update(state, deltaTime);
 
     // 5. Tactical engine — set tactical target positions for all players.
     tacticalEngine.update(state);
@@ -233,7 +235,7 @@ export class MatchEngine {
     teamBehaviour.update(state);
 
     // 7. Movement — advance players toward their targets.
-    movementSystem.update(state, this.DELTA_TIME);
+    movementSystem.update(state, deltaTime);
 
     // 8. Possession — award ball to nearest eligible player.
     possessionSystem.update(state);
@@ -241,7 +243,7 @@ export class MatchEngine {
     // 9. Sync attacking/defending designation to possession.
     this.syncPossessionSide(state);
 
-    void period; // used for event timestamping in sub-calls
+    void period;
     return events;
   }
 
@@ -254,19 +256,18 @@ export class MatchEngine {
   }
 
   private swapAttackingDirections(state: MatchState): void {
-    // TypeScript readonly: cast to mutable for the controlled mutation.
     const home = state.home as { attackingDirection: 1 | -1 };
     const away = state.away as { attackingDirection: 1 | -1 };
     home.attackingDirection = home.attackingDirection === 1 ? -1 : 1;
     away.attackingDirection = away.attackingDirection === 1 ? -1 : 1;
   }
 
-  private accumulateFatigue(state: MatchState): void {
+  private accumulateFatigue(state: MatchState, deltaTime: number): void {
     for (const player of this.allPlayers(state)) {
       const workRate = player.player.attributes.mental.workRate / 20;
       const speed = player.velocity.magnitude();
       const activityFactor = 0.3 + speed * 0.05 + workRate * 0.2;
-      player.fatigue = Math.min(100, player.fatigue + FATIGUE_RATE * activityFactor * this.DELTA_TIME);
+      player.fatigue = Math.min(100, player.fatigue + FATIGUE_RATE * activityFactor * deltaTime);
     }
   }
 

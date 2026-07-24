@@ -27,6 +27,7 @@ describe("Match Engine — Determinism across seeds", () => {
   it("different seeds produce at least some variation in scores across 10 runs", () => {
     const scores = Array.from({ length: 10 }, (_, i) => {
       const r = engine.simulate(fastConfig(i + 1));
+      console.log(`${r.homeScore}-${r.awayScore}`)
       return `${r.homeScore}-${r.awayScore}`;
     });
     const unique = new Set(scores);
