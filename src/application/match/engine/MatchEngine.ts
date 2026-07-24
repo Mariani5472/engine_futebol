@@ -60,10 +60,8 @@ export class MatchEngine {
   private DELTA_TIME = DEFAULT_DELTA_TIME;
 
   public simulate(config: SimulationConfig): MatchResult {
-    this.DELTA_TIME = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
-
     const rng = new SeededRandom(config.seed);
-    const deltaTime = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
+    const deltaTime = this.DELTA_TIME;
     const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
     const halfTime = matchDuration / 2;
 

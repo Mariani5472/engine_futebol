@@ -1,177 +1,120 @@
-Markdown
-# ⚽ Match Engine — Project Roadmap
+📊 Progresso Atual Estimado
+~55-60% concluído (bem mais avançado que os 33% do README antigo).
+Concluídos / Bem Avançados:
 
-Uma engine de simulação tática e comportamental de futebol focada em sistemas distribuídos de inteligência, física de campo e tomada de decisão determinística.
+Domínio, Geometria, Movimentação, Percepção, Cognição/Awareness, Decision Layer (core), Action Layer (parcial), Ball Physics (básica), Tactical (básico), Inicialização, Determinismo.
 
----
+Principais Gaps Atuais:
 
-## 📊 Progresso Geral
+Decisões ainda muito conservadoras → poucos gols.
+Interação entre sistemas (decisão × tática × física × posse).
+Regras completas do jogo e polish.
 
-[██████████░░░░░░░░░░░░░░░░░░] 33% Concluído (Fases 1–5 parcialmente implementadas)
+
+🗺️ Novo Roadmap Priorizado (Fases Reorganizadas)
+Fase 0: Correções Críticas (1-2 semanas) — Resolver 0x0
+Objetivo: Fazer o jogo produzir gols e progressão razoável consistentemente.
+
+Ajustes urgentes na Decisão:
+Aumentar utilidade de ShotEvaluator em zonas de ataque (attacking third).
+Reduzir bias conservador de PassEvaluator (menos bônus para passes laterais).
+Melhorar HoldBallEvaluator como verdadeiro fallback (baixa utilidade).
+Finalizar PersonalityModifier e integrá-lo melhor.
+
+Melhorar Progressão Ofensiva:
+Reforçar TacticalEngine para empurrar jogadores para frente quando em posse.
+Adicionar lógica simples de "support runs" e width/depth dinâmica.
+
+Refinar ShotAction + GK:
+Ajustar probabilidades de on-target/save.
+Garantir que shots de longa distância sejam viáveis para certos perfis.
+
+Limpar Duplicações:
+Unificar movimento da bola (MovementSystem + BallPhysicsSystem).
+Remover redundâncias em velocity/position.
+
+Debug & Telemetria:
+Adicionar logs opcionais de decisões tomadas, utilities, shots gerados vs executados.
+Criar um MatchDebugSummary no resultado.
 
 
-- **Módulos Concluídos:** Domínio, Geometria, Movimentação, Percepção/Cognição.
-- **Em Desenvolvimento:** Camada de Decisão (Decision Layer).
-- **Próximos Passos:** Camada de Ação e Física da Bola.
+Critério de Sucesso: Média de 2.0–3.5 gols por jogo em 100 simulações com seeds variados.
 
----
+Fase 1: Action Layer Completa (Alta Prioridade)
 
-## 🗺️ Roadmap de Desenvolvimento
+ Completar/implementar ações pendentes com outcomes realistas:
+DribbleAction (progressão com risco de perda de bola).
+TackleAction (melhor integração com Referee).
+HeaderAction, ClearanceAction.
 
-<details open>
-<summary><b>✅ Fase 1: Domínio Básicos & Atributos</b> (Concluído)</summary>
+ Adicionar cooldowns / recuperação pós-ação.
+ Integrar melhor ActionResult com eventos e mudanças de estado.
 
-- [x] Player & Team Core Structures
-- [x] Tactical Formation & Position Roles
-- [x] Player Attributes (Mental, Physical, Goalkeeper, Hidden)
-- [x] Languages & Player Relationships
-- [x] Team Cohesion & Tactical Familiarity
-- [x] Language Compatibility
-</details>
 
-<details open>
-<summary><b>✅ Fase 2: Geometria & Pitch Layout</b> (Concluído)</summary>
+Fase 2: Ball Physics & Interações Avançadas
 
-- [x] Vector2, Distance & Angle Math
-- [x] Line Intersection & Line of Sight
-- [x] Ball Trajectory Fundamentals
-- [x] Pitch, Rectangle & PitchZone Boundaries
-- [x] PitchGrid System (Grid A1–E3)
-- [x] Zone Neighbour Detection & Zones Between
-</details>
+ Melhorar BallPhysicsSystem:
+Trajetórias mais realistas (curva, swerve básico).
+Colisões com jogadores (interceptions).
+Bounce, wind (futuro), altura variável.
 
-<details open>
-<summary><b>✅ Fase 3: Movimentação & Posse</b> (Concluído)</summary>
+ Detecção precisa de gol via física (em vez de "fake" no ShotAction).
+ Implementar launch() de forma consistente em Pass/Shot.
 
-- [x] Player & Ball Movement Vectorization
-- [x] Velocity & Target Position Systems
-- [x] Player Speed & Fatigue Modifier Calculations
-- [x] Facing Direction & Reach Calculation
-- [x] Possession Candidates & Control Scoring
-- [x] Possession Duel Resolution
-</details>
 
-<details open>
-<summary><b>✅ Fase 4: Percepção & Cognição (AI)</b> (Concluído)</summary>
+Fase 3: Tactical & Team Behaviour (Core do Realismo)
 
-#### 4.1 Perception
-- [x] Distance, Angle & Line of Sight Evaluation
-- [x] Position Zone & Visibility Mapping
+ Expandir TacticalEngine:
+Instruções (Tempo, Counter-Attack, Pressing, Overlap/Underlap).
+Dynamic shapes (defensivo → transição → ataque).
+Width, Depth, Compactness, Defensive Line.
 
-#### 4.2 Awareness & Cognitive Model
-- [x] Short-Term Memory, Certainty & Memory Decay
-- [x] Last Seen Tick & Estimated Position/Velocity
-- [x] Spatial & Angular Error (Noise Model)
-- [x] Prediction Model (Ball/Player Extrapolation & Anticipation)
-- [x] Memory Decay Model (Exponential Decay, Vision & Concentration Influence)
-- [x] Cognitive System Pipeline Integration
-</details>
+ Fortalecer TeamBehaviourSystem:
+Pressing coletivo, marking, cover.
+Support movement quando um jogador tem a bola.
+Overloads numéricos e exploração de espaço.
 
-<details open>
-<summary><b>🧠 Fase 5: Decision Layer (Em Progresso)</b></summary>
+ Integrar Cohesion/Familiarity de forma mais impactante.
 
-- [x] **5.1 Decision Context:** `DecisionContext`, Player Awareness & Cognitive Pipeline
-- [x] **5.2 Utility Score:** `UtilityContext`, `UtilityScore`, Base/Tactical/Personality Utilities
-- [x] **5.3 Action Evaluation:** `PassEvaluator`, `ShotEvaluator` & Candidate Generation
-- [x] **5.4 Decision Selection:** Best Candidate & Utility Comparison
-- [x] **5.5 Risk Evaluation:** Risk Calculator, Failure Probabilities, Tactical & Match Risk
-- [ ] **5.6 Personality Influence:** Modifiers, Decision Bias & Personality-Based Risk
-</details>
 
-<details>
-<summary><b>⚙️ Fase 6: Action Layer</b> (Pendente)</summary>
+Fase 4: Regras & Referee
 
-- [ ] `ActionFactory`
-- [ ] Actions Core: `PassAction`, `ShotAction`, `DribbleAction`, `TackleAction`, `HeaderAction`, `ClearanceAction`
-</details>
+ RefereeSystem completo:
+Fouls, cartões, advantage, offside (simplificado), handball.
+Personalidade do árbitro.
 
-<details>
-<summary><b>⚽ Fase 7: Ball Physics</b> (Pendente)</summary>
+ Match Flow:
+Kickoff, throw-ins, corners, goal kicks, penalties.
+Stoppage time, substituições.
+Estados de jogo (set pieces).
 
-- [ ] `BallPhysicsSystem`
-- [ ] Physics Properties: Acceleration, Deceleration, Velocity, Direction & Height
-- [ ] Flight Dynamics, Bounce Resolution, Surface Friction & Trajectory Resolution
-</details>
 
-<details>
-<summary><b>🧠 Fase 8: Tactical Engine</b> (Pendente)</summary>
 
-- [ ] Tactical Systems: Width, Depth, Compactness, Defensive Line & Pressing
-- [ ] Instructions: Tempo, Counter Attack, Overlap & Underlap
-- [ ] Dynamic Team Shapes: Defensive, Attacking & Transition Shapes
-</details>
+Fase 5: Event Engine & Output
 
-<details>
-<summary><b>👥 Fase 9: Team Behaviour</b> (Pendente)</summary>
+ Sistema robusto de eventos (fila, prioridade, timestamps).
+ Match Report completo:
+Stats (xG básico, possession, passes, tackles, shots on target).
+Ratings de jogadores.
+Timeline serializável.
 
-- [ ] Collective Dynamics: Team Shape, Player Spacing & Role Coordination
-- [ ] Defensive Coordination: Line Movement, Pressing, Cover & Marking
-- [ ] Attacking Support: Passing Options & Collective Movement
-- [ ] Team Cohesion Influence
-</details>
 
-<details>
-<summary><b>🧑‍⚖️ Fase 10: Referee System</b> (Pendente)</summary>
 
-- [ ] Foul Detection & Severity Assessment
-- [ ] Card Systems: Yellow, Second Yellow, Direct Red, Last Defender & Violent Conduct
-- [ ] Advantages, Offside, Handball & Simulation
-- [ ] Referee Personality Profiles
-</details>
+Fase 6: Polish & Contexto Avançado
 
-<details>
-<summary><b>🔄 Fase 11: Match Flow & Rules</b> (Pendente)</summary>
+ Fatores contextuais: Morale, Crowd, Weather, Big Match, Fatigue mental.
+ Psychological dynamics (momentum, panic, concentration).
+ Environmental effects.
 
-- [ ] Match States: Kickoff, Periods (1st/2nd Half, Extra Time), Stoppage Time
-- [ ] Restarts: Throw-In, Goal Kick, Corner, Free Kick, Penalty
-- [ ] Substitution Management
-</details>
 
-<details>
-<summary><b>📡 Fase 12: Event Engine</b> (Pendente)</summary>
+Fase 7: Validação, Testes & Produção
 
-- [ ] Core Engine: Queue, Dispatcher, Priority Ordering & Timestamps
-- [ ] Event Types: Goal, Shot, Card, Period Boundaries
-- [ ] Event Serialization & Frontend Event Stream Pipeline
-</details>
+ Testes avançados:
+Monte Carlo (distribuição de resultados).
+Scenario-based (ex: "striker 1v1", "counter-attack").
+Regression tests contra versões anteriores.
 
-<details>
-<summary><b>📊 Fase 13: Match Report & Analytics</b> (Pendente)</summary>
-
-- [ ] Stats Tracking: Goals, xG, Shots/Target, Possession, Passes & Tackles
-- [ ] Player Performance Ratings & Match Timeline Generation
-</details>
-
-<details>
-<summary><b>🎮 Fase 14: Simulation Polish & Context</b> (Pendente)</summary>
-
-- [ ] Environmental Effects: Weather, Rain & Pitch Condition
-- [ ] Mental & Contextual Drivers: Crowd, Morale, Pressure, Big Match Performance, Leadership
-</details>
-
-<details>
-<summary><b>🧪 Fase 15: Engine Validation & Replayability</b> (Pendente)</summary>
-
-- [ ] Deterministic Simulation & Seeded Random
-- [ ] Replay System: Snapshots, Timelines & Event Replays
-- [ ] Testing Frameworks: Scenario, Monte Carlo & Regression Testing
-</details>
-
-<details>
-<summary><b>🔧 Fase 16: Pre-Release Refinement</b> (Pendente)</summary>
-
-- [ ] **Decision Tuning:** Action Priority Systems, Cooldowns, Weights & State Influences
-- [ ] **Attribute Calibration:** Normalization, Interactions, Probabilities & Diminishing Returns
-- [ ] **Spatial & Collision Accuracy:** Occupancy, Volume Collisions, Interception Zones
-- [ ] **Advanced Tactical Validation:** Overloads, Numerical Superiority/Inferiority, Space Exploitation
-- [ ] **Psychological & Emotional Dynamics:** Panic, Momentum, Aggression & Concentration Drops
-- [ ] **Production Tooling:** Full State Serialization, Simulation Logs & Regression Suites
-</details>
-
----
-
-## 🛠 Tech Stack & Paradigmas
-
-- **Paradigma:** Event-Driven Architecture, Deterministic Simulation.
-- **Estruturas de Dados:** Vector Spatial Trees, Grids de Ocupação Espacial.
-- **Modelos Matemáticos:** Utility-based AI, Decaimento Exponencial de Memória, Extrapolação Vetorial.
+ Replay system (snapshots periódicos).
+ Performance (otimizações, parallel sims).
+ Serialização completa de estado (para save/load).
+ Calibração fina de atributos e weights.

@@ -15,6 +15,7 @@ export class DecisionPriority {
     [DecisionType.COVER]: 0,
     [DecisionType.MOVE]: 0,
     [DecisionType.RECEIVE]: 0,
+    [DecisionType.HEADER]: 2
   };
 
   public get(type: DecisionType): number {

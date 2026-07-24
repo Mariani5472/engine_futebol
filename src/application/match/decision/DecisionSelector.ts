@@ -1,54 +1,31 @@
-import { Decision } from "./Decision";
 import { DecisionPriority } from "./DecisionPriority";
+import { EvaluatedDecision } from "./EvaluatedDecision";
 
 export class DecisionSelector {
-
   constructor(private readonly priority = new DecisionPriority()) {}
 
-  public select(decisions: Decision[]): Decision {
-
-    if (decisions.length === 0) {
-
-      throw new Error(
-        "Cannot select from an empty decision list"
-      );
-
+  public select(evaluatedDecisions: EvaluatedDecision[]): EvaluatedDecision {
+    if (evaluatedDecisions.length === 0) {
+      throw new Error("Cannot select from an empty decision list");
     }
 
-    return decisions.reduce((best, current) => {
-      if (current.utility > best.utility) {
+    return evaluatedDecisions.reduce((best, current) => {
+      const currentPriority = this.priority.get(current.decision.type);
+      const bestPriority = this.priority.get(best.decision.type);
 
+      // Transforma a prioridade em um multiplicador matemático real
+      // Ex: SHOT (prioridade 3) = 1 + (3 * 0.5) = multiplicador de 2.5x
+      const currentWeight = 1 + (currentPriority * 0.5);
+      const bestWeight = 1 + (bestPriority * 0.5);
+
+      const currentWeightedScore = current.finalScore * currentWeight;
+      const bestWeightedScore = best.finalScore * bestWeight;
+
+      if (currentWeightedScore > bestWeightedScore) {
         return current;
-
-      }
-
-      if (current.utility === best.utility) {
-        return this.isHigherPriority(current, best)
-          ? current
-          : best;
       }
 
       return best;
     });
   }
-
-  private isHigherPriority(
-    current: Decision,
-    best: Decision
-  ): boolean {
-
-    return (
-
-      this.priority.get(
-        current.type
-      ) >
-
-      this.priority.get(
-        best.type
-      )
-
-    );
-
-  }
-
 }

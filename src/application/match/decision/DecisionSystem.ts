@@ -78,10 +78,7 @@ export class DecisionSystem {
     });
 
     // Select the decision with the highest final score (utility - risk.total).
-    const best = evaluated.reduce((a, b) =>
-      b.finalScore > a.finalScore ? b : a
-    );
-
+    const best = this.selector.select(evaluated);
     return best.decision;
 
   }

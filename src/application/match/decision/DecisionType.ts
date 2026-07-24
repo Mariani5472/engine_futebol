@@ -10,5 +10,6 @@ export enum DecisionType {
   MARK,
   COVER,
   MOVE,
-  RECEIVE
+  RECEIVE,
+  HEADER
 }

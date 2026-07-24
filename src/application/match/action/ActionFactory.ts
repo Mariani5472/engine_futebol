@@ -45,6 +45,9 @@ export class ActionFactory {
       case DecisionType.DRIBBLE:
         return this.dribble.execute(context);
 
+      case DecisionType.HEADER:
+        return this.header.execute(context);
+
       case DecisionType.TACKLE:
         return this.tackle.execute(context);
 
