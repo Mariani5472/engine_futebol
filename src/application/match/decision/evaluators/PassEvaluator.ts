@@ -60,7 +60,7 @@ export class PassEvaluator implements ActionEvaluator {
     const distance = playerPosition.distanceTo(teammatePosition);
 
     // Short passes are safer and generally preferable.
-    const distanceScore = Math.max(0, 20 - distance * 0.6);
+    const distanceScore = Math.max(0, 18 - distance * 0.55);
 
     // Progress bonus (UNCLAMPED): forward passes earn a bonus; backward passes
     // incur a penalty. This strongly discourages recycling backward.
@@ -68,7 +68,7 @@ export class PassEvaluator implements ActionEvaluator {
     const attackingDir = (isHome ? context.match.home : context.match.away).attackingDirection;
     const forwardProgress = (teammatePosition.x - playerPosition.x) * attackingDir;
     // Scale: +1m forward = +0.8, -1m backward = -0.8. Cap at ±20.
-    const progressBonus = Math.max(-20, Math.min(20, forwardProgress * 0.8));
+    const progressBonus = Math.max(-15, Math.min(25, forwardProgress * 0.65))
 
     // Certainty: less certain about teammate position = riskier pass.
     const certaintyBonus = certainty * 5;

@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import {
   MatchEvent, MatchPeriod, Milliseconds,
   PeriodEndedEvent, PeriodStartedEvent
@@ -57,11 +58,10 @@ export interface MatchResult {
 export class MatchEngine {
 
   private readonly initializer = new MatchInitializer();
-  private DELTA_TIME = DEFAULT_DELTA_TIME;
 
   public simulate(config: SimulationConfig): MatchResult {
     const rng = new SeededRandom(config.seed);
-    const deltaTime = this.DELTA_TIME;
+    const deltaTime = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
     const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
     const halfTime = matchDuration / 2;
 

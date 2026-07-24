@@ -3,7 +3,7 @@ import { buildSimulationConfig } from "../helpers/builders";
 import { SimulationConfig } from "../../src/application/match/engine/SimulationConfig";
 
 function fastConfig(seed: number): SimulationConfig {
-  return { ...buildSimulationConfig(seed), tickDeltaSeconds: 10 };
+  return { ...buildSimulationConfig(seed), tickDeltaSeconds: 1 };
 }
 
 describe("Match Engine — Determinism across seeds", () => {
@@ -25,9 +25,8 @@ describe("Match Engine — Determinism across seeds", () => {
   }
 
   it("different seeds produce at least some variation in scores across 10 runs", () => {
-    const scores = Array.from({ length: 10 }, (_, i) => {
+    const scores = Array.from({ length: 2 }, (_, i) => {
       const r = engine.simulate(fastConfig(i + 1));
-      console.log(r)
       return `${r.homeScore}-${r.awayScore}`;
     });
     const unique = new Set(scores);

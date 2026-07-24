@@ -8,7 +8,7 @@ import { SimulationConfig } from "../../src/application/match/engine/SimulationC
  * timeout budget while exercising the full engine pipeline.
  */
 function fastConfig(seed: number): SimulationConfig {
-  return { ...buildSimulationConfig(seed), tickDeltaSeconds: 10 };
+  return { ...buildSimulationConfig(seed), tickDeltaSeconds: 1 };
 }
 
 describe("MatchEngine — full match simulation", () => {

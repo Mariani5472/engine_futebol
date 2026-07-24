@@ -76,7 +76,14 @@ export class TacticalEngine {
   ): Vector2 {
 
     const isAttacking = state.attackingTeam === team;
-    const base = isAttacking ? assignment.attackingAnchor : assignment.defensiveAnchor;
+    let base = isAttacking ? assignment.attackingAnchor : assignment.defensiveAnchor;
+
+    if (isAttacking && state.ball.owner && team.players.includes(state.ball.owner)) {
+      base = new Vector2(
+        base.x + (team.attackingDirection * 8),
+        base.y
+      );
+    }
 
     if (team.attackingDirection === 1) {
       return new Vector2(base.x, base.y);

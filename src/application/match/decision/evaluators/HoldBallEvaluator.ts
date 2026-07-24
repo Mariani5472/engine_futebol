@@ -27,7 +27,7 @@ export class HoldBallEvaluator implements ActionEvaluator {
 
     // Low base: hold-ball is only the best choice when nothing else is viable.
     // Composure and strength make shielding more effective under pressure.
-    const base = 12 + composure * 8 + strength * 5;
+    const base = 8 + composure * 6 + strength * 4;
 
     return new UtilityScore(base, 0, 0, 0, [
       { code: "COMPOSURE", value: composure * 8 },

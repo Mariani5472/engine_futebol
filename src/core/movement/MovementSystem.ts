@@ -11,7 +11,7 @@ export class MovementSystem {
 
     this.movePlayers(state, deltaTime);
 
-    this.moveBall(state, deltaTime);
+    // this.moveBall(state, deltaTime);
 
   }
 

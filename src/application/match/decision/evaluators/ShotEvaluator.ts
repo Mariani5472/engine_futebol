@@ -5,6 +5,8 @@ import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 import { Vector2 } from "../../../../core/geometry/Vector2";
+import { FieldThirdResolver } from "../../../../core/pitch/FieldThirdResolver";
+import { FieldThird } from "../../../../domain";
 
 /**
  * Shot evaluator — produces a utility score for attempting a shot on goal.
@@ -59,10 +61,18 @@ export class ShotEvaluator implements ActionEvaluator {
     // Pressure from nearby opponents (penalises shooting under pressure).
     const pressure = this.calculatePressure(context);
 
+
+    const fieldThird = this.getFieldThird(
+      match.pitch.length,
+      player.position,
+      attackingDirection
+    );
+    const attackingBonus = fieldThird === "ATTACKING" ? 28 : 0;
+
     // Angle bonus: central shots better than wide angles.
     const angleBonus = this.calculateAngleBonus(player.position, goalCenter, match.pitch);
 
-    const base = distanceBase * roleQuality * attrScore * (1 - pressure * 0.4) + angleBonus;
+    const base = distanceBase * roleQuality * attrScore * (1 - pressure * 0.4) + angleBonus + attackingBonus;
 
     return new UtilityScore(base, 0, 0, 0, [
       { code: "DISTANCE_BASE", value: distanceBase },
@@ -82,30 +92,16 @@ export class ShotEvaluator implements ActionEvaluator {
     finishing: number,
     longShots: number
   ): number {
-    if (distance <= 6) {
-      // Inside 6-yard box: tap-in, should almost always shoot.
-      return 120;
-    }
-    if (distance <= 12) {
-      // Penalty spot / close range: very high value.
-      return 90 + finishing * 1.5;
-    }
-    if (distance <= 20) {
-      // Inside penalty box: strong shot opportunity.
-      return 65 + finishing * 1.0;
-    }
-    if (distance <= 30) {
-      // Good shooting range.
-      return 35 + finishing * 0.8;
-    }
-    if (distance <= 40) {
-      // Long range — only worth it with good longShots skill.
-      const longShotBonus = Math.max(0, longShots - 10) * 1.5;
-      return 10 + longShotBonus;
-    }
-    // Beyond 40m — rarely worthwhile; only specialists.
-    const longShotBonus = Math.max(0, longShots - 15) * 0.8;
-    return Math.max(0, longShotBonus - 5);
+    if (distance <= 6) return 130;                    // tap-ins
+    if (distance <= 12) return 95 + finishing * 1.6;
+    if (distance <= 20) return 72 + finishing * 1.2;  // penalty area boost
+    if (distance <= 28) return 48 + finishing * 0.9;  // boa faixa
+
+    // Long range
+    const longBonus = Math.max(0, (longShots - 8) * 1.4);
+    if (distance <= 38) return 18 + longBonus;
+
+    return Math.max(0, longBonus * 0.6 - 8);
   }
 
   private calculatePressure(context: DecisionContext): number {
@@ -145,5 +141,14 @@ export class ShotEvaluator implements ActionEvaluator {
       ? pitch.geometry.rightGoal
       : pitch.geometry.leftGoal;
     return new Vector2(goal.center.x, goal.center.y);
+  }
+
+  private getFieldThird(
+    pitchLength: number,
+    position: Vector2,
+    attackingDirection: 1 | -1
+  ): FieldThird {
+    const third = new FieldThirdResolver(pitchLength);
+    return third.resolve(position, attackingDirection)
   }
 }
