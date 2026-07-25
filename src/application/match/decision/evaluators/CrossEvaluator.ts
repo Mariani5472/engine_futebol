@@ -4,6 +4,7 @@ import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
+import { Vector2 } from "../../../../core/geometry/Vector2";
 
 /**
  * Evaluates crosses from wide attacking areas.
@@ -54,10 +55,12 @@ export class CrossEvaluator implements ActionEvaluator {
     const attrs = player.player.attributes;
 
     const forwardTargetDistance = (targetPosition.x - player.position.x) * attackingDirection;
-    if (forwardTargetDistance < -5) return new UtilityScore(0, 0, 0, 0);
+    if (forwardTargetDistance < -5) return new UtilityScore(0, 0, 0, 0, []);
 
-    const distance = player.position.distanceTo(targetPosition);
-    if (distance > 45) return new UtilityScore(0, 0, 0, 0);
+    const distance = player.position.distanceTo(
+      new Vector2(targetPosition.x, targetPosition.y)
+    );
+    if (distance > 45) return new UtilityScore(0, 0, 0, 0, []);
 
     const targetForwardDistance = (targetPosition.x - match.pitch.length) * attackingDirection;
     const isNearGoal = targetForwardDistance > -22;

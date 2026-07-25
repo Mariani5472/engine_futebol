@@ -95,10 +95,10 @@ export class ClearEvaluator implements ActionEvaluator {
 
   private calculateClearanceQuality(player: PlayerMatchState): number {
     const technical = player.player.attributes.technical;
-    const kicking = technical.kicking / 20;
+    const tackling = technical.tackling / 20;
     const technique = technical.technique / 20;
 
-    return kicking * 0.6 + technique * 0.4;
+    return tackling * 0.6 + technique * 0.4;
   }
 
   private hasSafeTeammate(
