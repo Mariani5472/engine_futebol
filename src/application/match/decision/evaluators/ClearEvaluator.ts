@@ -1,3 +1,4 @@
+import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import { ActionEvaluator } from "../ActionEvaluator";
 import { Decision } from "../Decision";
 import { DecisionContext } from "../DecisionContext";
@@ -18,14 +19,22 @@ export class ClearEvaluator implements ActionEvaluator {
     const opponents = isHome ? match.away.players : match.home.players;
 
     const pressure = this.calculatePressure(player, opponents);
-    const danger = this.calculateDanger(player, match.pitch.length, team.attackingDirection);
+    const danger = this.calculateDanger(
+      player,
+      match.pitch.length,
+      team.attackingDirection
+    );
     const clearanceQuality = this.calculateClearanceQuality(player);
 
     const score = this.scoreClearance({
       pressure,
       danger,
       clearanceQuality,
-      hasSafeTeammate: this.hasSafeTeammate(player, team.players, opponents),
+      hasSafeTeammate: this.hasSafeTeammate(
+        player,
+        team.players,
+        opponents
+      ),
     });
 
     if (score.total <= 0) return [];
@@ -58,8 +67,8 @@ export class ClearEvaluator implements ActionEvaluator {
   }
 
   private calculatePressure(
-    player: typeof arguments extends never ? never : any,
-    opponents: any[]
+    player: PlayerMatchState,
+    opponents: PlayerMatchState[]
   ): number {
     let pressure = 0;
 
@@ -74,7 +83,7 @@ export class ClearEvaluator implements ActionEvaluator {
   }
 
   private calculateDanger(
-    player: any,
+    player: PlayerMatchState,
     pitchLength: number,
     attackingDirection: 1 | -1
   ): number {
@@ -84,7 +93,7 @@ export class ClearEvaluator implements ActionEvaluator {
     return Math.max(0, 1 - distanceToOwnGoal / 35);
   }
 
-  private calculateClearanceQuality(player: any): number {
+  private calculateClearanceQuality(player: PlayerMatchState): number {
     const technical = player.player.attributes.technical;
     const kicking = technical.kicking / 20;
     const technique = technical.technique / 20;
@@ -93,9 +102,9 @@ export class ClearEvaluator implements ActionEvaluator {
   }
 
   private hasSafeTeammate(
-    player: any,
-    teammates: any[],
-    opponents: any[]
+    player: PlayerMatchState,
+    teammates: PlayerMatchState[],
+    opponents: PlayerMatchState[]
   ): boolean {
     return teammates.some((teammate) => {
       if (teammate === player) return false;
@@ -104,7 +113,10 @@ export class ClearEvaluator implements ActionEvaluator {
         (opponent) => teammate.position.distanceTo(opponent.position) < 5
       );
 
-      return !teammatePressure && player.position.distanceTo(teammate.position) < 30;
+      return (
+        !teammatePressure &&
+        player.position.distanceTo(teammate.position) < 30
+      );
     });
   }
 }
