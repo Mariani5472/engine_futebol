@@ -8,7 +8,6 @@ import { Team } from "../../src/domain/team";
 import { Tactic, TacticalShape } from "../../src/domain/tactics";
 import { Pitch } from "../../src/domain/pitch";
 import { Referee } from "../../src/domain/referee";
-import { Match } from "../../src/domain/match";
 import { Vector2 } from "../../src/core/geometry/Vector2";
 import { PlayerMatchState } from "../../src/core/movement/PlayerMatchState";
 import { BallMatchState, BallState } from "../../src/core/movement/BallMatchState";
@@ -164,21 +163,21 @@ export function buildPlayerMatchState(overrides: {
 function buildDefaultShape(isGk: boolean = false): TacticalShape {
   const assignments = isGk
     ? [
-        { id: "gk", position: "GK", role: "GOALKEEPER", defensiveAnchor: { x: 3, y: 34 }, attackingAnchor: { x: 5, y: 34 }, width: 5, depth: 5, freedom: 1 },
-        { id: "dc1", position: "DC", role: "CENTRE_BACK", defensiveAnchor: { x: 20, y: 26 }, attackingAnchor: { x: 25, y: 26 }, width: 10, depth: 10, freedom: 2 },
-        { id: "dc2", position: "DC", role: "CENTRE_BACK", defensiveAnchor: { x: 20, y: 42 }, attackingAnchor: { x: 25, y: 42 }, width: 10, depth: 10, freedom: 2 },
-        { id: "dl", position: "DL", role: "FULL_BACK", defensiveAnchor: { x: 20, y: 10 }, attackingAnchor: { x: 30, y: 10 }, width: 8, depth: 8, freedom: 3 },
-        { id: "dr", position: "DR", role: "FULL_BACK", defensiveAnchor: { x: 20, y: 58 }, attackingAnchor: { x: 30, y: 58 }, width: 8, depth: 8, freedom: 3 },
-        { id: "ml", position: "ML", role: "WIDE_MIDFIELDER", defensiveAnchor: { x: 40, y: 12 }, attackingAnchor: { x: 55, y: 12 }, width: 8, depth: 8, freedom: 5 },
-        { id: "mc1", position: "MC", role: "CENTRAL_MIDFIELDER", defensiveAnchor: { x: 40, y: 27 }, attackingAnchor: { x: 55, y: 27 }, width: 10, depth: 10, freedom: 4 },
-        { id: "mc2", position: "MC", role: "CENTRAL_MIDFIELDER", defensiveAnchor: { x: 40, y: 41 }, attackingAnchor: { x: 55, y: 41 }, width: 10, depth: 10, freedom: 4 },
-        { id: "mr", position: "MR", role: "WIDE_MIDFIELDER", defensiveAnchor: { x: 40, y: 56 }, attackingAnchor: { x: 55, y: 56 }, width: 8, depth: 8, freedom: 5 },
-        { id: "st1", position: "ST", role: "STRIKER", defensiveAnchor: { x: 65, y: 30 }, attackingAnchor: { x: 75, y: 30 }, width: 12, depth: 12, freedom: 6 },
-        { id: "st2", position: "ST", role: "STRIKER", defensiveAnchor: { x: 65, y: 38 }, attackingAnchor: { x: 75, y: 38 }, width: 12, depth: 12, freedom: 6 },
-      ]
+      { id: "gk", position: "GK", role: "GOALKEEPER", defensiveAnchor: { x: 3, y: 34 }, attackingAnchor: { x: 5, y: 34 }, width: 5, depth: 5, freedom: 1 },
+      { id: "dc1", position: "DC", role: "CENTRE_BACK", defensiveAnchor: { x: 20, y: 26 }, attackingAnchor: { x: 25, y: 26 }, width: 10, depth: 10, freedom: 2 },
+      { id: "dc2", position: "DC", role: "CENTRE_BACK", defensiveAnchor: { x: 20, y: 42 }, attackingAnchor: { x: 25, y: 42 }, width: 10, depth: 10, freedom: 2 },
+      { id: "dl", position: "DL", role: "FULL_BACK", defensiveAnchor: { x: 20, y: 10 }, attackingAnchor: { x: 30, y: 10 }, width: 8, depth: 8, freedom: 3 },
+      { id: "dr", position: "DR", role: "FULL_BACK", defensiveAnchor: { x: 20, y: 58 }, attackingAnchor: { x: 30, y: 58 }, width: 8, depth: 8, freedom: 3 },
+      { id: "ml", position: "ML", role: "WIDE_MIDFIELDER", defensiveAnchor: { x: 40, y: 12 }, attackingAnchor: { x: 55, y: 12 }, width: 8, depth: 8, freedom: 5 },
+      { id: "mc1", position: "MC", role: "CENTRAL_MIDFIELDER", defensiveAnchor: { x: 40, y: 27 }, attackingAnchor: { x: 55, y: 27 }, width: 10, depth: 10, freedom: 4 },
+      { id: "mc2", position: "MC", role: "CENTRAL_MIDFIELDER", defensiveAnchor: { x: 40, y: 41 }, attackingAnchor: { x: 55, y: 41 }, width: 10, depth: 10, freedom: 4 },
+      { id: "mr", position: "MR", role: "WIDE_MIDFIELDER", defensiveAnchor: { x: 40, y: 56 }, attackingAnchor: { x: 55, y: 56 }, width: 8, depth: 8, freedom: 5 },
+      { id: "st1", position: "ST", role: "STRIKER", defensiveAnchor: { x: 65, y: 30 }, attackingAnchor: { x: 75, y: 30 }, width: 12, depth: 12, freedom: 6 },
+      { id: "st2", position: "ST", role: "STRIKER", defensiveAnchor: { x: 65, y: 38 }, attackingAnchor: { x: 75, y: 38 }, width: 12, depth: 12, freedom: 6 },
+    ]
     : [
-        { id: "mc", position: "MC", role: "CENTRAL_MIDFIELDER", defensiveAnchor: { x: 40, y: 34 }, attackingAnchor: { x: 55, y: 34 }, width: 10, depth: 10, freedom: 4 },
-      ];
+      { id: "mc", position: "MC", role: "CENTRAL_MIDFIELDER", defensiveAnchor: { x: 40, y: 34 }, attackingAnchor: { x: 55, y: 34 }, width: 10, depth: 10, freedom: 4 },
+    ];
 
   return { name: "4-4-2", assignments: assignments as any };
 }
