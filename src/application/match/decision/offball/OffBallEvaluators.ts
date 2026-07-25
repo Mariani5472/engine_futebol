@@ -1,12 +1,14 @@
 import { ActionEvaluator } from "../ActionEvaluator";
-import { TackleEvaluator } from "../evaluators/TackleEvaluator";
-import { PressEvaluator } from "../evaluators/PressEvaluator";
 import { CoverEvaluator } from "../evaluators/CoverEvaluator";
+import { PressEvaluator } from "../evaluators/PressEvaluator";
+import { ReceiveEvaluator } from "../evaluators/ReceiveEvaluator";
+import { TackleEvaluator } from "../evaluators/TackleEvaluator";
 
 export function createOffBallEvaluators(): ActionEvaluator[] {
   return [
     new PressEvaluator(),
     new CoverEvaluator(),
     new TackleEvaluator(),
+    new ReceiveEvaluator(),
   ];
 }
