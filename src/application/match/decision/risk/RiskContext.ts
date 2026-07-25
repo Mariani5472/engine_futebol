@@ -8,6 +8,11 @@ export class RiskContext {
     public readonly decision: Decision,
     public readonly player: PlayerMatchState,
     public readonly decisionContext: DecisionContext,
-    public readonly fieldThird: FieldThird
+    public readonly fieldThird: FieldThird,
+    /**
+     * Personality adjustment in the same scale produced by PersonalityModifier.
+     * Positive values mean the player tolerates more risk.
+     */
+    public readonly personalityRiskToleranceModifier: number = 0
   ) {}
 }
