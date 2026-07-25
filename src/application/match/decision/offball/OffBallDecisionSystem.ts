@@ -63,7 +63,7 @@ export class OffBallDecisionSystem {
       : context.match.away;
 
     const fieldThird = this.fieldThirdResolver.resolve(
-      context.player.position as PlayerPosition,
+      context.player.position,
       teamMatchState.attackingDirection
     );
 
