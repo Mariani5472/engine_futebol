@@ -4,7 +4,6 @@ import { Decision } from "./Decision";
 import { DecisionContext } from "./DecisionContext";
 import { DecisionFilter } from "./DecisionFilter";
 import { DecisionSelector } from "./DecisionSelector";
-import { DecisionType } from "./DecisionType";
 import { EvaluatedDecision } from "./EvaluatedDecision";
 import { DefaultPersonalityModifier } from "./personality/DefaultPersonalityModifier";
 import { PersonalityModifier } from "./personality/PersonalityModifier";
@@ -13,7 +12,6 @@ import { RiskCalculator } from "./risk/RiskCalculator";
 import { RiskContext } from "./risk/RiskContext";
 
 export class DecisionSystem {
-
   private readonly fieldThirdResolver: FieldThirdResolver;
   private readonly personalityModifier: PersonalityModifier;
   private readonly riskCalculator: RiskCalculator;
@@ -32,31 +30,33 @@ export class DecisionSystem {
   }
 
   public decide(context: DecisionContext): Decision {
-
     const candidates: Decision[] = [];
 
     for (const evaluator of this.evaluators) {
       candidates.push(...evaluator.evaluate(context));
     }
 
-    // Apply personality bias to each candidate's utility.
-    const biasedCandidates = candidates.map(decision => {
+    const biasedCandidates = candidates.map((decision) => {
       const bias = this.personalityModifier.calculate({
         player: context.player,
         decisionType: decision.type
       });
 
-      return new Decision(
-        decision.type,
-        decision.utility + bias.utilityModifier,
-        decision.targetId
-      );
+      return {
+        decision: new Decision(
+          decision.type,
+          decision.utility + bias.utilityModifier,
+          decision.targetId
+        ),
+        riskToleranceModifier: bias.riskToleranceModifier
+      };
     });
 
-    // Legal filter (also provides fallback).
-    const valid = this.filter.filter(biasedCandidates, context);
+    const valid = this.filter.filter(
+      biasedCandidates.map((candidate) => candidate.decision),
+      context
+    );
 
-    // Evaluate risk for each valid decision and score by utility – risk.
     const teamMatchState = context.match.home.players.includes(context.player)
       ? context.match.home
       : context.match.away;
@@ -66,21 +66,26 @@ export class DecisionSystem {
       teamMatchState.attackingDirection
     );
 
-    const evaluated: EvaluatedDecision[] = valid.map(decision => {
+    const evaluated: EvaluatedDecision[] = valid.map((decision) => {
+      const riskToleranceModifier = biasedCandidates.find(
+        (candidate) =>
+          candidate.decision.type === decision.type &&
+          candidate.decision.targetId === decision.targetId
+      )?.riskToleranceModifier ?? 0;
+
       const riskContext = new RiskContext(
         decision,
         context.player,
         context,
-        fieldThird
+        fieldThird,
+        riskToleranceModifier
       );
+
       const risk = this.riskCalculator.calculate(riskContext);
       return new EvaluatedDecision(decision, risk);
     });
 
-    // Select the decision with the highest final score (utility - risk.total).
     const best = this.selector.select(evaluated);
     return best.decision;
-
   }
-
 }
