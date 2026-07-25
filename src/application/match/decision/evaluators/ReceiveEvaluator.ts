@@ -17,13 +17,13 @@ export class ReceiveEvaluator implements ActionEvaluator {
     const { player, match } = context;
 
     if (player.hasBall) return [];
-    if (match.ball.state !== BallState.IN_FLIGHT && match.ball.state !== BallState.FREE) {
+
+    if (
+      match.ball.state !== BallState.IN_FLIGHT &&
+      match.ball.state !== BallState.FREE
+    ) {
       return [];
     }
-
-    const team = match.home.players.includes(player)
-      ? match.home
-      : match.away;
 
     const opponents = match.home.players.includes(player)
       ? match.away.players
@@ -47,8 +47,11 @@ export class ReceiveEvaluator implements ActionEvaluator {
     if (distanceToBall > 18) return 0;
 
     const distanceScore = Math.max(0, 30 - distanceToBall * 2.2);
-
-    const trajectoryScore = this.calculateTrajectoryScore(player, ball.velocity);
+    const trajectoryScore = this.calculateTrajectoryScore(
+      player,
+      ball.velocity.x,
+      ball.velocity.y
+    );
     const spaceScore = this.calculateSpaceScore(player, opponents);
     const technicalScore = this.calculateTechnicalQuality(player);
     const pressurePenalty = this.calculatePressurePenalty(player, opponents);
@@ -65,19 +68,21 @@ export class ReceiveEvaluator implements ActionEvaluator {
 
   private calculateTrajectoryScore(
     player: PlayerMatchState,
-    velocity: { x: number; y: number }
+    velocityX: number,
+    velocityY: number
   ): number {
-    const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2);
+    const speed = Math.sqrt(velocityX ** 2 + velocityY ** 2);
 
     if (speed < 0.1) return 8;
 
     const toBall = player.position.subtract(player.targetPosition);
-    const dot = toBall.x * velocity.x + toBall.y * velocity.y;
     const magnitude = Math.sqrt(toBall.x ** 2 + toBall.y ** 2) * speed;
 
     if (magnitude === 0) return 8;
 
-    const alignment = dot / magnitude;
+    const alignment =
+      (toBall.x * velocityX + toBall.y * velocityY) / magnitude;
+
     return Math.max(0, alignment) * 18;
   }
 
@@ -99,9 +104,10 @@ export class ReceiveEvaluator implements ActionEvaluator {
 
   private calculateTechnicalQuality(player: PlayerMatchState): number {
     const technique = player.player.attributes.technical.technique / 20;
-    const firstTouch = player.player.attributes.technical.firstTouch / 20;
+    const anticipation = player.player.attributes.mental.anticipation / 20;
+    const composure = player.player.attributes.mental.composure / 20;
 
-    return technique * 8 + firstTouch * 12;
+    return technique * 8 + anticipation * 8 + composure * 4;
   }
 
   private calculatePressurePenalty(
