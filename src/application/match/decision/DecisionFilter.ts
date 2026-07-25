@@ -10,13 +10,11 @@ const TACKLE_REACH_METRES = 3;
  * game context, then falls back gracefully when no legal options exist.
  */
 export class DecisionFilter {
-
   public filter(
     decisions: Decision[],
     context: DecisionContext
   ): Decision[] {
-
-    const legal = decisions.filter(d => this.isLegal(d, context));
+    const legal = decisions.filter((d) => this.isLegal(d, context));
 
     if (legal.length > 0) {
       return legal;
@@ -29,36 +27,49 @@ export class DecisionFilter {
         1
       )
     ];
-
   }
 
   private isLegal(
     decision: Decision,
     context: DecisionContext
   ): boolean {
-
     const hasBall = context.player.hasBall;
 
     switch (decision.type) {
-
       // Ball-carrier actions — only when you have the ball.
       case DecisionType.PASS:
+      case DecisionType.CROSS:
       case DecisionType.SHOT:
       case DecisionType.DRIBBLE:
       case DecisionType.HOLD_BALL:
       case DecisionType.CLEAR:
+      case DecisionType.HEADER:
+      case DecisionType.CONTROL:
+      case DecisionType.SKILL_MOVE:
+      case DecisionType.RECEIVE:
+      case DecisionType.SET_PIECE:
+      case DecisionType.GK_CLAIM:
+      case DecisionType.GK_DISTRIBUTE:
+      case DecisionType.FAKE:
         return hasBall;
 
       // Defensive actions — only when you don't have the ball.
       case DecisionType.TACKLE:
+      case DecisionType.INTERCEPT:
         return !hasBall && this.canReachBallCarrier(context);
+
+      case DecisionType.BLOCK:
+        return !hasBall;
 
       case DecisionType.PRESS:
       case DecisionType.COVER:
       case DecisionType.MARK:
-      case DecisionType.RECEIVE:
       case DecisionType.MOVE:
+      case DecisionType.POSITION:
         return !hasBall;
+
+      case DecisionType.TACTICAL_FOUL:
+        return !hasBall && this.canReachBallCarrier(context);
 
       // NONE is never legal.
       case DecisionType.NONE:
@@ -67,7 +78,6 @@ export class DecisionFilter {
       default:
         return decision.utility > 0;
     }
-
   }
 
   private canReachBallCarrier(context: DecisionContext): boolean {
@@ -77,5 +87,4 @@ export class DecisionFilter {
     const dist = context.player.position.distanceTo(ball.owner.position);
     return dist <= TACKLE_REACH_METRES;
   }
-
 }
