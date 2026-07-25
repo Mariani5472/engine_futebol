@@ -19,14 +19,11 @@ import { MemorySystem } from "../awareness/memory/MemorySystem";
 import { PredictionSystem } from "../awareness/prediction/PredictionSystem";
 import { PerceptionSystem } from "../perception/PerceptionSystem";
 import { DecisionContext } from "../decision/DecisionContext";
-import { DecisionSystem } from "../decision/DecisionSystem";
-import { HoldBallEvaluator } from "../decision/evaluators/HoldBallEvaluator";
-import { PassEvaluator } from "../decision/evaluators/PassEvaluator";
-import { ShotEvaluator } from "../decision/evaluators/ShotEvaluator";
-import { DribbleEvaluator } from "../decision/evaluators/DribbleEvaluator";
-import { TackleEvaluator } from "../decision/evaluators/TackleEvaluator";
-import { PressEvaluator } from "../decision/evaluators/PressEvaluator";
-import { CoverEvaluator } from "../decision/evaluators/CoverEvaluator";
+import { DecisionType } from "../decision/DecisionType";
+import { PossessionDecisionSystem } from "../decision/possession/PossessionDecisionSystem";
+import { OffBallDecisionSystem } from "../decision/offball/OffBallDecisionSystem";
+import { createPossessionEvaluators } from "../decision/possession/PossessionEvaluators";
+import { createOffBallEvaluators } from "../decision/offball/OffBallEvaluators";
 import { ActionFactory } from "../action/ActionFactory";
 import { ActionContext } from "../action/ActionContext";
 import { BallPhysicsSystem } from "../physics/BallPhysicsSystem";
@@ -56,7 +53,6 @@ export interface MatchResult {
 }
 
 export class MatchEngine {
-
   private readonly initializer = new MatchInitializer();
 
   public simulate(config: SimulationConfig): MatchResult {
@@ -73,16 +69,16 @@ export class MatchEngine {
       new MemorySystem(),
       new PredictionSystem()
     );
-    const decisionSystem = new DecisionSystem(
-      [
-        new PassEvaluator(),
-        new ShotEvaluator(),
-        new DribbleEvaluator(),
-        new HoldBallEvaluator(),
-        new TackleEvaluator(),
-        new PressEvaluator(),
-        new CoverEvaluator(),
-      ],
+    const possessionDecisionSystem = new PossessionDecisionSystem(
+      createPossessionEvaluators(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      config.pitch.length
+    );
+    const offBallDecisionSystem = new OffBallDecisionSystem(
+      createOffBallEvaluators(),
       undefined,
       undefined,
       undefined,
@@ -111,8 +107,6 @@ export class MatchEngine {
 
     // Main simulation loop.
     while (state.currentSecond < matchDuration) {
-
-      // Handle half time transition.
       if (!halfTimeHandled && state.currentSecond >= halfTime) {
         allEvents.push(this.makePeriodEnded("FIRST_HALF", state.currentSecond));
         period = "SECOND_HALF";
@@ -123,7 +117,8 @@ export class MatchEngine {
 
       const tickEvents = this.runTick(
         state, awarenessMap, rng, deltaTime,
-        perceptionSystem, cognitiveSystem, decisionSystem,
+        perceptionSystem, cognitiveSystem,
+        possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
         teamBehaviour, movementSystem, possessionSystem,
         tick, period
@@ -164,7 +159,8 @@ export class MatchEngine {
     deltaTime: number,
     perceptionSystem: PerceptionSystem,
     cognitiveSystem: CognitiveSystem,
-    decisionSystem: DecisionSystem,
+    possessionDecisionSystem: PossessionDecisionSystem,
+    offBallDecisionSystem: OffBallDecisionSystem,
     actionFactory: ActionFactory,
     ballPhysics: BallPhysicsSystem,
     tacticalEngine: TacticalEngine,
@@ -174,13 +170,10 @@ export class MatchEngine {
     tick: number,
     period: MatchPeriod
   ): MatchEvent[] {
-
     const events: MatchEvent[] = [];
 
-    // 1. Perception — what can each player currently see.
     const perceptions = perceptionSystem.update(state);
 
-    // 2. Cognition — update memory and predictions from perception.
     for (const player of this.allPlayers(state)) {
       const awareness = awarenessMap.get(player.player.id);
       const perception = perceptions.get(player.player.id);
@@ -195,13 +188,15 @@ export class MatchEngine {
       } satisfies CognitiveContext);
     }
 
-    // 3. Decision + Action — each player decides and acts.
     for (const player of this.allPlayers(state)) {
       const awareness = awarenessMap.get(player.player.id);
       if (!awareness) continue;
 
       const decisionCtx = new DecisionContext(state, player, awareness, tick, deltaTime);
-      const decision = decisionSystem.decide(decisionCtx);
+      const hasBall = player.hasBall;
+      const decision = hasBall
+        ? possessionDecisionSystem.decide(decisionCtx)
+        : offBallDecisionSystem.decide(decisionCtx);
 
       const isHome = state.home.players.includes(player);
       const teamState = isHome ? state.home : state.away;
@@ -222,22 +217,11 @@ export class MatchEngine {
       events.push(...result.events);
     }
 
-    // 4. Ball physics — apply gravity, friction, bounce.
     ballPhysics.update(state, deltaTime);
-
-    // 5. Tactical engine — set tactical target positions for all players.
     tacticalEngine.update(state);
-
-    // 6. Team behaviour — press, mark, cover refinements.
     teamBehaviour.update(state);
-
-    // 7. Movement — advance players toward their targets.
     movementSystem.update(state, deltaTime);
-
-    // 8. Possession — award ball to nearest eligible player.
     possessionSystem.update(state);
-
-    // 9. Sync attacking/defending designation to possession.
     this.syncPossessionSide(state);
 
     void period;
