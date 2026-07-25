@@ -218,7 +218,6 @@ export class MatchEngine {
         attackingDirection: teamState.attackingDirection,
         matchSecond: state.currentSecond
       };
-
       const result = actionFactory.execute(decision, actionCtx);
       events.push(...result.events);
     }
