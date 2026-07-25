@@ -1,5 +1,6 @@
 import { ActionEvaluator } from "../ActionEvaluator";
 import { CoverEvaluator } from "../evaluators/CoverEvaluator";
+import { HeaderEvaluator } from "../evaluators/HeaderEvaluator";
 import { PressEvaluator } from "../evaluators/PressEvaluator";
 import { ReceiveEvaluator } from "../evaluators/ReceiveEvaluator";
 import { TackleEvaluator } from "../evaluators/TackleEvaluator";
@@ -10,5 +11,6 @@ export function createOffBallEvaluators(): ActionEvaluator[] {
     new CoverEvaluator(),
     new TackleEvaluator(),
     new ReceiveEvaluator(),
+    new HeaderEvaluator(),
   ];
 }
