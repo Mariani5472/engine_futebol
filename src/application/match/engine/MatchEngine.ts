@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import {
   MatchEvent, MatchPeriod, Milliseconds,
   PeriodEndedEvent, PeriodStartedEvent
@@ -19,7 +18,6 @@ import { MemorySystem } from "../awareness/memory/MemorySystem";
 import { PredictionSystem } from "../awareness/prediction/PredictionSystem";
 import { PerceptionSystem } from "../perception/PerceptionSystem";
 import { DecisionContext } from "../decision/DecisionContext";
-import { DecisionType } from "../decision/DecisionType";
 import { PossessionDecisionSystem } from "../decision/possession/PossessionDecisionSystem";
 import { OffBallDecisionSystem } from "../decision/offball/OffBallDecisionSystem";
 import { createPossessionEvaluators } from "../decision/possession/PossessionEvaluators";
@@ -193,8 +191,7 @@ export class MatchEngine {
       if (!awareness) continue;
 
       const decisionCtx = new DecisionContext(state, player, awareness, tick, deltaTime);
-      const hasBall = player.hasBall;
-      const decision = hasBall
+      const decision = player.hasBall
         ? possessionDecisionSystem.decide(decisionCtx)
         : offBallDecisionSystem.decide(decisionCtx);
 
