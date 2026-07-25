@@ -16,7 +16,6 @@ import { RefereeSystem } from "../referee/RefereeSystem";
  * and executes it within the given context.
  */
 export class ActionFactory {
-
   private readonly pass = new PassAction();
   private readonly shot = new ShotAction();
   private readonly dribble = new DribbleAction();
@@ -33,44 +32,61 @@ export class ActionFactory {
     decision: Decision,
     context: ActionContext
   ): ActionResult {
-
     switch (decision.type) {
-
       case DecisionType.PASS:
+      case DecisionType.CROSS:
+      case DecisionType.GK_DISTRIBUTE:
         return this.pass.execute(context);
 
       case DecisionType.SHOT:
         return this.shot.execute(context);
 
       case DecisionType.DRIBBLE:
+      case DecisionType.SKILL_MOVE:
+      case DecisionType.FAKE:
         return this.dribble.execute(context);
 
       case DecisionType.HEADER:
         return this.header.execute(context);
 
       case DecisionType.TACKLE:
+      case DecisionType.INTERCEPT:
+      case DecisionType.BLOCK:
+      case DecisionType.TACTICAL_FOUL:
         return this.tackle.execute(context);
 
       case DecisionType.CLEAR:
+      case DecisionType.GK_CLAIM:
         return this.clearance.execute(context);
 
       case DecisionType.HOLD_BALL:
+      case DecisionType.CONTROL:
+      case DecisionType.RECEIVE:
+      case DecisionType.SET_PIECE:
         return this.holdBall.execute(context);
 
-      // Defensive non-action types: set target via tactical/team behaviour,
-      // no discrete action to execute here.
+      // Off-ball / positional decisions and other non-discrete actions:
+      // they update positioning elsewhere and do not resolve as a direct action here.
       case DecisionType.PRESS:
       case DecisionType.MARK:
       case DecisionType.COVER:
-      case DecisionType.RECEIVE:
       case DecisionType.MOVE:
-        return { actorId: context.player.player.id, type: decision.type, success: true, events: [] };
+      case DecisionType.POSITION:
+      case DecisionType.NONE:
+        return {
+          actorId: context.player.player.id,
+          type: decision.type,
+          success: true,
+          events: []
+        };
 
       default:
-        return { actorId: context.player.player.id, type: DecisionType.NONE, success: false, events: [] };
-
+        return {
+          actorId: context.player.player.id,
+          type: DecisionType.NONE,
+          success: false,
+          events: []
+        };
     }
-
   }
-
 }
