@@ -1,15 +1,33 @@
 export enum DecisionType {
+  // --- Neutro / Nenhum ---
   NONE,
+
+  // --- Com a bola ---
   PASS,
+  CROSS,
   SHOT,
   DRIBBLE,
   HOLD_BALL,
   CLEAR,
-  PRESS,
-  TACKLE,
+  RECEIVE,
+  HEADER,
+  CONTROL, // first touch / trap
+  SKILL_MOVE, // feint, step-over, etc.
+
+  // --- Sem a bola ---
+  MOVE,
   MARK,
   COVER,
-  MOVE,
-  RECEIVE,
-  HEADER
+  PRESS,
+  INTERCEPT,
+  TACKLE,
+  BLOCK,
+  POSITION,
+
+  // --- Especiais ---
+  SET_PIECE,
+  GK_CLAIM,
+  GK_DISTRIBUTE,
+  FAKE,
+  TACTICAL_FOUL
 }
