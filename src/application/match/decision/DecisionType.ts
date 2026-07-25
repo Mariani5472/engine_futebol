@@ -1,8 +1,6 @@
 export enum DecisionType {
-  // --- Neutro / Nenhum ---
   NONE,
 
-  // --- Com a bola ---
   PASS,
   CROSS,
   SHOT,
@@ -11,10 +9,9 @@ export enum DecisionType {
   CLEAR,
   RECEIVE,
   HEADER,
-  CONTROL, // first touch / trap
-  SKILL_MOVE, // feint, step-over, etc.
+  CONTROL,
+  SKILL_MOVE,
 
-  // --- Sem a bola ---
   MOVE,
   MARK,
   COVER,
@@ -24,7 +21,6 @@ export enum DecisionType {
   BLOCK,
   POSITION,
 
-  // --- Especiais ---
   SET_PIECE,
   GK_CLAIM,
   GK_DISTRIBUTE,
