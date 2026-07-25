@@ -1,4 +1,5 @@
 import { ActionEvaluator } from "../ActionEvaluator";
+import { ClearEvaluator } from "../evaluators/ClearEvaluator";
 import { CrossEvaluator } from "../evaluators/CrossEvaluator";
 import { PassEvaluator } from "../evaluators/PassEvaluator";
 import { ShotEvaluator } from "../evaluators/ShotEvaluator";
@@ -12,5 +13,6 @@ export function createPossessionEvaluators(): ActionEvaluator[] {
     new ShotEvaluator(),
     new DribbleEvaluator(),
     new HoldBallEvaluator(),
+    new ClearEvaluator(),
   ];
 }
