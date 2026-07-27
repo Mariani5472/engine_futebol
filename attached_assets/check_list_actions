@@ -1,0 +1,19 @@
+1. ActionExecutionProfile
+   ✓ já iniciado
+2. Calibrar atributos nos profiles
+   ↓
+3. Action Lifecycle
+   ↓
+4. ActiveAction no PlayerMatchState
+   ↓
+5. Separar intenção de execução
+   ↓
+6. ActionExecutor
+   ↓
+7. ActionResult
+   ↓
+8. OutcomeResolver
+   ↓
+9. Refatorar ActionFactory
+   ↓
+10. Melhorar MatchEngine
