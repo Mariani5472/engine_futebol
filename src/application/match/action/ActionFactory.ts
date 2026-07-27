@@ -10,11 +10,14 @@ import { PassAction } from "./actions/PassAction";
 import { ShotAction } from "./actions/ShotAction";
 import { TackleAction } from "./actions/TackleAction";
 import { RefereeSystem } from "../referee/RefereeSystem";
-import { applyActionExecutionProfile } from "./ActionExecutionProfile";
+import { ActionExecution, ActionExecutionPhase } from "./ActionExecution";
 
 /**
- * Routes a Decision to its corresponding action implementation
- * and executes it within the given context.
+ * Creates and advances physical action executions.
+ *
+ * The factory does not resolve the football outcome immediately anymore.
+ * A decision first creates an ActionExecution. The concrete action is
+ * resolved when that execution reaches EXECUTING.
  */
 export class ActionFactory {
   private readonly pass = new PassAction();
@@ -31,26 +34,50 @@ export class ActionFactory {
 
   public execute(
     decision: Decision,
-    context: ActionContext
+    context: ActionContext,
   ): ActionResult {
-    const result = this.executeAction(decision, context);
+    const player = context.player;
 
-    // Execution cost is applied after the action has actually been selected.
-    // The outcome may fail while the physical commitment still happened.
-    applyActionExecutionProfile(
-      context.player,
-      decision.type,
-      context.tick,
-      context.deltaTime,
-      result.type !== DecisionType.NONE
+    if (player.activeAction) {
+      const phase = player.activeAction.advance(context.matchSecond);
+
+      if (phase === ActionExecutionPhase.EXECUTING) {
+        const result = this.executeAction(
+          player.activeAction.decision,
+          context,
+        );
+
+        player.activeAction.advance(context.matchSecond);
+        return result;
+      }
+
+      if (phase === ActionExecutionPhase.COMPLETED) {
+        player.activeAction = undefined;
+      }
+
+      return this.noopResult(
+        player.player.id,
+        player.activeAction?.type ?? decision.type,
+      );
+    }
+
+    const execution = ActionExecution.start(
+      decision,
+      player,
+      context.matchSecond,
     );
 
-    return result;
+    if (execution) {
+      player.activeAction = execution;
+      return this.noopResult(player.player.id, decision.type);
+    }
+
+    return this.executeAction(decision, context);
   }
 
   private executeAction(
     decision: Decision,
-    context: ActionContext
+    context: ActionContext,
   ): ActionResult {
     switch (decision.type) {
       case DecisionType.PASS:
@@ -96,7 +123,7 @@ export class ActionFactory {
           actorId: context.player.player.id,
           type: decision.type,
           success: true,
-          events: []
+          events: [],
         };
 
       case DecisionType.NONE:
@@ -104,7 +131,7 @@ export class ActionFactory {
           actorId: context.player.player.id,
           type: DecisionType.NONE,
           success: true,
-          events: []
+          events: [],
         };
 
       default:
@@ -112,8 +139,17 @@ export class ActionFactory {
           actorId: context.player.player.id,
           type: DecisionType.NONE,
           success: false,
-          events: []
+          events: [],
         };
     }
+  }
+
+  private noopResult(actorId: string, type: DecisionType): ActionResult {
+    return {
+      actorId,
+      type,
+      success: false,
+      events: [],
+    };
   }
 }
