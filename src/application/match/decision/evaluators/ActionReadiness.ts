@@ -1,14 +1,21 @@
+import { DecisionType } from "../DecisionType";
 import { DecisionContext } from "../DecisionContext";
 import { Vector2 } from "../../../../core/geometry/Vector2";
 import { getActionExecutionProfile } from "../../action/ActionExecutionProfile";
+import { ActionExecutionPhase } from "../../action/ActionExecution";
+import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 
 export class ActionReadiness {
   public static isLocked(context: DecisionContext): boolean {
-    return context.currentTick < context.player.actionLockUntil;
+    return this.currentTime(context) < context.player.actionLockUntil;
   }
 
   public static isRecovering(context: DecisionContext): boolean {
-    return context.currentTick < context.player.recoveryUntil;
+    return this.currentTime(context) < context.player.recoveryUntil;
+  }
+
+  public static currentTime(context: DecisionContext): number {
+    return context.currentTick * context.deltaTime;
   }
 
   public static canStartAction(
@@ -26,29 +33,20 @@ export class ActionReadiness {
       ? getActionExecutionProfile(previousAction)
       : undefined;
 
-    // A technically interruptible action may be replaced by a new decision.
-    // A tackle, shot, clearance, etc. keeps the player committed until recovery.
     return previousProfile?.canInterrupt === true;
   }
 
-  /**
-   * General quality of the player's current body state for technical actions.
-   * This is intentionally not an attribute: it is the transient physical state
-   * created by movement and previous actions.
-   */
   public static bodyQuality(context: DecisionContext): number {
-    const { player } = context;
-
     const stateQuality = {
       STANDING: 1.0,
       BALANCED: 1.0,
       LEANING: 0.78,
       FALLING: 0.25,
       GROUND: 0.0,
-    }[player.bodyState];
+    }[context.player.bodyState];
 
-    const balance = this.normalize(player.balance);
-    const stability = this.normalize(player.stability);
+    const balance = this.normalize(context.player.balance);
+    const stability = this.normalize(context.player.stability);
 
     return Math.max(
       0,
@@ -56,10 +54,6 @@ export class ActionReadiness {
     );
   }
 
-  /**
-   * How well the player is facing a desired direction.
-   * 1 = perfectly aligned, 0 = facing the opposite direction.
-   */
   public static orientationQuality(
     playerFacingDirection: Vector2,
     desiredDirection: Vector2
@@ -69,6 +63,68 @@ export class ActionReadiness {
 
     const dot = playerFacingDirection.normalize().dot(desiredDirection.normalize());
     return Math.max(0, Math.min(1, (dot + 1) / 2));
+  }
+
+  /**
+   * Estimates the immediate physical pressure on a player.
+   * This is intentionally local and deterministic: evaluators should not need
+   * to know the future decisions of other players to recognize danger.
+   */
+  public static opponentPressure(
+    player: PlayerMatchState,
+    opponents: PlayerMatchState[]
+  ): number {
+    let pressure = 0;
+
+    for (const opponent of opponents) {
+      const distance = player.position.distanceTo(opponent.position);
+      if (distance > 8) continue;
+
+      const proximity = Math.max(0, 1 - distance / 8);
+      pressure = Math.max(pressure, proximity);
+
+      if (opponent.activeAction?.type === DecisionType.TACKLE) {
+        pressure = Math.max(pressure, Math.max(0.75, proximity));
+      }
+    }
+
+    return Math.max(0, Math.min(1, pressure));
+  }
+
+  /**
+   * Returns how exposed a player is while preparing an action.
+   * 1 = currently preparing and highly vulnerable; 0 = no preparation window.
+   */
+  public static preparationExposure(player: PlayerMatchState): number {
+    const action = player.activeAction;
+    if (!action || action.phase !== ActionExecutionPhase.PREPARING) return 0;
+
+    const duration = action.executeAt - action.startedAt;
+    if (duration <= 0) return 1;
+
+    const elapsed = Math.max(0, Math.min(duration, action.executeAt - action.startedAt));
+    const progress = elapsed / duration;
+
+    // Early preparation is more vulnerable because the player has not yet
+    // committed the technical action. Exposure decreases as execution nears.
+    return Math.max(0.15, 1 - progress * 0.85);
+  }
+
+  /**
+   * Estimates how much a defender benefits from attacking an opponent's
+   * current action window.
+   */
+  public static interruptionOpportunity(
+    target: PlayerMatchState,
+    defender: PlayerMatchState
+  ): number {
+    const exposure = this.preparationExposure(target);
+    if (exposure <= 0) return 0;
+
+    const distance = defender.position.distanceTo(target.position);
+    const proximity = Math.max(0, 1 - distance / 5);
+
+    return Math.max(0, Math.min(1, exposure * proximity));
   }
 
   private static normalize(value: number): number {
