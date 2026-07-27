@@ -1,11 +1,24 @@
 import { Vector2 } from "../../../../core/geometry/Vector2";
 import { BallState } from "../../../../core/movement/BallMatchState";
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
-import { GoalEvent, Milliseconds, PlayerId, ShotEvent, TeamId } from "../../../../domain";
+import {
+  CornerEvent,
+  GoalEvent,
+  Milliseconds,
+  PlayerId,
+  ShotEvent,
+  TeamId,
+} from "../../../../domain";
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
+
+/** Team-wide shot cooldown after each attempt (simulation seconds). */
+const SHOT_COOLDOWN_SECONDS = 30;
+
+/** Chance an off-target shot near the goal line becomes a corner. */
+const CORNER_FROM_MISS_RATE = 0.42;
 
 export class ShotAction {
 
@@ -23,11 +36,9 @@ export class ShotAction {
     const aimOffset = random.nextFloat(-goal.width / 2.5, goal.width / 2.5);
     const aimPoint = new Vector2(goalCenter.x, goalCenter.y + aimOffset);
 
-    // Register cooldown BEFORE resolving outcome so the same possession cannot
-    // re-select SHOT on the next free tick.
     const isHome = teamSide === "HOME";
     const attacking = isHome ? match.home : match.away;
-    attacking.noteShotTaken(matchSecond, 14);
+    attacking.noteShotTaken(matchSecond, SHOT_COOLDOWN_SECONDS);
 
     const onTargetProb = this.calculateOnTargetProb(context, player, goalCenter);
     const isOnTarget = random.nextFloat(0, 1) < onTargetProb;
@@ -40,17 +51,14 @@ export class ShotAction {
     match.ball.owner = null;
 
     if (!isOnTarget) {
-      const missAngle = random.nextFloat(-0.45, 0.45);
+      const missAngle = random.nextFloat(-0.55, 0.55);
       const along = player.position.add(
-        aimPoint.subtract(player.position).multiply(random.nextFloat(0.55, 0.9)),
+        aimPoint.subtract(player.position).multiply(random.nextFloat(0.55, 1.05)),
       );
-      match.ball.position = new Vector2(
-        Math.max(0, Math.min(match.pitch.length, along.x + Math.sin(missAngle) * 4)),
-        Math.max(0, Math.min(match.pitch.width, along.y + Math.cos(missAngle) * 4)),
-      );
-      match.ball.velocity = Vector2.zero();
-      match.ball.height = 0;
-      match.ball.state = BallState.FREE;
+      let ballX = Math.max(0, Math.min(match.pitch.length, along.x + Math.sin(missAngle) * 5));
+      let ballY = Math.max(0, Math.min(match.pitch.width, along.y + Math.cos(missAngle) * 5));
+
+      const events: Array<ShotEvent | CornerEvent> = [];
 
       const shot: ShotEvent = {
         id: shotId,
@@ -63,8 +71,40 @@ export class ShotAction {
         targetX: aimPoint.x,
         targetY: aimPoint.y
       };
+      events.push(shot);
 
-      return { actorId: player.player.id, type: DecisionType.SHOT, success: false, events: [shot] };
+      // Near the goal line / end-line → chance of corner for the attacking side.
+      const endLineX = attackingDirection === 1 ? match.pitch.length : 0;
+      const distToEnd = Math.abs(ballX - endLineX);
+      const nearEnd = distToEnd < 8 || ballX <= 0.5 || ballX >= match.pitch.length - 0.5;
+      const wideOfGoal = Math.abs(ballY - goalCenter.y) > goal.width * 0.35;
+
+      if (nearEnd && (wideOfGoal || distToEnd < 3) && random.nextFloat(0, 1) < CORNER_FROM_MISS_RATE) {
+        const cornerY = ballY < goalCenter.y ? 0 : match.pitch.width;
+        ballX = endLineX;
+        ballY = cornerY;
+
+        const corner: CornerEvent = {
+          id: `corner-${teamId}-${matchSecond.toFixed(1)}`,
+          type: "CORNER",
+          timestamp: (matchSecond * 1000) as Milliseconds,
+          period,
+          teamId,
+        };
+        events.push(corner);
+      }
+
+      match.ball.position = new Vector2(ballX, ballY);
+      match.ball.velocity = Vector2.zero();
+      match.ball.height = 0;
+      match.ball.state = BallState.FREE;
+
+      return {
+        actorId: player.player.id,
+        type: DecisionType.SHOT,
+        success: false,
+        events,
+      };
     }
 
     const gkSaveProb = this.calculateGkSaveProb(context, goalCenter);
@@ -78,6 +118,45 @@ export class ShotAction {
       for (const p of [...match.home.players, ...match.away.players]) {
         p.hasBall = false;
       }
+
+      // Occasional parry for a corner instead of a clean claim.
+      const parryCorner = random.nextFloat(0, 1) < 0.18;
+      if (parryCorner) {
+        const endLineX = attackingDirection === 1 ? match.pitch.length : 0;
+        const cornerY = random.nextFloat(0, 1) < 0.5 ? 0 : match.pitch.width;
+        match.ball.owner = null;
+        match.ball.position = new Vector2(endLineX, cornerY);
+        match.ball.state = BallState.FREE;
+        match.ball.velocity = Vector2.zero();
+        match.ball.height = 0;
+
+        const shot: ShotEvent = {
+          id: shotId,
+          type: "SHOT",
+          timestamp: (matchSecond * 1000) as Milliseconds,
+          period,
+          teamId,
+          playerId,
+          result: "SAVED",
+          targetX: aimPoint.x,
+          targetY: aimPoint.y
+        };
+        const corner: CornerEvent = {
+          id: `corner-${teamId}-${matchSecond.toFixed(1)}`,
+          type: "CORNER",
+          timestamp: (matchSecond * 1000) as Milliseconds,
+          period,
+          teamId,
+        };
+        attacking.resetPossessionShotCount();
+        return {
+          actorId: player.player.id,
+          type: DecisionType.SHOT,
+          success: false,
+          events: [shot, corner],
+        };
+      }
+
       if (gk) {
         gk.hasBall = true;
         match.ball.owner = gk;
@@ -92,7 +171,6 @@ export class ShotAction {
         match.ball.owner = null;
       }
 
-      // Possession spell ends for the attacking side.
       attacking.resetPossessionShotCount();
 
       const shot: ShotEvent = {
@@ -182,8 +260,7 @@ export class ShotAction {
     const roleQuality = PositionInfluenceCalculator.shootingQuality(shooter.currentRole);
 
     const distance = shooter.position.distanceTo(goalCenter);
-    // Brasileirão ~35% on target overall; distance dominates.
-    const distanceFactor = Math.max(0.18, 1 - distance / 42);
+    const distanceFactor = Math.max(0.15, 1 - distance / 40);
 
     const opponents = context.match.home.players.includes(shooter)
       ? context.match.away.players
@@ -195,9 +272,9 @@ export class ShotAction {
         pressureCount++;
       }
     }
-    const pressurePenalty = Math.min(0.50, pressureCount * 0.14);
+    const pressurePenalty = Math.min(0.55, pressureCount * 0.15);
 
-    const fatiguePenalty = 1 - (shooter.fatigue / 100) * 0.18;
+    const fatiguePenalty = 1 - (shooter.fatigue / 100) * 0.20;
 
     const raw = (finishing * 0.50 + composure * 0.30 + technique * 0.20)
       * roleQuality
@@ -205,7 +282,8 @@ export class ShotAction {
       * (1 - pressurePenalty)
       * fatiguePenalty;
 
-    return Math.max(0.12, Math.min(0.72, raw));
+    // ~30–35% on target overall when volume is calibrated.
+    return Math.max(0.10, Math.min(0.58, raw));
   }
 
   private calculateGkSaveProb(
@@ -217,7 +295,7 @@ export class ShotAction {
     const defendingTeam = isHome ? context.match.away : context.match.home;
     const gk = defendingTeam.players.find(p => p.currentRole === "GOALKEEPER");
 
-    if (!gk) return 0.08;
+    if (!gk) return 0.10;
 
     const attrs = gk.player.attributes;
     const reflexes = attrs.goalkeeping.reflexes / 20;
@@ -228,13 +306,13 @@ export class ShotAction {
     const positionBonus = Math.max(0, 1 - gkDistToGoal / 6);
 
     const shooterDist = context.player.position.distanceTo(goalCenter);
-    const distanceSavabilityBonus = Math.min(0.22, shooterDist / 80);
+    const distanceSavabilityBonus = Math.min(0.25, shooterDist / 70);
 
     const raw = (reflexes * 0.45 + handling * 0.30 + positioning * 0.25)
-      * (0.70 + positionBonus * 0.25)
+      * (0.75 + positionBonus * 0.25)
       + distanceSavabilityBonus;
 
-    // ~70% of on-target shots saved → ~2.5 goals if ~25 shots and ~35% on target.
-    return Math.max(0.35, Math.min(0.88, raw));
+    // Higher floor so goals scale with shot volume toward ~2.5/game.
+    return Math.max(0.48, Math.min(0.90, raw));
   }
 }
