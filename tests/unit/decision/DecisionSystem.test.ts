@@ -7,10 +7,13 @@ import { HoldBallEvaluator } from "../../../src/application/match/decision/evalu
 import { TackleEvaluator } from "../../../src/application/match/decision/evaluators/TackleEvaluator";
 import { PlayerAwareness } from "../../../src/application/match/awareness/memory/PlayerAwareness";
 import { PlayerMemory } from "../../../src/application/match/awareness/memory/PlayerMemory";
+import { WorldAwarenessSystem } from "../../../src/application/match/awareness/WorldAwarenessSystem";
 import { Vector2 } from "../../../src/core/geometry/Vector2";
 import {
   buildMinimalMatchState, buildPlayerMatchState, buildPlayer, buildAttributes
 } from "../../helpers/builders";
+
+const worldSystem = new WorldAwarenessSystem();
 
 function makeSystemWithAllEvaluators(): DecisionSystem {
   return new DecisionSystem([
@@ -30,7 +33,8 @@ function makeContextWithBall(awarenessOverrides?: (awareness: PlayerAwareness) =
   const awareness = PlayerAwareness.create(player.player.id);
   if (awarenessOverrides) awarenessOverrides(awareness);
 
-  return new DecisionContext(state, player, awareness, 0, 0.5);
+  const world = worldSystem.build(state, player, awareness);
+  return new DecisionContext(state, player, awareness, 0, 0.5, world);
 }
 
 describe("DecisionSystem", () => {
@@ -53,13 +57,10 @@ describe("DecisionSystem", () => {
   it("player with a visible teammate considers PASS", () => {
     const system = makeSystemWithAllEvaluators();
     const ctx = makeContextWithBall(awareness => {
-      // Add a nearby teammate memory.
       const mem = PlayerMemory.create("teammate-1", new Vector2(60, 34), 0);
       awareness.teammates.set("teammate-1", mem);
     });
 
-    // PASS should be in the candidate list (even if not selected).
-    // We verify by running the evaluators directly.
     const passEval = new PassEvaluator();
     const candidates = passEval.evaluate(ctx);
     expect(candidates.length).toBeGreaterThan(0);
@@ -73,10 +74,10 @@ describe("DecisionSystem", () => {
     state.home.players.splice(0, 0, nonBallCarrier);
 
     const awareness = PlayerAwareness.create(nonBallCarrier.player.id);
-    const ctx = new DecisionContext(state, nonBallCarrier, awareness, 0, 0.5);
+    const world = worldSystem.build(state, nonBallCarrier, awareness);
+    const ctx = new DecisionContext(state, nonBallCarrier, awareness, 0, 0.5, world);
 
     const decision = system.decide(ctx);
-    // Non-ball-carrier should never SHOOT or PASS.
     expect(decision.type).not.toBe(DecisionType.SHOT);
     expect(decision.type).not.toBe(DecisionType.PASS);
   });
