@@ -59,6 +59,8 @@ export interface MatchResult {
 export class MatchEngine {
   private readonly initializer = new MatchInitializer();
   private readonly arbitrator = new ActionArbitrator();
+  /** Tracks which team last held continuous possession for shot-count reset. */
+  private lastPossessionTeamId: string | null = null;
 
   public simulate(
     config: SimulationConfig,
@@ -68,6 +70,8 @@ export class MatchEngine {
     const deltaTime = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
     const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
     const halfTime = matchDuration / 2;
+
+    this.lastPossessionTeamId = null;
 
     const pitchGrid = PitchGrid.create(config.pitch);
     const perceptionSystem = new PerceptionSystem(pitchGrid);
@@ -284,8 +288,6 @@ export class MatchEngine {
         );
       }
 
-      // Zero-windup: action may already be EXECUTING — resolve same tick so
-      // tick=2s simulations actually complete passes instead of only deciding.
       if (
         player.activeAction &&
         player.activeAction.phase === ActionExecutionPhase.EXECUTING
@@ -371,10 +373,22 @@ export class MatchEngine {
 
   private syncPossessionSide(state: MatchState): void {
     const owner = state.ball.owner;
-    if (!owner) return;
+    if (!owner) {
+      this.lastPossessionTeamId = null;
+      return;
+    }
     const ownerIsHome = state.home.players.includes(owner);
-    state.attackingTeam = ownerIsHome ? state.home : state.away;
-    state.defendingTeam = ownerIsHome ? state.away : state.home;
+    const team = ownerIsHome ? state.home : state.away;
+    const other = ownerIsHome ? state.away : state.home;
+
+    state.attackingTeam = team;
+    state.defendingTeam = other;
+
+    if (this.lastPossessionTeamId !== team.team.id) {
+      // Fresh possession spell for this team — allow up to MAX shots again.
+      team.resetPossessionShotCount();
+      this.lastPossessionTeamId = team.team.id;
+    }
   }
 
   private swapAttackingDirections(state: MatchState): void {
