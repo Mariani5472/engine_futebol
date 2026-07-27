@@ -7,11 +7,11 @@ import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 
 export class ActionReadiness {
   public static isLocked(context: DecisionContext): boolean {
-    return this.currentTime(context) < context.player.actionLockUntil;
+    return this.currentTime(context) < (context.player.actionLockUntil ?? 0);
   }
 
   public static isRecovering(context: DecisionContext): boolean {
-    return this.currentTime(context) < context.player.recoveryUntil;
+    return this.currentTime(context) < (context.player.recoveryUntil ?? 0);
   }
 
   public static currentTime(context: DecisionContext): number {
@@ -22,7 +22,8 @@ export class ActionReadiness {
     context: DecisionContext,
     minimumStability = 0
   ): boolean {
-    if (context.player.stability < minimumStability) return false;
+    const stability = context.player.stability ?? 100;
+    if (stability < minimumStability) return false;
 
     if (!this.isLocked(context) && !this.isRecovering(context)) {
       return true;
@@ -37,16 +38,37 @@ export class ActionReadiness {
   }
 
   public static bodyQuality(context: DecisionContext): number {
+    const bodyState = context.player.bodyState ?? "STANDING";
     const stateQuality = {
       STANDING: 1.0,
       BALANCED: 1.0,
       LEANING: 0.78,
       FALLING: 0.25,
       GROUND: 0.0,
-    }[context.player.bodyState];
+    }[bodyState] ?? 1.0;
 
-    const balance = this.normalize(context.player.balance);
-    const stability = this.normalize(context.player.stability);
+    const balance = this.normalize(context.player.balance ?? 100);
+    const stability = this.normalize(context.player.stability ?? 100);
+
+    return Math.max(
+      0,
+      Math.min(1, stateQuality * 0.45 + balance * 0.30 + stability * 0.25)
+    );
+  }
+
+  /** Body quality for an arbitrary player (not necessarily the decision subject). */
+  public static bodyQualityOf(player: PlayerMatchState): number {
+    const bodyState = player.bodyState ?? "STANDING";
+    const stateQuality = {
+      STANDING: 1.0,
+      BALANCED: 1.0,
+      LEANING: 0.78,
+      FALLING: 0.25,
+      GROUND: 0.0,
+    }[bodyState] ?? 1.0;
+
+    const balance = this.normalize(player.balance ?? 100);
+    const stability = this.normalize(player.stability ?? 100);
 
     return Math.max(
       0,
@@ -58,8 +80,8 @@ export class ActionReadiness {
     playerFacingDirection: Vector2,
     desiredDirection: Vector2
   ): number {
-    if (desiredDirection.magnitude() === 0) return 1;
-    if (playerFacingDirection.magnitude() === 0) return 0.5;
+    if (!desiredDirection || desiredDirection.magnitude() === 0) return 1;
+    if (!playerFacingDirection || playerFacingDirection.magnitude() === 0) return 0.5;
 
     const dot = playerFacingDirection.normalize().dot(desiredDirection.normalize());
     return Math.max(0, Math.min(1, (dot + 1) / 2));
@@ -120,6 +142,7 @@ export class ActionReadiness {
   }
 
   private static normalize(value: number): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) return 1;
     if (value <= 1) return Math.max(0, value);
     return Math.max(0, Math.min(1, value / 100));
   }
