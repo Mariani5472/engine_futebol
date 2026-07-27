@@ -37,10 +37,10 @@ describe("AttackFunnel — effective progression + ownership median", () => {
         samples.map((s, i) => ({
           seed: seeds[i],
           ownership: +s.report.ownershipRatio.toFixed(3),
-          realΔx: +s.report.avgPassRealForwardGain.toFixed(2),
+          realDx: +s.report.avgPassRealForwardGain.toFixed(2),
           laneFP: +s.report.avgSelectedPassForwardProgress.toFixed(2),
-          |err|: +s.report.avgLaneVsRealAbsError.toFixed(2),
-          effective≥8m: +s.report.passEffectiveProgressiveRate.toFixed(3),
+          absErr: +s.report.avgLaneVsRealAbsError.toFixed(2),
+          effective8m: +s.report.passEffectiveProgressiveRate.toFixed(3),
           atk: +s.report.attackingThirdShareOfPossession.toFixed(3),
           zone: +s.report.shootingZoneShareOfPossession.toFixed(3),
           shots: s.result.metrics.totalShots,
@@ -53,19 +53,18 @@ describe("AttackFunnel — effective progression + ownership median", () => {
     expect(median(samples.map((s) => s.report.ownershipRatio))).toBeGreaterThan(0.5);
   }, 300_000);
 
-  it("A: lane FP ≈ real Δx after live-position fix (paradox check)", () => {
+  it("A: lane FP approx real Dx after live-position fix", () => {
     const { report } = runProbedMatch(11, 2, 90 * 60);
 
     // eslint-disable-next-line no-console
     console.log(AttackFunnelCollector.format(report));
 
     expect(report.completedPassSamples).toBeGreaterThan(20);
-    // Live lanes should keep lane vs real error small.
     expect(report.avgLaneVsRealAbsError).toBeLessThan(8);
     expect(report.avgPassRealForwardGain).toBeGreaterThan(-5);
   }, 120_000);
 
-  it("A/B aggregate seeds 1–3: median ownership + progression stats", () => {
+  it("A/B aggregate seeds 1-3: median ownership + progression stats", () => {
     const seeds = [1, 2, 3];
     const samples = seeds.map((seed) => runProbedMatch(seed, 2, 90 * 60));
 
@@ -99,9 +98,9 @@ describe("AttackFunnel — effective progression + ownership median", () => {
           minOwnership: +minOwnership.toFixed(3),
           avgAtk: +avgAtk.toFixed(4),
           avgZone: +avgZone.toFixed(4),
-          avgRealΔx: +avgReal.toFixed(2),
+          avgRealDx: +avgReal.toFixed(2),
           avgLaneVsRealErr: +avgErr.toFixed(2),
-          avgEffective≥8m: +avgEff.toFixed(3),
+          avgEffective8m: +avgEff.toFixed(3),
           avgShots: +avgShots.toFixed(2),
           targetAtk: 0.1,
           targetZone: 0.03,
@@ -110,7 +109,7 @@ describe("AttackFunnel — effective progression + ownership median", () => {
             ownership: +s.report.ownershipRatio.toFixed(3),
             atk: +s.report.attackingThirdShareOfPossession.toFixed(4),
             zone: +s.report.shootingZoneShareOfPossession.toFixed(4),
-            realΔx: +s.report.avgPassRealForwardGain.toFixed(2),
+            realDx: +s.report.avgPassRealForwardGain.toFixed(2),
             laneFP: +s.report.avgSelectedPassForwardProgress.toFixed(2),
             err: +s.report.avgLaneVsRealAbsError.toFixed(2),
             effective: +s.report.passEffectiveProgressiveRate.toFixed(3),
@@ -123,7 +122,6 @@ describe("AttackFunnel — effective progression + ownership median", () => {
       ),
     );
 
-    // Prefer median so a single outlier seed does not fail the suite.
     expect(medianOwnership).toBeGreaterThan(0.5);
     expect(avgOwnership).toBeGreaterThan(0.5);
     expect(avgErr).toBeLessThan(10);
