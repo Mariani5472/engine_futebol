@@ -24,6 +24,7 @@ import { createPossessionEvaluators } from "../decision/possession/PossessionEva
 import { createOffBallEvaluators } from "../decision/offball/OffBallEvaluators";
 import { ActionFactory } from "../action/ActionFactory";
 import { ActionContext } from "../action/ActionContext";
+import { recoverActionState } from "../action/ActionExecutionProfile";
 import { BallPhysicsSystem } from "../physics/BallPhysicsSystem";
 import { TacticalEngine } from "../tactical/TacticalEngine";
 import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
@@ -169,6 +170,10 @@ export class MatchEngine {
     period: MatchPeriod
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
+
+    for (const player of this.allPlayers(state)) {
+      recoverActionState(player, tick, deltaTime);
+    }
 
     const perceptions = perceptionSystem.update(state);
 
