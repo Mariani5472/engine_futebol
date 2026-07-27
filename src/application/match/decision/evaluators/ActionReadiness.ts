@@ -1,5 +1,6 @@
 import { DecisionContext } from "../DecisionContext";
 import { Vector2 } from "../../../../core/geometry/Vector2";
+import { getActionExecutionProfile } from "../../action/ActionExecutionProfile";
 
 export class ActionReadiness {
   public static isLocked(context: DecisionContext): boolean {
@@ -14,11 +15,20 @@ export class ActionReadiness {
     context: DecisionContext,
     minimumStability = 0
   ): boolean {
-    if (this.isLocked(context)) return false;
-    if (this.isRecovering(context)) return false;
     if (context.player.stability < minimumStability) return false;
 
-    return true;
+    if (!this.isLocked(context) && !this.isRecovering(context)) {
+      return true;
+    }
+
+    const previousAction = context.player.lastActionType;
+    const previousProfile = previousAction
+      ? getActionExecutionProfile(previousAction)
+      : undefined;
+
+    // A technically interruptible action may be replaced by a new decision.
+    // A tackle, shot, clearance, etc. keeps the player committed until recovery.
+    return previousProfile?.canInterrupt === true;
   }
 
   /**
