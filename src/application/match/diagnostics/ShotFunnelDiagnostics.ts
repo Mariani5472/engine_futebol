@@ -2,7 +2,6 @@ import { MatchState } from "../../../core/movement/MatchState";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { PlayerAwareness } from "../awareness/memory/PlayerAwareness";
 import { WorldAwarenessSystem } from "../awareness/WorldAwarenessSystem";
-import { Decision } from "../decision/Decision";
 import { DecisionContext } from "../decision/DecisionContext";
 import { DecisionType } from "../decision/DecisionType";
 import { ShotEvaluator } from "../decision/evaluators/ShotEvaluator";
@@ -20,7 +19,6 @@ export interface ShotCandidateSnapshot {
 }
 
 export interface ShotFunnelProbeResult {
-  /** Stage 1 — WorldAwareness numbers that feed ShotEvaluator. */
   readonly world: {
     goalDistance: number;
     shotWindow: number;
@@ -28,32 +26,22 @@ export interface ShotFunnelProbeResult {
     fieldThird: string;
     goalAngleQuality: number;
   };
-
-  /** Stage 2 — ShotEvaluator alone. */
   readonly shotEvaluator: {
     proposed: boolean;
     utility: number;
     components: Readonly<Record<string, number>>;
   };
-
-  /** Stage 3 — all possession candidates before filter/risk/select. */
   readonly candidates: readonly ShotCandidateSnapshot[];
-
-  /** Stage 4 — final decision after PossessionDecisionSystem. */
   readonly selected: {
     type: string;
     utility: number;
     isShot: boolean;
   };
-
-  /** Stage 5 — pipeline created? */
   readonly pipeline: {
     started: boolean;
     stepCount: number;
     steps: readonly string[];
   };
-
-  /** Stage 6 — advance until EXECUTING or timeout; resolve shot events. */
   readonly execution: {
     reachedExecuting: boolean;
     shotEvents: number;
@@ -62,10 +50,6 @@ export interface ShotFunnelProbeResult {
   };
 }
 
-/**
- * Probes every stage of the shot funnel for a single ball-carrier context.
- * Use in tests to locate where shots die (evaluator / selector / pipeline / action).
- */
 export class ShotFunnelDiagnostics {
   private readonly worldSystem: WorldAwarenessSystem;
   private readonly shotEvaluator = new ShotEvaluator();
@@ -101,11 +85,9 @@ export class ShotFunnelDiagnostics {
     const world = this.worldSystem.build(match, player, awareness);
     const ctx = new DecisionContext(match, player, awareness, tick, deltaTime, world);
 
-    // Stage 2 — ShotEvaluator alone
     const shotOnly = this.shotEvaluator.evaluate(ctx);
     const shotDecision = shotOnly[0];
 
-    // Stage 3 — raw candidates from all possession evaluators
     const candidates: ShotCandidateSnapshot[] = [];
     for (const ev of createPossessionEvaluators()) {
       for (const d of ev.evaluate(ctx)) {
@@ -117,18 +99,15 @@ export class ShotFunnelDiagnostics {
     }
     candidates.sort((a, b) => b.utility - a.utility);
 
-    // Stage 4 — full decision system
     const selected = this.possessionSystem.decide(ctx);
 
-    // Stage 5 — pipeline start
     player.activeAction = undefined;
     player.activePipeline = undefined;
     const pipeline = this.actionFactory.tryStart(selected, player, match.currentSecond);
     const steps = pipeline
-      ? pipeline["steps"]?.map((d: Decision) => DecisionType[d.type] ?? String(d.type)) ?? []
+      ? pipeline.steps.map((s) => DecisionType[s.decision.type] ?? String(s.decision.type))
       : [];
 
-    // Stage 6 — advance time until EXECUTING then resolve
     let reachedExecuting = false;
     let shotEvents = 0;
     let goalEvents = 0;
@@ -140,7 +119,8 @@ export class ShotFunnelDiagnostics {
         t += deltaTime;
         const phase = this.actionFactory.advanceOnly(player, t);
         if (phase === ActionExecutionPhase.EXECUTING && player.activeAction) {
-          reachedExecuting = true;
+          // If pipeline has CONTROL then SHOT, first EXECUTING may be CONTROL.
+          const actionType = player.activeAction.type;
           const isHome = match.home.players.includes(player);
           const team = isHome ? match.home : match.away;
           const actionCtx: ActionContext = {
@@ -156,16 +136,22 @@ export class ShotFunnelDiagnostics {
             matchSecond: t,
           };
           const result = this.actionFactory.resolveExecuting(player.activeAction, actionCtx);
-          for (const e of result.events) {
-            if (e.type === "SHOT") {
-              shotEvents++;
-              shotResults.push((e as { result: string }).result);
+
+          if (actionType === DecisionType.SHOT) {
+            reachedExecuting = true;
+            for (const e of result.events) {
+              if (e.type === "SHOT") {
+                shotEvents++;
+                shotResults.push((e as { result: string }).result);
+              }
+              if (e.type === "GOAL") goalEvents++;
             }
-            if (e.type === "GOAL") goalEvents++;
+            break;
           }
-          break;
+          // Continue advancing pipeline after CONTROL etc.
+          continue;
         }
-        if (phase === ActionExecutionPhase.COMPLETED) break;
+        if (phase === ActionExecutionPhase.COMPLETED && !player.activePipeline) break;
         if (!player.activePipeline && !player.activeAction) break;
       }
     }
@@ -205,17 +191,15 @@ export class ShotFunnelDiagnostics {
     };
   }
 
-  /** Human-readable breakdown for failing tests / console. */
   public static format(result: ShotFunnelProbeResult): string {
-    const lines = [
+    return [
       "=== Shot funnel probe ===",
       `World: dist=${result.world.goalDistance.toFixed(1)}m window=${result.world.shotWindow.toFixed(2)} pressure=${result.world.pressure.toFixed(2)} third=${result.world.fieldThird}`,
       `ShotEvaluator: proposed=${result.shotEvaluator.proposed} utility=${result.shotEvaluator.utility.toFixed(1)}`,
       `Top candidates: ${result.candidates.slice(0, 5).map((c) => `${c.type}=${c.utility.toFixed(1)}`).join(", ")}`,
       `Selected: ${result.selected.type} (${result.selected.utility.toFixed(1)}) shot=${result.selected.isShot}`,
       `Pipeline: started=${result.pipeline.started} steps=[${result.pipeline.steps.join(" → ")}]`,
-      `Execution: executing=${result.execution.reachedExecuting} shots=${result.execution.shotEvents} goals=${result.execution.goalEvents} results=[${result.execution.shotResults.join(",")}]`,
-    ];
-    return lines.join("\n");
+      `Execution: shotExecuting=${result.execution.reachedExecuting} shots=${result.execution.shotEvents} goals=${result.execution.goalEvents} results=[${result.execution.shotResults.join(",")}]`,
+    ].join("\n");
   }
 }
