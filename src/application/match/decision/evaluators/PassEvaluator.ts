@@ -16,6 +16,7 @@ export class PassEvaluator implements ActionEvaluator {
 
     for (const lane of context.world.passingLanes) {
       const score = this.scoreLane(context, lane);
+      if (score.total <= 0) continue;
       decisions.push(
         new Decision(
           DecisionType.PASS,
@@ -37,16 +38,17 @@ export class PassEvaluator implements ActionEvaluator {
 
     const passing = (attrs.technical.passing ?? 10) / 20;
     const vision = (attrs.mental.vision ?? 10) / 20;
-    const decisions = (attrs.mental.decisions ?? 10) / 20;
+    const decisionsAttr = (attrs.mental.decisions ?? 10) / 20;
 
     const roleQuality = PositionInfluenceCalculator.passingQuality(
       context.player.currentRole,
     );
 
-    const distanceScore = Math.max(0, 18 - lane.distance * 0.55);
-    const progressBonus = Math.max(-15, Math.min(25, lane.forwardProgress * 0.65));
-    const certaintyBonus = lane.certainty * 5;
-    const clearanceBonus = lane.clear ? 6 : -10;
+    const distanceScore = Math.max(0, 22 - lane.distance * 0.45);
+    // Progressive passes are the primary antidote to dribble loops.
+    const progressBonus = Math.max(-8, Math.min(42, lane.forwardProgress * 1.15));
+    const certaintyBonus = lane.certainty * 6;
+    const clearanceBonus = lane.clear ? 10 : -8;
 
     const desiredDirection = lane.targetPosition.subtract(context.player.position);
     const orientationQuality = ActionReadiness.orientationQuality(
@@ -56,17 +58,23 @@ export class PassEvaluator implements ActionEvaluator {
     const bodyQuality = ActionReadiness.bodyQuality(context);
 
     const pressure = world.pressure;
-    let pressurePenalty = pressure * 12;
+
+    // Under pressure, a clear progressive pass is highly attractive.
+    let pressureRelief = 0;
+    if (pressure > 0.35) {
+      pressureRelief = pressure * (lane.clear ? 28 : 10);
+      if (lane.forwardProgress > 5) pressureRelief += 12;
+    }
+
+    // Lateral / backward under no pressure is only a modest option.
+    const backwardPenalty =
+      lane.forwardProgress < -3 && pressure < 0.25 ? -14 : 0;
 
     if (
       world.nearestOpponent?.isTackling &&
       world.nearestOpponentDistance <= 4.5
     ) {
-      pressurePenalty += 14;
-    }
-
-    if (context.player.activeAction?.phase === "PREPARING") {
-      pressurePenalty += 5;
+      pressureRelief += lane.clear ? 8 : -6;
     }
 
     const bodyExecutionQuality = Math.max(
@@ -74,22 +82,30 @@ export class PassEvaluator implements ActionEvaluator {
       orientationQuality * 0.55 + bodyQuality * 0.45,
     );
 
-    // Component model before role/body scaling — then scale the aggregate.
-    const technique = vision * 12 + passing * 8 + decisions * 5;
-    const space = distanceScore + progressBonus + certaintyBonus + clearanceBonus;
-    const pressureComp = -pressurePenalty;
+    const technique = vision * 14 + passing * 12 + decisionsAttr * 6;
+    const space =
+      distanceScore +
+      progressBonus +
+      certaintyBonus +
+      clearanceBonus +
+      backwardPenalty;
+    const pressureComp = pressureRelief;
+
     const raw = technique + space + pressureComp;
     const scaled = Math.max(0, raw * roleQuality * bodyExecutionQuality);
-
-    // Distribute scale proportionally so components still sum to total.
     const scale = raw !== 0 ? scaled / raw : 0;
 
+    // Floor boost so progressive clear lanes compete with residual dribble scores.
+    const progressiveFloor =
+      lane.forwardProgress > 8 && lane.clear ? 18 * bodyExecutionQuality : 0;
+
     return UtilityScore.fromComponents({
-      SPACE: space * scale,
+      SPACE: space * scale + progressiveFloor * 0.4,
       TECHNIQUE: technique * scale,
       PRESSURE: pressureComp * scale,
-      ROLE: roleQuality * 10 * bodyExecutionQuality * 0.3,
+      ROLE: roleQuality * 12 * bodyExecutionQuality * 0.35,
       BODY: bodyQuality * 8 * roleQuality * 0.3,
+      TACTICAL: progressiveFloor * 0.6,
     });
   }
 }
