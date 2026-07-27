@@ -14,6 +14,7 @@ export interface ActionExecutionProfile {
   readonly balanceCost: number;
   readonly stabilityCost: number;
   readonly resultingBodyState?: BodyState;
+  /** Whether the action can be interrupted by a new action during recovery. */
   readonly canInterrupt: boolean;
 }
 
@@ -36,9 +37,8 @@ const profile = (
 /**
  * Transient physical cost of an action.
  *
- * Costs are intentionally expressed as fractions of a normalized 0..1 state.
- * PlayerMatchState.applyExecutionProfile also supports the existing 0..100
- * representation, which makes this safe while the state scale is migrated.
+ * Costs are expressed as fractions of a normalized 0..1 state. The application
+ * helper also supports the legacy 0..100 representation.
  */
 export const ACTION_EXECUTION_PROFILES: Readonly<
   Partial<Record<DecisionType, ActionExecutionProfile>>
@@ -79,10 +79,10 @@ export function applyActionExecutionProfile(
   decisionType: DecisionType,
   currentTick: number,
   deltaTime: number,
-  success: boolean
+  executed: boolean
 ): void {
   const executionProfile = getActionExecutionProfile(decisionType);
-  if (!executionProfile || !success) return;
+  if (!executionProfile || !executed) return;
 
   const tickDuration = Math.max(0.001, deltaTime);
   const windupTicks = Math.ceil(executionProfile.windupSeconds / tickDuration);
@@ -97,10 +97,7 @@ export function applyActionExecutionProfile(
     currentTick + windupTicks + recoveryTicks
   );
 
-  player.balance = subtractStateCost(
-    player.balance,
-    executionProfile.balanceCost
-  );
+  player.balance = subtractStateCost(player.balance, executionProfile.balanceCost);
   player.stability = subtractStateCost(
     player.stability,
     executionProfile.stabilityCost
@@ -111,6 +108,31 @@ export function applyActionExecutionProfile(
   }
 
   player.lastActionType = decisionType;
+}
+
+/**
+ * Passive physical recovery. This is deliberately independent of decision
+ * selection: a player can recover while moving, thinking, or being evaluated.
+ */
+export function recoverActionState(
+  player: PlayerMatchState,
+  currentTick: number,
+  deltaTime: number
+): void {
+  const recoveryFinished = currentTick >= player.recoveryUntil;
+  const scale = player.balance <= 1 ? 1 : 100;
+  const recoveryAmount = deltaTime * 0.08 * scale;
+
+  player.balance = Math.min(scale, player.balance + recoveryAmount);
+  player.stability = Math.min(scale, player.stability + recoveryAmount * 0.75);
+
+  if (recoveryFinished) {
+    if (player.bodyState === "GROUND" || player.bodyState === "FALLING") {
+      player.bodyState = "STANDING";
+    } else if (player.bodyState === "LEANING") {
+      player.bodyState = "BALANCED";
+    }
+  }
 }
 
 function subtractStateCost(value: number, normalizedCost: number): number {
