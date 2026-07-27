@@ -5,33 +5,68 @@ import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 
 /**
- * Hold Ball evaluator.
- *
- * Holding the ball is a LOW-priority fallback option — useful when under heavy
- * pressure and no good pass/shot is available, but should never beat a clear
- * shooting opportunity or a progressive pass. Base is intentionally modest
- * (~25) so that a striker near goal (shot utility 80-120) strongly prefers
- * shooting.
+ * Hold ball is the safe option under pressure when pass/shot lanes are poor.
+ * Must beat mindless dribbling into traffic, but stay below clear shots.
  */
 export class HoldBallEvaluator implements ActionEvaluator {
 
   public evaluate(context: DecisionContext): Decision[] {
+    if (!context.player.hasBall) return [];
+
     const score = this.calculateUtility(context);
-    return [new Decision(DecisionType.HOLD_BALL, score.total)];
+    if (score.total <= 0) return [];
+
+    return [
+      new Decision(
+        DecisionType.HOLD_BALL,
+        score.total,
+        undefined,
+        score.reasons,
+        score.components,
+      ),
+    ];
   }
 
   private calculateUtility(context: DecisionContext): UtilityScore {
     const attrs = context.player.player.attributes;
-    const composure = attrs.mental.composure / 20;  // normalised 0-1
-    const strength = attrs.physical.strength / 20;
+    const world = context.world;
 
-    // Low base: hold-ball is only the best choice when nothing else is viable.
-    // Composure and strength make shielding more effective under pressure.
-    const base = 8 + composure * 6 + strength * 4;
+    const composure = (attrs.mental.composure ?? 10) / 20;
+    const strength = (attrs.physical.strength ?? 10) / 20;
+    const balance = this.normalize(context.player.balance ?? 100);
+    const stability = this.normalize(context.player.stability ?? 100);
 
-    return new UtilityScore(base, 0, 0, 0, [
-      { code: "COMPOSURE", value: composure * 8 },
-      { code: "STRENGTH", value: strength * 5 }
-    ]);
+    const pressure = world.pressure;
+    const freeSpace = world.freeSpace;
+
+    // Base shielding skill.
+    const technique = composure * 14 + strength * 10;
+    const body = balance * 8 + stability * 6;
+
+    // Pressure is the main reason to hold — rises steeply when closed down.
+    const pressureValue = pressure * 36;
+
+    // Open pitch: holding is a waste of possession.
+    const openPitchPenalty = freeSpace > 0.55 ? -(freeSpace * 18) : 0;
+
+    // After a failed progressive action, holding stabilises.
+    const recoveryBonus =
+      context.player.lastActionType === DecisionType.DRIBBLE && pressure > 0.4
+        ? 12
+        : 0;
+
+    return UtilityScore.fromComponents({
+      TECHNIQUE: technique,
+      BODY: body,
+      PRESSURE: pressureValue,
+      SPACE: openPitchPenalty,
+      TACTICAL: recoveryBonus,
+    });
+  }
+
+  private normalize(value: number): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) return 1;
+    if (value <= 1) return Math.max(0, value);
+    return Math.max(0, Math.min(1, value / 100));
   }
 }
