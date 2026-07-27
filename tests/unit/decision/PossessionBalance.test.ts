@@ -3,6 +3,7 @@ import { BallState } from "../../../src/core/movement/BallMatchState";
 import { DecisionType } from "../../../src/application/match/decision/DecisionType";
 import { DecisionContext } from "../../../src/application/match/decision/DecisionContext";
 import { PlayerAwareness } from "../../../src/application/match/awareness/memory/PlayerAwareness";
+import { PlayerMemory } from "../../../src/application/match/awareness/memory/PlayerMemory";
 import { WorldAwarenessSystem } from "../../../src/application/match/awareness/WorldAwarenessSystem";
 import { createPossessionEvaluators } from "../../../src/application/match/decision/possession/PossessionEvaluators";
 import { PossessionDecisionSystem } from "../../../src/application/match/decision/possession/PossessionDecisionSystem";
@@ -26,11 +27,7 @@ function setupCarrier(opts: {
   carrier.bodyState = "STANDING";
   carrier.lastActionType = opts.lastAction;
 
-  // Support ahead for progressive pass lanes.
-  support.position = new Vector2(
-    Math.min(100, opts.x + 18),
-    40,
-  );
+  support.position = new Vector2(Math.min(100, opts.x + 18), 40);
   support.hasBall = false;
 
   if (opts.pressureOpponent) {
@@ -44,13 +41,10 @@ function setupCarrier(opts: {
   match.ball.state = BallState.CONTROLLED;
 
   const awareness = PlayerAwareness.create(carrier.player.id);
-  // Seed teammate memory so PassEvaluator lanes exist even without perception tick.
-  awareness.teammates.set(support.player.id, {
-    playerId: support.player.id,
-    estimatedPosition: support.position,
-    certainty: 1,
-    lastSeenTick: 0,
-  } as any);
+  awareness.teammates.set(
+    support.player.id,
+    PlayerMemory.create(support.player.id, support.position, 0),
+  );
 
   const world = new WorldAwarenessSystem().build(match, carrier, awareness);
   const ctx = new DecisionContext(match, carrier, awareness, 0, 0.5, world);
@@ -77,7 +71,6 @@ describe("Possession balance after anti-dribble monopoly fix", () => {
     console.log("open midfield utilities", u);
 
     expect(u.PASS ?? 0).toBeGreaterThan(0);
-    // Dribble must not be >2x the best pass in open play with a free teammate ahead.
     if ((u.PASS ?? 0) > 0) {
       expect(u.DRIBBLE ?? 0).toBeLessThan((u.PASS ?? 1) * 2.5);
     }
