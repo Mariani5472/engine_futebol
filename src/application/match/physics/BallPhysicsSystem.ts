@@ -2,34 +2,36 @@ import { Vector2 } from "../../../core/geometry/Vector2";
 import { BallMatchState, BallState } from "../../../core/movement/BallMatchState";
 import { MatchState } from "../../../core/movement/MatchState";
 
-/** Surface friction coefficient (fraction of velocity retained per second). */
 const GROUND_FRICTION = 0.82;
-/** Bounce energy retention (fraction of vertical speed retained on bounce). */
 const BOUNCE_RESTITUTION = 0.55;
-/** Gravity (m/s²). */
 const GRAVITY = 9.81;
-/** Height at which the ball is considered grounded. */
 const GROUND_THRESHOLD = 0.05;
-/** Speed below which the ball is considered stationary. */
 const MIN_SPEED = 0.1;
 
 export class BallPhysicsSystem {
 
-  /**
-   * Advances ball physics by one simulation step.
-   * Called only when the ball is NOT controlled by a player.
-   */
   public update(state: MatchState, deltaTime: number): void {
-
     const ball = state.ball;
 
-    // Ball controlled: position tracks owner.
-    if (ball.owner !== null || ball.state === BallState.CONTROLLED) {
-      if (ball.owner) {
-        ball.position = ball.owner.position;
-        ball.velocity = ball.owner.velocity;
+    // Orphan controlled state — never leave the ball stuck without an owner.
+    if (ball.state === BallState.CONTROLLED && !ball.owner) {
+      (ball as { state: BallState }).state = BallState.FREE;
+    }
+
+    if (ball.owner !== null && ball.state === BallState.CONTROLLED) {
+      ball.position = ball.owner.position;
+      ball.velocity = ball.owner.velocity;
+      // Keep hasBall flag consistent if something cleared it.
+      if (!ball.owner.hasBall) {
+        ball.owner.hasBall = true;
       }
       return;
+    }
+
+    // Owner pointer without CONTROLLED — clear stale owner so contests work.
+    if (ball.owner && ball.state !== BallState.CONTROLLED) {
+      ball.owner.hasBall = false;
+      (ball as { owner: null }).owner = null;
     }
 
     this.applyGravity(ball, deltaTime);
@@ -37,18 +39,13 @@ export class BallPhysicsSystem {
     this.applyMovement(ball, deltaTime);
     this.clampToPitch(ball, state);
     this.checkRestState(ball);
-
   }
 
   private applyGravity(ball: BallMatchState, deltaTime: number): void {
     if (ball.height > GROUND_THRESHOLD) {
-      // Ball is airborne: gravity pulls vertical component.
-      // verticalVelocity is stored implicitly through height change.
-      // We approximate with simple Euler integration.
       const newHeight = ball.height - (this.getVerticalSpeed(ball) * deltaTime);
 
       if (newHeight <= 0) {
-        // Bounce
         this.bounce(ball);
       } else {
         (ball as { height: number }).height = newHeight;
@@ -56,19 +53,12 @@ export class BallPhysicsSystem {
     }
   }
 
-  /**
-   * Extracts an approximate vertical descent speed from the ball's
-   * current height (used for trajectory continuation after being kicked).
-   * In a more complete physics model this would be tracked separately.
-   */
   private getVerticalSpeed(_ball: BallMatchState): number {
-    // Simple model: ball descends at gravity-influenced rate
     return GRAVITY * 0.15;
   }
 
   private bounce(ball: BallMatchState): void {
     (ball as { height: number }).height = 0;
-    // Reduce horizontal velocity on bounce.
     const speed = ball.velocity.magnitude();
     if (speed > MIN_SPEED) {
       const retained = speed * BOUNCE_RESTITUTION;
@@ -82,7 +72,7 @@ export class BallPhysicsSystem {
   }
 
   private applyGroundFriction(ball: BallMatchState, deltaTime: number): void {
-    if (ball.height > GROUND_THRESHOLD) return; // No friction in the air.
+    if (ball.height > GROUND_THRESHOLD) return;
 
     const speed = ball.velocity.magnitude();
     if (speed < MIN_SPEED) {
@@ -119,23 +109,19 @@ export class BallPhysicsSystem {
     }
   }
 
-  /**
-   * Launches the ball toward a target position.
-   * Handles passes (low trajectory) and shots (can be elevated).
-   */
   public launch(
     ball: BallMatchState,
     target: Vector2,
     power: number,
     height: number = 0
   ): void {
-
     const direction = target.subtract(ball.position).normalize();
     (ball as { velocity: Vector2 }).velocity = direction.multiply(power);
     (ball as { height: number }).height = height;
     (ball as { state: BallState }).state = BallState.IN_FLIGHT;
+    if (ball.owner) {
+      ball.owner.hasBall = false;
+    }
     (ball as { owner: null }).owner = null;
-
   }
-
 }
