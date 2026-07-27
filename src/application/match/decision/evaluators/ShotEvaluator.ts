@@ -7,12 +7,6 @@ import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCal
 import { FieldThird } from "../../../../domain";
 import { ActionReadiness } from "./ActionReadiness";
 
-/**
- * Shot evaluator — produces a utility score for attempting a shot on goal.
- *
- * Spatial / pressure perception comes from WorldAwareness.
- * This class only combines those signals with attribute and body quality.
- */
 export class ShotEvaluator implements ActionEvaluator {
 
   public evaluate(context: DecisionContext): Decision[] {
@@ -30,55 +24,51 @@ export class ShotEvaluator implements ActionEvaluator {
     const distance = world.goalDistance;
     const distanceBase = this.distanceBase(
       distance,
-      attrs.technical.finishing,
-      attrs.technical.longShots
+      attrs.technical.finishing ?? 10,
+      attrs.technical.longShots ?? 10,
     );
 
     const roleQuality = PositionInfluenceCalculator.shootingQuality(player.currentRole);
 
-    const finishing = attrs.technical.finishing / 20;
-    const composure = attrs.mental.composure / 20;
-    const technique = attrs.technical.technique / 20;
+    const finishing = (attrs.technical.finishing ?? 10) / 20;
+    const composure = (attrs.mental.composure ?? 10) / 20;
+    const technique = (attrs.technical.technique ?? 10) / 20;
     const attrScore = finishing * 0.55 + composure * 0.30 + technique * 0.15;
 
     const pressure = world.pressure;
-
     const attackingBonus =
       world.fieldThird === FieldThird.ATTACKING ? 28 : 0;
-
     const angleBonus = world.goalAngleQuality * 8;
 
     const desiredDirection = world.goalCenter.subtract(player.position);
     const orientationQuality = ActionReadiness.orientationQuality(
       player.facingDirection,
-      desiredDirection
+      desiredDirection,
     );
     const bodyQuality = ActionReadiness.bodyQuality(context);
     const executionQuality = Math.max(
       0.25,
-      orientationQuality * 0.50 + bodyQuality * 0.50
+      orientationQuality * 0.50 + bodyQuality * 0.50,
     );
 
-    // shotWindow amplifies when the composite tactical window is open.
     const windowBoost = 0.75 + world.shotWindow * 0.50;
 
-    const base = (
-      distanceBase * roleQuality * attrScore * (1 - pressure * 0.4) +
-      angleBonus +
-      attackingBonus
-    ) * executionQuality * windowBoost;
+    // Decompose into components, then scale by execution/window.
+    const space = distanceBase * windowBoost;
+    const techniqueComp = attrScore * distanceBase * 0.35 * windowBoost;
+    const role = roleQuality * 20 * windowBoost;
+    const pressureComp = -pressure * distanceBase * 0.4 * windowBoost;
+    const body = (executionQuality - 0.25) / 0.75 * 12;
+    const tactical = (angleBonus + attackingBonus) * executionQuality;
 
-    return new UtilityScore(base, 0, 0, 0, [
-      { code: "DISTANCE_BASE", value: distanceBase },
-      { code: "ROLE_QUALITY", value: roleQuality },
-      { code: "ATTR_SCORE", value: attrScore },
-      { code: "PRESSURE", value: -pressure },
-      { code: "ANGLE_BONUS", value: angleBonus },
-      { code: "SHOT_WINDOW", value: world.shotWindow },
-      { code: "BODY_QUALITY", value: bodyQuality },
-      { code: "ORIENTATION", value: orientationQuality },
-      { code: "EXECUTION_QUALITY", value: executionQuality },
-    ]);
+    return UtilityScore.fromComponents({
+      SPACE: space * executionQuality * 0.4,
+      TECHNIQUE: techniqueComp * executionQuality,
+      ROLE: role * executionQuality * 0.3,
+      PRESSURE: pressureComp * executionQuality,
+      BODY: body,
+      TACTICAL: tactical,
+    });
   }
 
   private distanceBase(
