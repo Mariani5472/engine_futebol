@@ -1,5 +1,5 @@
-import { ActionExecution, ActionExecutionPhase } from "./ActionExecution";
-import { ActionPriority, getActionPriority } from "./ActionPriority";
+import { ActionExecution } from "./ActionExecution";
+import { getActionPriority } from "./ActionPriority";
 import { DecisionType } from "../decision/DecisionType";
 import { MatchState } from "../../../core/movement/MatchState";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
@@ -12,14 +12,14 @@ import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
  * 1. Higher ActionPriority wins.
  * 2. If equal priority, earlier executeAt (started earlier / faster windup) wins.
  * 3. If still tied, the action whose player is closer to the ball wins.
- * 4. Losers are interrupted with an appropriate reason.
+ * 4. Losers are interrupted — the entire PipelineExecution is cancelled.
  */
 export class ActionArbitrator {
 
   /**
    * Given all players that just transitioned to EXECUTING this tick,
    * returns the subset that are allowed to apply their consequences.
-   * Losers have their ActionExecution interrupted.
+   * Losers have their ActionExecution (and owning pipeline) interrupted.
    */
   public resolve(
     candidates: ActionExecution[],
@@ -28,7 +28,6 @@ export class ActionArbitrator {
   ): ActionExecution[] {
     if (candidates.length <= 1) return candidates;
 
-    // Group by conflict domain.
     const ballContenders = candidates.filter((e) => isBallContest(e.type));
     const others = candidates.filter((e) => !isBallContest(e.type));
 
@@ -39,7 +38,6 @@ export class ActionArbitrator {
       return winners;
     }
 
-    // Sort: higher priority first, then earlier executeAt, then closer to ball.
     const ballPos = match.ball.position;
     const ranked = [...ballContenders].sort((a, b) => {
       const prioDiff =
@@ -61,17 +59,16 @@ export class ActionArbitrator {
     const winner = ranked[0];
     winners.push(winner);
 
-    // Interrupt losers.
     for (let i = 1; i < ranked.length; i++) {
       const loser = ranked[i];
-      const reason = interruptionReasonFor(winner.type, loser.type);
-      loser.interrupt(reason, currentTime);
-
-      // Clear activeAction reference if it was interrupted to recovery.
+      const reason = interruptionReasonFor(winner.type);
       const loserPlayer = findPlayer(match, loser);
-      if (loserPlayer && loserPlayer.activeAction === loser) {
-        // Keep the interrupted action so recovery can finish;
-        // do not null it here — recovery phase still runs.
+
+      // Prefer interrupting the whole pipeline so remaining steps are cancelled.
+      if (loserPlayer?.activePipeline?.isBusy()) {
+        loserPlayer.activePipeline.interrupt(reason, currentTime);
+      } else {
+        loser.interrupt(reason, currentTime);
       }
     }
 
@@ -107,7 +104,6 @@ function isBallContest(type: DecisionType): boolean {
 
 function interruptionReasonFor(
   winnerType: DecisionType,
-  _loserType: DecisionType,
 ): "TACKLE" | "INTERCEPTION" | "BLOCK" | "COLLISION" | "LOSS_OF_BALANCE" {
   switch (winnerType) {
     case DecisionType.TACKLE:
