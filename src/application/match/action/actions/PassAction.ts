@@ -5,23 +5,14 @@ import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 
-/** Maximum pass speed in m/s (used for failed / loose trajectories). */
 const MAX_PASS_SPEED = 28;
 const MIN_PASS_SPEED = 8;
 const FAIL_NOISE_RADIANS = 0.6;
 
-/**
- * Successful passes transfer possession to the target teammate.
- *
- * Previously every pass launched an IN_FLIGHT ball with owner=null. With a 2s
- * tick the ball overflew receivers and stayed free for most of the match
- * (ownership ~0.3–6%), which collapsed chance creation after dribble monopoly
- * was fixed and PASS became the dominant decision.
- */
 export class PassAction {
 
   public execute(context: ActionContext): ActionResult {
-    const { player, decision, match, random } = context;
+    const { player, decision, match, random, matchSecond } = context;
     const targetId = decision.targetId;
 
     if (!targetId) {
@@ -33,23 +24,31 @@ export class PassAction {
       return this.fail(player.player.id, decision.type);
     }
 
+    const team = match.home.players.includes(player) ? match.home : match.away;
+    const dir = team.attackingDirection;
+    const realForwardGain = (target.position.x - player.position.x) * dir;
+
     const successProb = this.calculateSuccessProb(context, player, target);
     const success = random.nextFloat(0, 1) < successProb;
 
-    // Always release from passer.
     player.hasBall = false;
 
     if (success) {
       this.deliverToReceiver(match, player, target);
+      team.noteProgressivePass(matchSecond, realForwardGain);
       return {
         actorId: player.player.id,
         type: decision.type,
         success: true,
         events: [],
-      };
+        // Diagnostic payload consumed by AttackFunnel when present.
+        meta: {
+          passRealForwardGain: realForwardGain,
+          passReceiverId: target.player.id,
+        },
+      } as ActionResult;
     }
 
-    // Failed pass: ball becomes contestable near the intended lane.
     this.releaseFailedPass(context, player, target, random);
 
     return {
@@ -57,7 +56,11 @@ export class PassAction {
       type: decision.type,
       success: false,
       events: [],
-    };
+      meta: {
+        passRealForwardGain: realForwardGain,
+        passReceiverId: target.player.id,
+      },
+    } as ActionResult;
   }
 
   private deliverToReceiver(
@@ -76,7 +79,6 @@ export class PassAction {
     match.ball.velocity = Vector2.zero();
     (match.ball as { height: number }).height = 0;
 
-    // Receiver settles first touch on next decision cycle.
     target.lastActionType = DecisionType.RECEIVE;
     void passer;
   }
@@ -95,7 +97,6 @@ export class PassAction {
     const noiseAngle = random.nextFloat(-FAIL_NOISE_RADIANS, FAIL_NOISE_RADIANS);
     direction = direction.rotate(noiseAngle);
 
-    // Land the ball partway toward the target so nearby players can contest.
     const landFraction = random.nextFloat(0.45, 0.85);
     const landPos = passer.position.add(
       target.position.subtract(passer.position).multiply(landFraction),
@@ -149,7 +150,6 @@ export class PassAction {
       (1 - pressure * 0.7) *
       fatigueModifier;
 
-    // Floor high enough that short team passes usually complete.
     return Math.max(0.35, Math.min(0.96, raw + 0.15));
   }
 
