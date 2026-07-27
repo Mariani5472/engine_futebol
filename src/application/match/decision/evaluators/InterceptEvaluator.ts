@@ -27,7 +27,15 @@ export class InterceptEvaluator implements ActionEvaluator {
     const score = this.calculateUtility(context, ballOwner, distanceToOwner);
     if (score.total < 12) return [];
 
-    return [new Decision(DecisionType.INTERCEPT, score.total)];
+    return [
+      new Decision(
+        DecisionType.INTERCEPT,
+        score.total,
+        undefined,
+        score.reasons,
+        score.components,
+      ),
+    ];
   }
 
   private calculateUtility(
@@ -43,7 +51,7 @@ export class InterceptEvaluator implements ActionEvaluator {
     const receiver = this.getNearestTeammateToOwner(ballOwner, ownerTeam.players);
     const laneScore = receiver
       ? this.calculatePassingLaneScore(player.position, ballOwner.position, receiver.position)
-      : 0.5; // unknown lane — neutral opportunity
+      : 0.5;
 
     const anticipation = (player.player.attributes.mental.anticipation ?? 10) / 20;
     const decisions = (player.player.attributes.mental.decisions ?? 10) / 20;
@@ -98,7 +106,6 @@ export class InterceptEvaluator implements ActionEvaluator {
 
     if (opportunity <= 0) return 0;
 
-    // Even without a known receiver, preparing a pass is interceptable.
     const effectiveLane = receiver ? laneScore : Math.max(0.45, laneScore);
     return 24 * opportunity * effectiveLane;
   }
