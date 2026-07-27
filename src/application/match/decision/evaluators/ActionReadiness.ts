@@ -65,11 +65,6 @@ export class ActionReadiness {
     return Math.max(0, Math.min(1, (dot + 1) / 2));
   }
 
-  /**
-   * Estimates the immediate physical pressure on a player.
-   * This is intentionally local and deterministic: evaluators should not need
-   * to know the future decisions of other players to recognize danger.
-   */
   public static opponentPressure(
     player: PlayerMatchState,
     opponents: PlayerMatchState[]
@@ -91,34 +86,31 @@ export class ActionReadiness {
     return Math.max(0, Math.min(1, pressure));
   }
 
-  /**
-   * Returns how exposed a player is while preparing an action.
-   * 1 = currently preparing and highly vulnerable; 0 = no preparation window.
-   */
-  public static preparationExposure(player: PlayerMatchState): number {
+  public static preparationExposure(
+    player: PlayerMatchState,
+    currentTime: number
+  ): number {
     const action = player.activeAction;
     if (!action || action.phase !== ActionExecutionPhase.PREPARING) return 0;
 
     const duration = action.executeAt - action.startedAt;
     if (duration <= 0) return 1;
 
-    const elapsed = Math.max(0, Math.min(duration, action.executeAt - action.startedAt));
+    const elapsed = Math.max(
+      0,
+      Math.min(duration, currentTime - action.startedAt)
+    );
     const progress = elapsed / duration;
 
-    // Early preparation is more vulnerable because the player has not yet
-    // committed the technical action. Exposure decreases as execution nears.
     return Math.max(0.15, 1 - progress * 0.85);
   }
 
-  /**
-   * Estimates how much a defender benefits from attacking an opponent's
-   * current action window.
-   */
   public static interruptionOpportunity(
     target: PlayerMatchState,
-    defender: PlayerMatchState
+    defender: PlayerMatchState,
+    currentTime: number
   ): number {
-    const exposure = this.preparationExposure(target);
+    const exposure = this.preparationExposure(target, currentTime);
     if (exposure <= 0) return 0;
 
     const distance = defender.position.distanceTo(target.position);
