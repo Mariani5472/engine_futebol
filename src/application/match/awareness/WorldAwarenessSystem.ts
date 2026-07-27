@@ -12,18 +12,16 @@ import {
   WorldAwareness,
 } from "./WorldAwareness";
 
-/** Radius used for pressure / free-space calculations (metres). */
 const PRESSURE_RADIUS = 8;
-/** Radius beyond which an opponent is ignored for nearest-opponent. */
 const NEAREST_SEARCH_RADIUS = 30;
-/** Obstacle radius for crude pass-lane clearance checks. */
 const PASS_LANE_OBSTACLE_RADIUS = 1.2;
 
 /**
  * Builds a WorldAwareness snapshot for a single player.
  *
- * Called once per decision cycle so every evaluator shares the same
- * pre-computed tactical view of the pitch.
+ * Passing lanes intentionally use LIVE teammate positions. Using stale memory
+ * produced high forwardProgress while the real receiver was still deep,
+ * causing avgPassFP ~30–40m with attacking-third possession ~0.5%.
  */
 export class WorldAwarenessSystem {
   private readonly thirdResolver: FieldThirdResolver;
@@ -117,8 +115,6 @@ export class WorldAwarenessSystem {
       teammates,
     );
   }
-
-  // ── private helpers ──────────────────────────────────────────────
 
   private findNearestOpponent(
     player: PlayerMatchState,
@@ -214,55 +210,35 @@ export class WorldAwarenessSystem {
   ): PassingLane[] {
     const lanes: PassingLane[] = [];
 
-    // Prefer memory-based targets when available (imperfect knowledge).
-    if (awareness && awareness.teammates.size > 0) {
-      for (const mem of awareness.teammates.values()) {
-        const distance = player.position.distanceTo(mem.estimatedPosition);
-        const forwardProgress =
-          (mem.estimatedPosition.x - player.position.x) * attackingDirection;
-        const clear = this.isLaneClear(
-          player.position,
-          mem.estimatedPosition,
-          opponents,
-        );
-        lanes.push({
-          targetId: mem.playerId,
-          targetPosition: mem.estimatedPosition,
-          distance,
-          clear,
-          forwardProgress,
-          certainty: mem.certainty,
-        });
+    // Live positions for geometry / forwardProgress. Certainty may still come
+    // from memory when present (imperfect knowledge without false progress).
+    for (const tm of teammates) {
+      const livePos = tm.position;
+      const distance = player.position.distanceTo(livePos);
+      const forwardProgress =
+        (livePos.x - player.position.x) * attackingDirection;
+      const clear = this.isLaneClear(player.position, livePos, opponents);
+
+      let certainty = 1;
+      if (awareness) {
+        const mem = awareness.teammates.get(tm.player.id);
+        if (mem) certainty = Math.max(0.35, mem.certainty);
       }
-    } else {
-      for (const tm of teammates) {
-        const distance = player.position.distanceTo(tm.position);
-        const forwardProgress =
-          (tm.position.x - player.position.x) * attackingDirection;
-        const clear = this.isLaneClear(
-          player.position,
-          tm.position,
-          opponents,
-        );
-        lanes.push({
-          targetId: tm.player.id,
-          targetPosition: tm.position,
-          distance,
-          clear,
-          forwardProgress,
-          certainty: 1,
-        });
-      }
+
+      lanes.push({
+        targetId: tm.player.id,
+        targetPosition: livePos,
+        distance,
+        clear,
+        forwardProgress,
+        certainty,
+      });
     }
 
     lanes.sort((a, b) => a.distance - b.distance);
     return lanes;
   }
 
-  /**
-   * Crude line-of-sight: true when no opponent is within
-   * PASS_LANE_OBSTACLE_RADIUS of the segment midpoint region.
-   */
   private isLaneClear(
     from: Vector2,
     to: Vector2,
@@ -274,7 +250,6 @@ export class WorldAwarenessSystem {
     if (len < 0.5) return true;
 
     for (const opp of opponents) {
-      // Project opponent onto the segment.
       const t = Math.max(
         0,
         Math.min(
@@ -283,7 +258,6 @@ export class WorldAwarenessSystem {
             (len * len),
         ),
       );
-      // Ignore endpoints (passer / receiver themselves).
       if (t < 0.08 || t > 0.92) continue;
 
       const projX = from.x + t * dx;
@@ -304,10 +278,6 @@ export class WorldAwarenessSystem {
     return Math.max(0, Math.min(1, distanceFactor * (1 - pressure * 0.5)));
   }
 
-  /**
-   * Simplified offside heuristic: fraction of attacking teammates that are
-   * beyond the second-last defender. Not a full law implementation.
-   */
   private calculateOffsideRisk(
     player: PlayerMatchState,
     teammates: readonly PlayerMatchState[],
@@ -317,7 +287,6 @@ export class WorldAwarenessSystem {
   ): number {
     if (opponents.length === 0) return 0;
 
-    // Second-last defender depth along attacking axis.
     const defenderDepths = opponents
       .map((o) => o.position.x * attackingDirection)
       .sort((a, b) => b - a);
@@ -326,7 +295,6 @@ export class WorldAwarenessSystem {
       defenderDepths.length >= 2 ? defenderDepths[1] : defenderDepths[0];
 
     const halfLength = pitchLength / 2;
-    // Only relevant in the opponent's half.
     const halfway = halfLength * attackingDirection;
 
     let atRisk = 0;
@@ -334,7 +302,7 @@ export class WorldAwarenessSystem {
 
     for (const tm of teammates) {
       const depth = tm.position.x * attackingDirection;
-      if (depth < halfway) continue; // own half — cannot be offside
+      if (depth < halfway) continue;
       counted++;
       if (depth > offsideLine) atRisk++;
     }
@@ -350,9 +318,8 @@ export class WorldAwarenessSystem {
     fieldThird: FieldThird,
     supportPlayers: readonly SupportPlayer[],
   ): number {
-    if (fieldThird !== FieldThird.ATTACKING && fieldThird !== "ATTACKING") {
-      // FieldThird enum value check — support both enum and string.
-      if (fieldThird !== FieldThird.ATTACKING) return 0;
+    if (fieldThird !== FieldThird.ATTACKING && String(fieldThird) !== "ATTACKING") {
+      return 0;
     }
 
     const pitch = match.pitch;
@@ -362,14 +329,12 @@ export class WorldAwarenessSystem {
         : player.position.x;
     const lateralDistance = Math.abs(player.position.y - pitch.width / 2);
 
-    // Must be advanced and wide.
     if (forwardDistance > 40) return 0;
     if (lateralDistance < pitch.width * 0.18) return 0;
 
     const widthFactor = Math.min(1, lateralDistance / (pitch.width * 0.35));
     const depthFactor = Math.max(0, 1 - forwardDistance / 40);
 
-    // Central target available near goal?
     const centralTargets = supportPlayers.filter(
       (s) =>
         s.forwardProgress > -5 &&
@@ -389,7 +354,6 @@ export class WorldAwarenessSystem {
     pressure: number,
     fieldThird: FieldThird,
   ): number {
-    // Distance quality: best inside 12m, poor beyond 30m.
     let distanceQuality: number;
     if (goalDistance <= 6) distanceQuality = 1;
     else if (goalDistance <= 12) distanceQuality = 0.9;
@@ -399,9 +363,9 @@ export class WorldAwarenessSystem {
     else distanceQuality = 0.05;
 
     const thirdBonus =
-      fieldThird === FieldThird.ATTACKING || fieldThird === "ATTACKING"
+      fieldThird === FieldThird.ATTACKING || String(fieldThird) === "ATTACKING"
         ? 1
-        : fieldThird === FieldThird.MIDDLE || fieldThird === "MIDDLE"
+        : fieldThird === FieldThird.MIDDLE || String(fieldThird) === "MIDDLE"
           ? 0.4
           : 0.1;
 
