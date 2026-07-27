@@ -1,8 +1,11 @@
 import { DecisionType } from "../../application/match/decision/DecisionType";
+import type { ActionExecution } from "../../application/match/action/ActionExecution";
 import { Player, PlayerRole } from "../../domain";
 import { Vector2 } from "../geometry/Vector2";
 
 export class PlayerMatchState {
+
+  public activeAction?: ActionExecution;
 
   constructor(
     public readonly player: Player,
@@ -25,5 +28,9 @@ export class PlayerMatchState {
 
   public setTarget(position: Vector2): void {
     this.targetPosition = position;
+  }
+
+  public isActionBusy(): boolean {
+    return this.activeAction?.isBusy() ?? false;
   }
 }
