@@ -14,40 +14,31 @@ export interface FoulOutcome {
 
 /**
  * Discipline model calibrated toward Brasileirão-like rates:
- *   ~25–30 fouls / game (both teams)
+ *   ~25–30 fouls / game
  *   ~4–5 yellows / game
  *   ~0.2 reds / game
- *
- * Previous model treated ~half of all tackles as fouls and converted
- * yellows to reds so fast that matches averaged ~21 red cards.
  */
 
 /** Base chance a contested tackle becomes a foul (before danger / strictness). */
-const BASE_FOUL_CHANCE = 0.18;
+const BASE_FOUL_CHANCE = 0.34;
 
 /** Minimum danger before foul is even considered. */
-const FOUL_DANGER_FLOOR = 0.35;
+const FOUL_DANGER_FLOOR = 0.28;
 
 /** Danger needed before a *direct* red is possible (rare). */
-const DIRECT_RED_DANGER = 0.92;
+const DIRECT_RED_DANGER = 0.95;
 
 /** Base P(direct red | foul & extreme danger). */
-const DIRECT_RED_CHANCE = 0.04;
+const DIRECT_RED_CHANCE = 0.012;
 
-/** Base P(yellow | foul) before player traits. Target ~15–20% of fouls. */
-const BASE_YELLOW_CHANCE = 0.12;
+/** Base P(yellow | foul) before player traits. */
+const BASE_YELLOW_CHANCE = 0.11;
 
 export class RefereeSystem {
   private readonly records: Map<string, FoulRecord> = new Map();
 
   constructor(private readonly random: Random) {}
 
-  /**
-   * Evaluates a tackle for foul / card.
-   *
-   * @param tackleSucceeded  clean win on the ball → much lower foul chance
-   * @param tackleDanger     0–1 contact severity from TackleAction
-   */
   public evaluateTackle(
     tackler: PlayerMatchState,
     tacklerTeam: TeamMatchState,
@@ -59,16 +50,14 @@ export class RefereeSystem {
     matchSecond: number,
     tackleSucceeded: boolean = false,
   ): FoulOutcome {
-    // Already sent off — should not be tackling, but ignore further cards.
     if (this.isPlayerSentOff(tackler.player.id)) {
       return { isFoul: false, isCard: false, events: [] };
     }
 
-    const strictness = this.resolveStrictness(match); // 0–1
+    const strictness = this.resolveStrictness(match);
     const danger = Math.max(0, Math.min(1, tackleDanger));
 
-    // Successful, controlled challenges are rarely fouls.
-    if (tackleSucceeded && danger < 0.55) {
+    if (tackleSucceeded && danger < 0.50) {
       return { isFoul: false, isCard: false, events: [] };
     }
 
@@ -76,24 +65,21 @@ export class RefereeSystem {
       return { isFoul: false, isCard: false, events: [] };
     }
 
-    // P(foul) rises with danger and referee strictness; falls on clean wins.
-    const successFactor = tackleSucceeded ? 0.25 : 1.0;
+    const successFactor = tackleSucceeded ? 0.28 : 1.0;
     const foulChance = Math.min(
-      0.55,
+      0.62,
       BASE_FOUL_CHANCE
         * successFactor
-        * (0.6 + danger * 1.2)
-        * (0.75 + strictness * 0.5),
+        * (0.55 + danger * 1.15)
+        * (0.80 + strictness * 0.45),
     );
 
     if (this.random.nextFloat(0, 1) >= foulChance) {
       return { isFoul: false, isCard: false, events: [] };
     }
 
-    // ── Foul awarded ───────────────────────────────────────────────
     const events: CardEvent[] = [];
 
-    // Direct red: only on extreme danger + unlucky roll.
     if (danger >= DIRECT_RED_DANGER && this.random.nextFloat(0, 1) < DIRECT_RED_CHANCE) {
       events.push(
         ...this.issueCard(
@@ -108,16 +94,15 @@ export class RefereeSystem {
       return { isFoul: true, isCard: true, cardType: "RED", events };
     }
 
-    // Yellow: minority of fouls.
     const aggression = (tackler.player.attributes.mental.aggression ?? 10) / 20;
     const dirtiness = (tackler.player.attributes.hidden.dirtiness ?? 5) / 20;
 
     const yellowChance = Math.min(
-      0.35,
+      0.28,
       BASE_YELLOW_CHANCE
-        * (0.7 + danger * 0.8)
-        * (0.8 + aggression * 0.4 + dirtiness * 0.3)
-        * (0.85 + strictness * 0.3),
+        * (0.65 + danger * 0.75)
+        * (0.85 + aggression * 0.35 + dirtiness * 0.25)
+        * (0.85 + strictness * 0.25),
     );
 
     if (this.random.nextFloat(0, 1) < yellowChance) {
@@ -140,13 +125,10 @@ export class RefereeSystem {
       };
     }
 
-    // Soft foul — free kick / stoppage only, no card event.
     return { isFoul: true, isCard: false, events: [] };
   }
 
   private resolveStrictness(match: MatchState): number {
-    // MatchState does not yet carry the Referee aggregate on every path;
-    // default mid-strictness keeps rates stable until wired.
     void match;
     return 0.5;
   }
@@ -170,7 +152,6 @@ export class RefereeSystem {
       this.records.set(player.player.id, record);
     }
 
-    // Already has a red — do not stack more cards.
     if (record.redCard) {
       return [];
     }
@@ -191,7 +172,6 @@ export class RefereeSystem {
         reason,
       });
 
-      // Second yellow → red (still realistic if yellow rate is low).
       if (record.yellowCards >= 2) {
         record.redCard = true;
         events.push({
@@ -234,7 +214,6 @@ export class RefereeSystem {
     return [...this.records.values()];
   }
 
-  /** Reset between matches if the same RefereeSystem instance is reused. */
   public reset(): void {
     this.records.clear();
   }
