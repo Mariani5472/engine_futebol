@@ -4,7 +4,6 @@ import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
-import { ActionReadiness } from "./ActionReadiness";
 
 export class DribbleEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
@@ -36,44 +35,53 @@ export class DribbleEvaluator implements ActionEvaluator {
 
   private calculateDribbleUtility(context: DecisionContext): UtilityScore {
     const attrs = context.player.player.attributes;
+    const world = context.world;
     const dribbling = attrs.technical.dribbling / 20;
     const pace = attrs.physical.pace / 20;
     const flair = attrs.mental.flair / 20;
     const agility = attrs.physical.agility / 20;
 
-    const isHome = context.match.home.players.includes(context.player);
-    const attackingDir = isHome
-      ? context.match.home.attackingDirection
-      : context.match.away.attackingDirection;
     const pitchCentreX = context.match.pitch.length / 2;
     const playerX = context.player.position.x;
-    const attackingX = attackingDir === 1 ? playerX - pitchCentreX : pitchCentreX - playerX;
+    const attackingX =
+      world.attackingDirection === 1
+        ? playerX - pitchCentreX
+        : pitchCentreX - playerX;
     const fieldAdvanceFactor = Math.max(0, Math.min(1, attackingX / pitchCentreX));
-    const isAttacking = PositionInfluenceCalculator.isAttackingRole(context.player.currentRole);
-    const roleBonus = isAttacking ? 18 + fieldAdvanceFactor * 15 : 4 + fieldAdvanceFactor * 8;
+    const isAttacking = PositionInfluenceCalculator.isAttackingRole(
+      context.player.currentRole,
+    );
+    const roleBonus = isAttacking
+      ? 18 + fieldAdvanceFactor * 15
+      : 4 + fieldAdvanceFactor * 8;
 
-    const opponents = isHome ? context.match.away.players : context.match.home.players;
-    const pressure = ActionReadiness.opponentPressure(context.player, opponents);
-    const nearestOpponentDistance = this.nearestOpponentDistance(context, opponents);
-
+    const pressure = world.pressure;
+    const nearestOpponentDistance = world.nearestOpponentDistance;
     const pressurePenalty = pressure * 18;
-    const escapeBonus = this.calculateEscapeBonus(dribbling, pace, agility, nearestOpponentDistance);
+    const escapeBonus = this.calculateEscapeBonus(
+      dribbling,
+      pace,
+      agility,
+      nearestOpponentDistance,
+    );
+    const spaceBonus = world.freeSpace * 8;
 
-    const total = (
+    const total =
       dribbling * 20 +
       pace * 8 +
       flair * 6 +
       agility * 4 +
       roleBonus +
-      escapeBonus -
-      pressurePenalty
-    );
+      escapeBonus +
+      spaceBonus -
+      pressurePenalty;
 
     return new UtilityScore(Math.max(0, total), 0, 0, 0, [
       { code: "DRIBBLING", value: dribbling * 20 },
       { code: "ROLE_BONUS", value: roleBonus },
       { code: "FIELD_ADVANCE", value: fieldAdvanceFactor },
       { code: "PRESSURE", value: pressure },
+      { code: "FREE_SPACE", value: world.freeSpace },
       { code: "ESCAPE_BONUS", value: escapeBonus },
       { code: "PRESSURE_PENALTY", value: -pressurePenalty },
     ]);
@@ -81,16 +89,19 @@ export class DribbleEvaluator implements ActionEvaluator {
 
   private calculateHoldBallUtility(context: DecisionContext): UtilityScore {
     const attrs = context.player.player.attributes;
+    const world = context.world;
     const composure = attrs.mental.composure / 20;
     const strength = attrs.physical.strength / 20;
     const balance = this.normalize(context.player.balance);
     const stability = this.normalize(context.player.stability);
 
-    const isHome = context.match.home.players.includes(context.player);
-    const opponents = isHome ? context.match.away.players : context.match.home.players;
-    const pressure = ActionReadiness.opponentPressure(context.player, opponents);
-
-    const total = composure * 12 + strength * 10 + balance * 8 + stability * 8 + pressure * 18;
+    const pressure = world.pressure;
+    const total =
+      composure * 12 +
+      strength * 10 +
+      balance * 8 +
+      stability * 8 +
+      pressure * 18;
 
     return new UtilityScore(total, 0, 0, 0, [
       { code: "COMPOSURE", value: composure * 12 },
@@ -103,27 +114,28 @@ export class DribbleEvaluator implements ActionEvaluator {
 
   private calculateSkillMoveUtility(context: DecisionContext): UtilityScore {
     const attrs = context.player.player.attributes;
+    const world = context.world;
     const dribbling = attrs.technical.dribbling / 20;
     const flair = attrs.mental.flair / 20;
     const agility = attrs.physical.agility / 20;
     const technique = attrs.technical.technique / 20;
 
-    const isHome = context.match.home.players.includes(context.player);
-    const opponents = isHome ? context.match.away.players : context.match.home.players;
-    const pressure = ActionReadiness.opponentPressure(context.player, opponents);
-    const nearestOpponentDistance = this.nearestOpponentDistance(context, opponents);
+    const pressure = world.pressure;
+    const nearestOpponentDistance = world.nearestOpponentDistance;
 
-    const pressureWindow = Math.max(0, Math.min(1, 1 - Math.abs(pressure - 0.55) / 0.55));
+    const pressureWindow = Math.max(
+      0,
+      Math.min(1, 1 - Math.abs(pressure - 0.55) / 0.55),
+    );
     const spacePenalty = nearestOpponentDistance < 1.2 ? 18 : 0;
 
-    const total = (
+    const total =
       dribbling * 18 +
       flair * 16 +
       agility * 10 +
       technique * 8 +
       pressureWindow * 14 -
-      spacePenalty
-    );
+      spacePenalty;
 
     return new UtilityScore(Math.max(0, total), 0, 0, 0, [
       { code: "DRIBBLING", value: dribbling * 18 },
@@ -141,15 +153,11 @@ export class DribbleEvaluator implements ActionEvaluator {
     agility: number,
     nearestOpponentDistance: number,
   ): number {
-    if (nearestOpponentDistance > 5) return 8;
+    if (!Number.isFinite(nearestOpponentDistance) || nearestOpponentDistance > 5) {
+      return 8;
+    }
     if (nearestOpponentDistance > 3) return (dribbling + pace + agility) * 4;
     return (dribbling + agility) * 5;
-  }
-
-  private nearestOpponentDistance(context: DecisionContext, opponents: typeof context.match.home.players): number {
-    return opponents.reduce((nearest, opponent) => {
-      return Math.min(nearest, context.player.position.distanceTo(opponent.position));
-    }, Infinity);
   }
 
   private normalize(value: number): number {
