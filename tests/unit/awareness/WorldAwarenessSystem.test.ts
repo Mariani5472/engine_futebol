@@ -1,5 +1,6 @@
 import { WorldAwarenessSystem } from "../../../src/application/match/awareness/WorldAwarenessSystem";
 import { PlayerAwareness } from "../../../src/application/match/awareness/memory/PlayerAwareness";
+import { PlayerMemory } from "../../../src/application/match/awareness/memory/PlayerMemory";
 import { Vector2 } from "../../../src/core/geometry/Vector2";
 import { FieldThird } from "../../../src/domain";
 import { buildMinimalMatchState, buildPlayerMatchState } from "../../helpers/builders";
@@ -40,7 +41,6 @@ describe("WorldAwarenessSystem", () => {
   it("computes goalDistance and shotWindow in the attacking third", () => {
     const match = buildMinimalMatchState();
     const carrier = match.home.players[0];
-    // Home attacks +x (direction 1) toward right goal at x=105.
     carrier.position = new Vector2(95, 34);
 
     const world = system.build(match, carrier);
@@ -80,7 +80,6 @@ describe("WorldAwarenessSystem", () => {
     });
     match.home.players.push(target);
 
-    // Wide right, deep in attacking third.
     carrier.position = new Vector2(95, 8);
     carrier.hasBall = true;
 
@@ -95,12 +94,8 @@ describe("WorldAwarenessSystem", () => {
     carrier.position = new Vector2(60, 34);
 
     const awareness = PlayerAwareness.create(carrier.player.id);
-    // Inject a memory teammate not present in match state teammates list only via memory.
-    // Ground-truth teammates may also exist; memory path is exercised when map is non-empty.
-    const { PlayerMemory } = require("../../../src/application/match/awareness/memory/PlayerMemory");
     const mem = PlayerMemory.create("mem-tm-1", new Vector2(65, 30), 0);
-    // certainty field — create may set defaults
-    (mem as { certainty: number }).certainty = 0.8;
+    mem.certainty = 0.8;
     awareness.teammates.set("mem-tm-1", mem);
 
     const world = system.build(match, carrier, awareness);
