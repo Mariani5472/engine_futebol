@@ -46,9 +46,24 @@ export interface GoalEvent extends BaseMatchEvent {
   readonly assistId: PlayerId | null;
 }
 
+/** Awarded to the attacking team when the ball goes out for a corner. */
+export interface CornerEvent extends BaseMatchEvent {
+  readonly type: "CORNER";
+  readonly teamId: TeamId;
+}
+
+/** Soft or hard foul by the offending team (with or without a card). */
+export interface FoulEvent extends BaseMatchEvent {
+  readonly type: "FOUL";
+  readonly teamId: TeamId;
+  readonly playerId: PlayerId;
+}
+
 export type MatchEvent =
   | PeriodStartedEvent
   | PeriodEndedEvent
   | ShotEvent
   | CardEvent
-  | GoalEvent;
+  | GoalEvent
+  | CornerEvent
+  | FoulEvent;
