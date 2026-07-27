@@ -7,9 +7,6 @@ import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 
-const SHOT_POWER = 30;
-const SHOT_HEIGHT = 0.5;
-
 export class ShotAction {
 
   public execute(context: ActionContext): ActionResult {
@@ -26,18 +23,23 @@ export class ShotAction {
     const aimOffset = random.nextFloat(-goal.width / 2.5, goal.width / 2.5);
     const aimPoint = new Vector2(goalCenter.x, goalCenter.y + aimOffset);
 
+    // Register cooldown BEFORE resolving outcome so the same possession cannot
+    // re-select SHOT on the next free tick.
+    const isHome = teamSide === "HOME";
+    const attacking = isHome ? match.home : match.away;
+    attacking.noteShotTaken(matchSecond, 14);
+
     const onTargetProb = this.calculateOnTargetProb(context, player, goalCenter);
     const isOnTarget = random.nextFloat(0, 1) < onTargetProb;
 
     const shotId = `shot-${player.player.id}-${matchSecond.toFixed(1)}`;
-    const teamId = (teamSide === "HOME" ? match.home.team.id : match.away.team.id) as TeamId;
+    const teamId = (isHome ? match.home.team.id : match.away.team.id) as TeamId;
     const playerId = player.player.id as PlayerId;
 
     player.hasBall = false;
     match.ball.owner = null;
 
     if (!isOnTarget) {
-      // Place a contestable ball near the goal mouth rather than a permanent fly-away.
       const missAngle = random.nextFloat(-0.45, 0.45);
       const along = player.position.add(
         aimPoint.subtract(player.position).multiply(random.nextFloat(0.55, 0.9)),
@@ -69,8 +71,6 @@ export class ShotAction {
     const isSaved = random.nextFloat(0, 1) < gkSaveProb;
 
     if (isSaved) {
-      // GK claims — controlled by nearest defending GK if present.
-      const isHome = teamSide === "HOME";
       const defending = isHome ? match.away : match.home;
       const gk = defending.players.find((p) => p.currentRole === "GOALKEEPER")
         ?? defending.players[0];
@@ -92,6 +92,9 @@ export class ShotAction {
         match.ball.owner = null;
       }
 
+      // Possession spell ends for the attacking side.
+      attacking.resetPossessionShotCount();
+
       const shot: ShotEvent = {
         id: shotId,
         type: "SHOT",
@@ -107,11 +110,12 @@ export class ShotAction {
     }
 
     // GOAL
-    const scoringTeam = teamSide === "HOME" ? match.home : match.away;
+    const scoringTeam = isHome ? match.home : match.away;
     scoringTeam.score++;
+    scoringTeam.resetPossessionShotCount();
 
-    // Kickoff: give ball to conceding team at centre.
-    const conceding = teamSide === "HOME" ? match.away : match.home;
+    const conceding = isHome ? match.away : match.home;
+    conceding.resetPossessionShotCount();
     const kickoffPlayer =
       conceding.players.find((p) => p.currentRole !== "GOALKEEPER") ??
       conceding.players[0];
@@ -178,7 +182,8 @@ export class ShotAction {
     const roleQuality = PositionInfluenceCalculator.shootingQuality(shooter.currentRole);
 
     const distance = shooter.position.distanceTo(goalCenter);
-    const distanceFactor = Math.max(0.25, 1 - distance / 48);
+    // Brasileirão ~35% on target overall; distance dominates.
+    const distanceFactor = Math.max(0.18, 1 - distance / 42);
 
     const opponents = context.match.home.players.includes(shooter)
       ? context.match.away.players
@@ -190,19 +195,17 @@ export class ShotAction {
         pressureCount++;
       }
     }
-    const pressurePenalty = Math.min(0.45, pressureCount * 0.12);
+    const pressurePenalty = Math.min(0.50, pressureCount * 0.14);
 
-    const fatiguePenalty = 1 - (shooter.fatigue / 100) * 0.15;
+    const fatiguePenalty = 1 - (shooter.fatigue / 100) * 0.18;
 
-    // Slightly higher conversion readiness once volume rises (priority C prep).
-    const raw = (finishing * 0.55 + composure * 0.30 + technique * 0.15)
+    const raw = (finishing * 0.50 + composure * 0.30 + technique * 0.20)
       * roleQuality
       * distanceFactor
       * (1 - pressurePenalty)
-      * fatiguePenalty
-      + 0.08;
+      * fatiguePenalty;
 
-    return Math.max(0.08, Math.min(0.90, raw));
+    return Math.max(0.12, Math.min(0.72, raw));
   }
 
   private calculateGkSaveProb(
@@ -214,7 +217,7 @@ export class ShotAction {
     const defendingTeam = isHome ? context.match.away : context.match.home;
     const gk = defendingTeam.players.find(p => p.currentRole === "GOALKEEPER");
 
-    if (!gk) return 0.05;
+    if (!gk) return 0.08;
 
     const attrs = gk.player.attributes;
     const reflexes = attrs.goalkeeping.reflexes / 20;
@@ -225,13 +228,13 @@ export class ShotAction {
     const positionBonus = Math.max(0, 1 - gkDistToGoal / 6);
 
     const shooterDist = context.player.position.distanceTo(goalCenter);
-    const distanceSavabilityBonus = Math.min(0.18, shooterDist / 90);
+    const distanceSavabilityBonus = Math.min(0.22, shooterDist / 80);
 
     const raw = (reflexes * 0.45 + handling * 0.30 + positioning * 0.25)
-      * (0.60 + positionBonus * 0.25)
+      * (0.70 + positionBonus * 0.25)
       + distanceSavabilityBonus;
 
-    // Cap saves so close-range finishing converts more often once volume exists.
-    return Math.max(0.05, Math.min(0.72, raw));
+    // ~70% of on-target shots saved → ~2.5 goals if ~25 shots and ~35% on target.
+    return Math.max(0.35, Math.min(0.88, raw));
   }
 }
