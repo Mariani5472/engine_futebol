@@ -7,17 +7,6 @@ import {
   ActionInterruptionReason,
 } from "./ActionExecution";
 
-/**
- * Lifecycle of a multi-step play sequence.
- *
- * A pipeline owns a ordered list of Decisions. Each step is realized as a
- * full ActionExecution (PREPARING → EXECUTING → RECOVERING → COMPLETED).
- * When a step completes, the next step starts automatically — without going
- * back through the DecisionSystem — so the whole sequence belongs to one play.
- *
- * Example:
- *   RECEIVE → CONTROL → DRIBBLE → SKILL_MOVE → SHOT
- */
 export enum PipelinePhase {
   IDLE = "IDLE",
   ACTIVE = "ACTIVE",
@@ -31,9 +20,7 @@ export interface PipelineStep {
 
 export interface PipelineAdvanceResult {
   readonly phase: PipelinePhase;
-  /** Set when the current step just transitioned into EXECUTING this tick. */
   readonly justReachedExecuting?: ActionExecution;
-  /** Set when a step finished and the next one was started. */
   readonly steppedForward?: boolean;
 }
 
@@ -78,10 +65,6 @@ export class PipelineExecution {
     return this.phase === PipelinePhase.ACTIVE;
   }
 
-  /**
-   * Create and begin a pipeline from an ordered list of decisions.
-   * Starts the first ActionExecution immediately.
-   */
   public static start(
     decisions: Decision[],
     player: PlayerMatchState,
@@ -104,13 +87,6 @@ export class PipelineExecution {
     return pipeline;
   }
 
-  /**
-   * Advance the current step's ActionExecution.
-   *
-   * - If the step reaches EXECUTING → report it for arbitration/resolution.
-   * - If the step reaches COMPLETED → start the next step (or finish pipeline).
-   * - Does NOT apply football outcomes; that remains ActionFactory.resolveExecuting.
-   */
   public advance(currentTime: number): PipelineAdvanceResult {
     if (this.phase !== PipelinePhase.ACTIVE || !this.currentAction) {
       return { phase: this.phase };
@@ -119,7 +95,6 @@ export class PipelineExecution {
     const previousPhase = this.currentAction.phase;
     const phase = this.currentAction.advance(currentTime);
 
-    // Just transitioned into EXECUTING this call.
     if (
       phase === ActionExecutionPhase.EXECUTING &&
       previousPhase === ActionExecutionPhase.PREPARING
@@ -130,7 +105,33 @@ export class PipelineExecution {
       };
     }
 
-    // Step fully recovered → advance pipeline or complete.
+    // Zero-windup start: already EXECUTING on construction.
+    if (
+      phase === ActionExecutionPhase.EXECUTING &&
+      previousPhase === ActionExecutionPhase.EXECUTING &&
+      previousPhase === this.currentAction.phase
+    ) {
+      // no-op path
+    }
+
+    if (
+      phase === ActionExecutionPhase.EXECUTING &&
+      previousPhase === ActionExecutionPhase.EXECUTING
+    ) {
+      // Already executing — scheduler should resolve; do not auto-recover here.
+      return { phase: this.phase };
+    }
+
+    // Fresh start landed directly in EXECUTING (windup 0).
+    if (
+      phase === ActionExecutionPhase.EXECUTING &&
+      previousPhase !== ActionExecutionPhase.RECOVERING &&
+      previousPhase !== ActionExecutionPhase.COMPLETED
+    ) {
+      // If previous was already EXECUTING at start of advance, still report
+      // for first-tick resolve when pipeline just started.
+    }
+
     if (phase === ActionExecutionPhase.COMPLETED) {
       return this.advanceToNextStep(currentTime);
     }
@@ -139,20 +140,28 @@ export class PipelineExecution {
   }
 
   /**
-   * Called by the scheduler after a winning EXECUTING step has had its
-   * outcome applied. Moves the current ActionExecution into RECOVERING.
+   * After outcome applied: move EXECUTING → RECOVERING, and if recovery time
+   * has already elapsed (large ticks), complete immediately so the next
+   * player decision can happen next tick.
    */
   public markStepResolved(currentTime: number): void {
     if (!this.currentAction) return;
+
     if (this.currentAction.phase === ActionExecutionPhase.EXECUTING) {
-      this.currentAction.advance(currentTime);
+      // Force into RECOVERING by setting phase via a timed advance path:
+      // temporarily ensure recovery can finish.
+      (this.currentAction as { phase: ActionExecutionPhase }).phase =
+        ActionExecutionPhase.RECOVERING;
+    }
+
+    if (this.currentAction.phase === ActionExecutionPhase.RECOVERING) {
+      const phase = this.currentAction.advance(currentTime);
+      if (phase === ActionExecutionPhase.COMPLETED) {
+        this.advanceToNextStep(currentTime);
+      }
     }
   }
 
-  /**
-   * Interrupt the entire pipeline (e.g. tackle, collision).
-   * Cancels remaining steps; current action enters recovery via interrupt.
-   */
   public interrupt(
     reason: ActionInterruptionReason,
     currentTime: number,
@@ -166,14 +175,9 @@ export class PipelineExecution {
       this.currentAction.interrupt(reason, currentTime);
     }
 
-    // Keep activeAction so recovery can finish; clear pipeline ownership later
-    // when the interrupted action reaches COMPLETED.
     return true;
   }
 
-  /**
-   * After an interrupted current action finishes recovery, clear references.
-   */
   public finalizeIfDone(currentTime: number): void {
     if (this.phase === PipelinePhase.INTERRUPTED && this.currentAction) {
       const phase = this.currentAction.advance(currentTime);
@@ -203,7 +207,6 @@ export class PipelineExecution {
     );
 
     if (!nextAction) {
-      // Cannot start next step (no profile / continuous) → end pipeline.
       this.phase = PipelinePhase.COMPLETED;
       this.clearPlayerRefs();
       return { phase: this.phase, steppedForward: false };
@@ -216,6 +219,10 @@ export class PipelineExecution {
     return {
       phase: this.phase,
       steppedForward: true,
+      justReachedExecuting:
+        nextAction.phase === ActionExecutionPhase.EXECUTING
+          ? nextAction
+          : undefined,
     };
   }
 
@@ -224,7 +231,6 @@ export class PipelineExecution {
     if (this.player.activePipeline === this) {
       this.player.activePipeline = undefined;
     }
-    // Only clear activeAction if it still points at a finished step.
     if (
       this.player.activeAction &&
       !this.player.activeAction.isBusy()
