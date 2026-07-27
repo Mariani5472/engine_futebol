@@ -7,10 +7,6 @@ import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCal
 import { PassingLane } from "../../awareness/WorldAwareness";
 import { ActionReadiness } from "./ActionReadiness";
 
-/**
- * Progressive passing is the main lever for chance creation.
- * When at least one forward lane exists, lateral/back options are heavily demoted.
- */
 export class PassEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     if (!context.player.hasBall) return [];
@@ -22,10 +18,21 @@ export class PassEvaluator implements ActionEvaluator {
     const bestForward = Math.max(...lanes.map((l) => l.forwardProgress));
     const hasProgressiveOption = bestForward >= 6;
 
+    const team = context.match.home.players.includes(context.player)
+      ? context.match.home
+      : context.match.away;
+    const holdProgressive = team.inProgressiveHold(context.match.currentSecond);
+
     const decisions: Decision[] = [];
 
     for (const lane of lanes) {
-      const score = this.scoreLane(context, lane, hasProgressiveOption, bestForward);
+      const score = this.scoreLane(
+        context,
+        lane,
+        hasProgressiveOption,
+        bestForward,
+        holdProgressive,
+      );
       if (score.total <= 0) continue;
       decisions.push(
         new Decision(
@@ -46,6 +53,7 @@ export class PassEvaluator implements ActionEvaluator {
     lane: PassingLane,
     hasProgressiveOption: boolean,
     bestForward: number,
+    holdProgressive: boolean,
   ): UtilityScore {
     const attrs = context.player.player.attributes;
     const world = context.world;
@@ -59,10 +67,7 @@ export class PassEvaluator implements ActionEvaluator {
     );
 
     const distanceScore = Math.max(0, 20 - lane.distance * 0.4);
-
-    // Strong continuous reward for metres gained toward the opponent goal.
     const progressBonus = Math.max(-20, Math.min(55, lane.forwardProgress * 1.6));
-
     const certaintyBonus = lane.certainty * 6;
     const clearanceBonus = lane.clear ? 12 : -6;
 
@@ -80,13 +85,12 @@ export class PassEvaluator implements ActionEvaluator {
       if (lane.forwardProgress > 4) pressureRelief += 14;
     }
 
-    // When a progressive lane exists, punish sideways / backward retention.
     let antiStagnation = 0;
-    if (hasProgressiveOption) {
+    if (hasProgressiveOption || holdProgressive) {
       if (lane.forwardProgress < 0) {
-        antiStagnation = -35;
+        antiStagnation = holdProgressive ? -45 : -35;
       } else if (lane.forwardProgress < 3) {
-        antiStagnation = -22;
+        antiStagnation = holdProgressive ? -30 : -22;
       } else if (lane.forwardProgress < bestForward * 0.5) {
         antiStagnation = -10;
       }
