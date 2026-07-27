@@ -5,16 +5,22 @@ import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 
+/**
+ * Dribble is a situational option, not the default possession loop.
+ *
+ * Calibration showed ~99% of on-ball decisions were DRIBBLE because base
+ * utility stayed ~50–65 every tick while PASS was low and HOLD was weak.
+ */
 export class DribbleEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     if (!context.player.hasBall) return [];
 
     const options = [
       this.createDecision(DecisionType.DRIBBLE, this.calculateDribbleUtility(context)),
-      this.createDecision(DecisionType.HOLD_BALL, this.calculateHoldBallUtility(context)),
       this.createDecision(DecisionType.SKILL_MOVE, this.calculateSkillMoveUtility(context)),
     ];
 
+    // HOLD_BALL is owned by HoldBallEvaluator — avoid duplicate candidates.
     return options.filter((decision) => decision.utility > 0);
   }
 
@@ -30,6 +36,15 @@ export class DribbleEvaluator implements ActionEvaluator {
     const flair = (attrs.mental.flair ?? 10) / 20;
     const agility = (attrs.physical.agility ?? 10) / 20;
 
+    const freeSpace = world.freeSpace;
+    const pressure = world.pressure;
+    const nearest = world.nearestOpponentDistance;
+
+    // No space and already marked → dribble is a poor default.
+    if (freeSpace < 0.18 && pressure > 0.55) {
+      return UtilityScore.fromComponents({ SPACE: 0 });
+    }
+
     const pitchCentreX = context.match.pitch.length / 2;
     const playerX = context.player.position.x;
     const attackingX =
@@ -41,42 +56,35 @@ export class DribbleEvaluator implements ActionEvaluator {
       context.player.currentRole,
     );
     const roleBonus = isAttacking
-      ? 18 + fieldAdvanceFactor * 15
-      : 4 + fieldAdvanceFactor * 8;
+      ? 8 + fieldAdvanceFactor * 10
+      : 2 + fieldAdvanceFactor * 4;
 
-    const pressure = world.pressure;
-    const nearestOpponentDistance = world.nearestOpponentDistance;
-    const pressurePenalty = pressure * 18;
-    const escapeBonus = this.calculateEscapeBonus(
-      dribbling,
-      pace,
-      agility,
-      nearestOpponentDistance,
-    );
-    const spaceBonus = world.freeSpace * 8;
+    // Space is the main gate — open pitch rewards dribble; congestion punishes it.
+    const spaceGate = Math.max(0, freeSpace * 22 - pressure * 20);
+
+    // Escape only when an opponent is close but not already on top of the ball.
+    let escapeBonus = 0;
+    if (Number.isFinite(nearest) && nearest > 1.5 && nearest < 5) {
+      escapeBonus = (dribbling + agility + pace) * 3;
+    }
+
+    // Anti-spam: after a dribble beat, prefer pass/shot/hold unless space opened up.
+    let repeatPenalty = 0;
+    if (context.player.lastActionType === DecisionType.DRIBBLE) {
+      repeatPenalty = freeSpace > 0.55 ? 12 : 38;
+    }
+    if (context.player.lastActionType === DecisionType.SKILL_MOVE) {
+      repeatPenalty += 10;
+    }
+
+    const technique = dribbling * 12 + pace * 5 + flair * 4 + agility * 3;
 
     return UtilityScore.fromComponents({
-      TECHNIQUE: dribbling * 20 + pace * 8 + flair * 6 + agility * 4,
+      TECHNIQUE: technique,
       ROLE: roleBonus,
-      SPACE: spaceBonus + escapeBonus,
-      PRESSURE: -pressurePenalty,
-    });
-  }
-
-  private calculateHoldBallUtility(context: DecisionContext): UtilityScore {
-    const attrs = context.player.player.attributes;
-    const world = context.world;
-    const composure = (attrs.mental.composure ?? 10) / 20;
-    const strength = (attrs.physical.strength ?? 10) / 20;
-    const balance = this.normalize(context.player.balance ?? 100);
-    const stability = this.normalize(context.player.stability ?? 100);
-
-    const pressure = world.pressure;
-
-    return UtilityScore.fromComponents({
-      TECHNIQUE: composure * 12 + strength * 10,
-      BODY: balance * 8 + stability * 8,
-      PRESSURE: pressure * 18,
+      SPACE: spaceGate + escapeBonus,
+      PRESSURE: -pressure * 22,
+      RISK: -repeatPenalty,
     });
   }
 
@@ -91,6 +99,14 @@ export class DribbleEvaluator implements ActionEvaluator {
     const pressure = world.pressure;
     const nearestOpponentDistance = world.nearestOpponentDistance;
 
+    // Skill moves need a narrow pressure window — not open pitch spam.
+    if (pressure < 0.25 || pressure > 0.85) {
+      return UtilityScore.fromComponents({ SPACE: 0 });
+    }
+    if (context.player.lastActionType === DecisionType.SKILL_MOVE) {
+      return UtilityScore.fromComponents({ SPACE: 0 });
+    }
+
     const pressureWindow = Math.max(
       0,
       Math.min(1, 1 - Math.abs(pressure - 0.55) / 0.55),
@@ -98,28 +114,9 @@ export class DribbleEvaluator implements ActionEvaluator {
     const spacePenalty = nearestOpponentDistance < 1.2 ? 18 : 0;
 
     return UtilityScore.fromComponents({
-      TECHNIQUE: dribbling * 18 + flair * 16 + agility * 10 + technique * 8,
-      PRESSURE: pressureWindow * 14,
+      TECHNIQUE: dribbling * 10 + flair * 12 + agility * 6 + technique * 5,
+      PRESSURE: pressureWindow * 10,
       SPACE: -spacePenalty,
     });
-  }
-
-  private calculateEscapeBonus(
-    dribbling: number,
-    pace: number,
-    agility: number,
-    nearestOpponentDistance: number,
-  ): number {
-    if (!Number.isFinite(nearestOpponentDistance) || nearestOpponentDistance > 5) {
-      return 8;
-    }
-    if (nearestOpponentDistance > 3) return (dribbling + pace + agility) * 4;
-    return (dribbling + agility) * 5;
-  }
-
-  private normalize(value: number): number {
-    if (typeof value !== "number" || !Number.isFinite(value)) return 1;
-    if (value <= 1) return Math.max(0, value);
-    return Math.max(0, Math.min(1, value / 100));
   }
 }
