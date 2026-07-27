@@ -32,6 +32,8 @@ import { BallPhysicsSystem } from "../physics/BallPhysicsSystem";
 import { TacticalEngine } from "../tactical/TacticalEngine";
 import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
 import { RefereeSystem } from "../referee/RefereeSystem";
+import { MatchMetricsCollector } from "../metrics/MatchMetricsCollector";
+import { MatchMetrics } from "../metrics/MatchMetrics";
 import { MatchInitializer } from "./MatchInitializer";
 import { SimulationConfig } from "./SimulationConfig";
 
@@ -52,6 +54,8 @@ export interface MatchResult {
   readonly awayShots: number;
   readonly matchDurationSeconds: number;
   readonly seed: number;
+  /** Full Phase 9 metrics (xG, PPDA, field tilt, progressive passes, …). */
+  readonly metrics: MatchMetrics;
 }
 
 export class MatchEngine {
@@ -95,8 +99,10 @@ export class MatchEngine {
     const teamBehaviour = new TeamBehaviourSystem();
     const movementSystem = new MovementSystem();
     const possessionSystem = new PossessionSystem(rng, new ReachCalculator());
+    const metrics = new MatchMetricsCollector();
 
     const { state, awarenessMap } = this.initializer.initialize(config);
+    metrics.bindTeams(state.home.team.id, state.away.team.id);
 
     let period: MatchPeriod = "FIRST_HALF";
     const allEvents: MatchEvent[] = [];
@@ -122,7 +128,7 @@ export class MatchEngine {
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
         teamBehaviour, movementSystem, possessionSystem,
-        tick, period
+        tick, period, metrics
       );
 
       for (const event of tickEvents) {
@@ -133,12 +139,17 @@ export class MatchEngine {
         }
       }
 
+      metrics.onEvents(tickEvents, state);
+      metrics.sampleState(state);
+
       this.accumulateFatigue(state, deltaTime);
       state.currentSecond += deltaTime;
       tick++;
     }
 
     allEvents.push(this.makePeriodEnded("SECOND_HALF", state.currentSecond));
+
+    const finalMetrics = metrics.finalize();
 
     return {
       homeTeamId: state.home.team.id,
@@ -149,7 +160,8 @@ export class MatchEngine {
       homeShots,
       awayShots,
       matchDurationSeconds: state.currentSecond,
-      seed: config.seed
+      seed: config.seed,
+      metrics: finalMetrics,
     };
   }
 
@@ -163,7 +175,7 @@ export class MatchEngine {
    * 5. ActionArbitrator resolves conflicts
    * 6. Apply consequences of winning steps
    * 7. Build WorldAwareness + evaluate decisions for free players
-   * 8. Create new PipelineExecutions
+   * 8. Create new PipelineExecutions (+ metrics.onActionStarted)
    * 9. Ball physics / tactical / movement / possession
    */
   private runTick(
@@ -183,7 +195,8 @@ export class MatchEngine {
     movementSystem: MovementSystem,
     possessionSystem: PossessionSystem,
     tick: number,
-    period: MatchPeriod
+    period: MatchPeriod,
+    metrics: MatchMetricsCollector,
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
     const players = this.allPlayers(state);
@@ -268,7 +281,10 @@ export class MatchEngine {
         ? possessionDecisionSystem.decide(decisionCtx)
         : offBallDecisionSystem.decide(decisionCtx);
 
-      actionFactory.tryStart(decision, player, state.currentSecond);
+      const started = actionFactory.tryStart(decision, player, state.currentSecond);
+      if (started) {
+        metrics.onActionStarted(player, decision.type, state);
+      }
     }
 
     ballPhysics.update(state, deltaTime);
