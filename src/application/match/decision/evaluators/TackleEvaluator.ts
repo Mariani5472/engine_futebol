@@ -37,60 +37,75 @@ export class TackleEvaluator implements ActionEvaluator {
     const defendingTeam = isHome ? match.home : match.away;
     const opponents = isHome ? match.away.players : match.home.players;
 
-    const tackling = player.player.attributes.technical.tackling / 20;
-    const aggression = player.player.attributes.mental.aggression / 20;
-    const positioning = player.player.attributes.mental.positioning / 20;
-    const decisions = player.player.attributes.mental.decisions / 20;
-    const anticipation = player.player.attributes.mental.anticipation / 20;
-    const stamina = player.stamina / 100;
+    const tackling = (player.player.attributes.technical.tackling ?? 10) / 20;
+    const aggression = (player.player.attributes.mental.aggression ?? 10) / 20;
+    const positioning = (player.player.attributes.mental.positioning ?? 10) / 20;
+    const decisions = (player.player.attributes.mental.decisions ?? 10) / 20;
+    const anticipation = (player.player.attributes.mental.anticipation ?? 10) / 20;
+    const stamina = (player.stamina ?? 100) / 100;
 
     const proximityBonus = Math.max(0, 22 - distance * 5.2);
     const ballOwnerPressure = this.calculateBallOwnerPressure(ballOwner, opponents);
-    const ownGoalBonus = this.calculateOwnGoalUrgency(player, defendingTeam.attackingDirection, match.pitch.length);
+    const ownGoalBonus = this.calculateOwnGoalUrgency(
+      player,
+      defendingTeam.attackingDirection,
+      match.pitch.length,
+    );
     const roleBonus = this.calculateRoleBonus(player);
 
     const currentTime = ActionReadiness.currentTime(context);
-    const interruptionOpportunity = ActionReadiness.interruptionOpportunity(ballOwner, player, currentTime);
-    const targetBodyQuality = ActionReadiness.bodyQuality({ ...context, player: ballOwner } as DecisionContext);
-    const preparationBonus = this.calculatePreparationBonus(ballOwner, interruptionOpportunity);
-    const vulnerabilityBonus = this.calculateVulnerabilityBonus(targetBodyQuality, interruptionOpportunity);
+    const interruptionOpportunity = ActionReadiness.interruptionOpportunity(
+      ballOwner,
+      player,
+      currentTime,
+    );
+    const targetBodyQuality = ActionReadiness.bodyQualityOf(ballOwner);
+    const preparationBonus = this.calculatePreparationBonus(
+      ballOwner,
+      interruptionOpportunity,
+    );
+    const vulnerabilityBonus = this.calculateVulnerabilityBonus(
+      targetBodyQuality,
+      interruptionOpportunity,
+    );
 
     const movementProfile = this.calculateTargetMovementProfile(ballOwner);
-    const movementBonus = this.calculateMovementBonus(movementProfile, tackling, anticipation, decisions);
-    const movementRisk = this.calculateMovementRisk(movementProfile, distance, tackling);
+    const movementBonus = this.calculateMovementBonus(
+      movementProfile,
+      tackling,
+      anticipation,
+      decisions,
+    );
+    const movementRisk = this.calculateMovementRisk(
+      movementProfile,
+      distance,
+      tackling,
+    );
 
     const staminaModifier = Math.max(0.65, 0.45 + stamina * 0.55);
 
-    const base = (
+    const technique =
       tackling * 28 +
       aggression * 12 +
-      positioning * 10 +
       anticipation * 8 +
       decisions * 5 +
-      proximityBonus +
-      ballOwnerPressure +
-      ownGoalBonus +
-      roleBonus +
-      preparationBonus +
-      vulnerabilityBonus +
-      movementBonus -
-      movementRisk
-    ) * staminaModifier;
+      movementBonus;
+    const space = proximityBonus;
+    const pressure = ballOwnerPressure + preparationBonus + vulnerabilityBonus;
+    const role = roleBonus + positioning * 10 + ownGoalBonus;
+    const risk = -movementRisk;
+    const raw = technique + space + pressure + role + risk;
+    const fatigueAdj = raw * (staminaModifier - 1);
 
-    return new UtilityScore(Math.max(0, base), 0, 0, 0, [
-      { code: "TACKLING", value: tackling * 28 },
-      { code: "AGGRESSION", value: aggression * 12 },
-      { code: "POSITIONING", value: positioning * 10 },
-      { code: "ANTICIPATION", value: anticipation * 8 },
-      { code: "PROXIMITY", value: proximityBonus },
-      { code: "BALL_OWNER_PRESSURE", value: ballOwnerPressure },
-      { code: "OWN_GOAL_URGENCY", value: ownGoalBonus },
-      { code: "ROLE_BONUS", value: roleBonus },
-      { code: "PREPARATION_WINDOW", value: preparationBonus },
-      { code: "TARGET_VULNERABILITY", value: vulnerabilityBonus },
-      { code: "TARGET_MOVEMENT", value: movementBonus },
-      { code: "MOVEMENT_RISK", value: -movementRisk },
-    ]);
+    return UtilityScore.fromComponents({
+      SPACE: space,
+      PRESSURE: pressure,
+      TECHNIQUE: technique,
+      ROLE: role,
+      RISK: risk,
+      FATIGUE: fatigueAdj,
+      BODY: 0,
+    });
   }
 
   private calculateTargetMovementProfile(target: PlayerMatchState): {
@@ -99,7 +114,7 @@ export class TackleEvaluator implements ActionEvaluator {
     isRunning: boolean;
     isTurning: boolean;
   } {
-    const speed = target.velocity.magnitude();
+    const speed = target.velocity?.magnitude?.() ?? 0;
     const isStationary = speed < 0.35;
     const isRunning = speed > 3.5;
 
@@ -108,9 +123,10 @@ export class TackleEvaluator implements ActionEvaluator {
     }
 
     const movementDirection = target.velocity.normalize();
-    const facing = target.facingDirection.magnitude() === 0
-      ? movementDirection
-      : target.facingDirection.normalize();
+    const facing =
+      !target.facingDirection || target.facingDirection.magnitude() === 0
+        ? movementDirection
+        : target.facingDirection.normalize();
 
     const alignment = facing.dot(movementDirection);
     return {
@@ -151,7 +167,10 @@ export class TackleEvaluator implements ActionEvaluator {
     return risk;
   }
 
-  private calculatePreparationBonus(ballOwner: PlayerMatchState, interruptionOpportunity: number): number {
+  private calculatePreparationBonus(
+    ballOwner: PlayerMatchState,
+    interruptionOpportunity: number,
+  ): number {
     const actionType = ballOwner.activeAction?.type;
     if (!actionType || interruptionOpportunity <= 0) return 0;
 
@@ -171,11 +190,17 @@ export class TackleEvaluator implements ActionEvaluator {
     return (technicalCommitment[actionType] ?? 0) * interruptionOpportunity;
   }
 
-  private calculateVulnerabilityBonus(bodyQuality: number, interruptionOpportunity: number): number {
+  private calculateVulnerabilityBonus(
+    bodyQuality: number,
+    interruptionOpportunity: number,
+  ): number {
     return (1 - bodyQuality) * 8 * interruptionOpportunity;
   }
 
-  private calculateBallOwnerPressure(ballOwner: PlayerMatchState, opponents: PlayerMatchState[]): number {
+  private calculateBallOwnerPressure(
+    ballOwner: PlayerMatchState,
+    opponents: PlayerMatchState[],
+  ): number {
     const nearestOpponentDistance = opponents.reduce((nearest, opponent) => {
       return Math.min(nearest, ballOwner.position.distanceTo(opponent.position));
     }, Infinity);
@@ -187,7 +212,11 @@ export class TackleEvaluator implements ActionEvaluator {
     return 1;
   }
 
-  private calculateOwnGoalUrgency(player: PlayerMatchState, attackingDirection: 1 | -1, pitchLength: number): number {
+  private calculateOwnGoalUrgency(
+    player: PlayerMatchState,
+    attackingDirection: 1 | -1,
+    pitchLength: number,
+  ): number {
     const ownGoalX = attackingDirection === 1 ? 0 : pitchLength;
     const distanceToOwnGoal = Math.abs(player.position.x - ownGoalX);
 
