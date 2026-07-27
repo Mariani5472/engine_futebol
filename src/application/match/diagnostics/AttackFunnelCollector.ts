@@ -39,16 +39,28 @@ export interface AttackFunnelReport {
   readonly backwardPassCount: number;
   readonly supportAheadShareOfPossession: number;
 
-  /** Mean real Δx (attack axis) after successful pass completion. */
   readonly avgPassRealForwardGain: number;
-  /** Share of completed passes with real Δx ≥ 8m. */
   readonly passEffectiveProgressiveRate: number;
-  /** Mean |laneFP − realΔx| for completed passes (paradox detector). */
   readonly avgLaneVsRealAbsError: number;
   readonly completedPassSamples: number;
-  /** Mean ticks from opponent-half entry until return to own half. */
   readonly avgTicksUntilOwnHalfReturn: number;
   readonly ownHalfReturnSamples: number;
+
+  /** Throughput: tryStart(PASS) calls. */
+  readonly passTryStarts: number;
+  /** Throughput: PASS reached EXECUTING. */
+  readonly passReachedExecuting: number;
+  /** Throughput: resolveExecuting success. */
+  readonly passResolvedSuccess: number;
+  /** Throughput: resolveExecuting failure. */
+  readonly passResolvedFailure: number;
+  /** Ratio resolvedSuccess / tryStarts. */
+  readonly passCompletionRatio: number;
+  /** Ball-carrier ticks while isActionBusy. */
+  readonly carrierBusyTicks: number;
+  readonly carrierBusyShareOfPossession: number;
+  readonly avgPassWindupSeconds: number;
+  readonly avgPassRecoverySeconds: number;
 }
 
 export class AttackFunnelCollector {
@@ -58,6 +70,7 @@ export class AttackFunnelCollector {
   private shootingZoneTicks = 0;
   private opponentHalfPossessionTicks = 0;
   private supportAheadTicks = 0;
+  private carrierBusyTicks = 0;
 
   private goalDistanceSum = 0;
   private goalDistanceSamples = 0;
@@ -73,6 +86,14 @@ export class AttackFunnelCollector {
   private passRealGainSamples = 0;
   private passEffectiveProgressive = 0;
   private laneVsRealAbsErrorSum = 0;
+
+  private passTryStarts = 0;
+  private passReachedExecuting = 0;
+  private passResolvedSuccess = 0;
+  private passResolvedFailure = 0;
+  private passWindupSum = 0;
+  private passRecoverySum = 0;
+  private passTimingSamples = 0;
 
   private opponentHalfStreak = 0;
   private ownHalfReturnSum = 0;
@@ -94,6 +115,7 @@ export class AttackFunnelCollector {
     }
 
     this.possessionTicks++;
+    if (owner.isActionBusy()) this.carrierBusyTicks++;
 
     const isHome = state.home.players.includes(owner);
     const team = isHome ? state.home : state.away;
@@ -177,18 +199,34 @@ export class AttackFunnelCollector {
     }
   }
 
-  /** Call when a PASS action resolves (success or fail) with real Δx. */
+  public onPassTryStart(windupSeconds?: number, recoverySeconds?: number): void {
+    this.passTryStarts++;
+    if (windupSeconds !== undefined && recoverySeconds !== undefined) {
+      this.passWindupSum += windupSeconds;
+      this.passRecoverySum += recoverySeconds;
+      this.passTimingSamples++;
+    }
+  }
+
+  public onPassReachedExecuting(): void {
+    this.passReachedExecuting++;
+  }
+
   public onPassResolved(
     realForwardGain: number,
     laneForwardProgress?: number,
     success: boolean = true,
   ): void {
-    if (!success) return;
-    this.passRealGainSum += realForwardGain;
-    this.passRealGainSamples++;
-    if (realForwardGain >= 8) this.passEffectiveProgressive++;
-    if (laneForwardProgress !== undefined) {
-      this.laneVsRealAbsErrorSum += Math.abs(laneForwardProgress - realForwardGain);
+    if (success) {
+      this.passResolvedSuccess++;
+      this.passRealGainSum += realForwardGain;
+      this.passRealGainSamples++;
+      if (realForwardGain >= 8) this.passEffectiveProgressive++;
+      if (laneForwardProgress !== undefined) {
+        this.laneVsRealAbsErrorSum += Math.abs(laneForwardProgress - realForwardGain);
+      }
+    } else {
+      this.passResolvedFailure++;
     }
   }
 
@@ -198,7 +236,6 @@ export class AttackFunnelCollector {
       (a, b) => a + b,
       0,
     );
-    const completed = Math.max(1, this.passRealGainSamples);
 
     return {
       ticks: this.ticks,
@@ -264,6 +301,25 @@ export class AttackFunnelCollector {
           ? this.ownHalfReturnSum / this.ownHalfReturnSamples
           : 0,
       ownHalfReturnSamples: this.ownHalfReturnSamples,
+
+      passTryStarts: this.passTryStarts,
+      passReachedExecuting: this.passReachedExecuting,
+      passResolvedSuccess: this.passResolvedSuccess,
+      passResolvedFailure: this.passResolvedFailure,
+      passCompletionRatio:
+        this.passTryStarts > 0
+          ? this.passResolvedSuccess / this.passTryStarts
+          : 0,
+      carrierBusyTicks: this.carrierBusyTicks,
+      carrierBusyShareOfPossession: this.carrierBusyTicks / poss,
+      avgPassWindupSeconds:
+        this.passTimingSamples > 0
+          ? this.passWindupSum / this.passTimingSamples
+          : 0,
+      avgPassRecoverySeconds:
+        this.passTimingSamples > 0
+          ? this.passRecoverySum / this.passTimingSamples
+          : 0,
     };
   }
 
@@ -282,15 +338,14 @@ export class AttackFunnelCollector {
       `opponentHalf:   ${report.opponentHalfPossessionTicks} (${(report.opponentHalfShareOfPossession * 100).toFixed(1)}% of poss)`,
       `shootingZone≤${SHOOTING_ZONE_DISTANCE}m: ${report.shootingZoneTicks} (${(report.shootingZoneShareOfPossession * 100).toFixed(1)}% of poss)`,
       `supportAhead: ${(report.supportAheadShareOfPossession * 100).toFixed(1)}% of poss`,
+      `carrierBusy: ${(report.carrierBusyShareOfPossession * 100).toFixed(1)}% of poss`,
+      `PASS throughput: tryStart=${report.passTryStarts} executing=${report.passReachedExecuting} ok=${report.passResolvedSuccess} fail=${report.passResolvedFailure} ratio=${(report.passCompletionRatio * 100).toFixed(1)}%`,
+      `PASS timing avg windup=${report.avgPassWindupSeconds.toFixed(3)}s recovery=${report.avgPassRecoverySeconds.toFixed(3)}s`,
       `avgGoalDist=${report.avgGoalDistanceWhenInPossession.toFixed(1)}m minGoalDist=${report.minGoalDistanceObserved.toFixed(1)}m`,
       `pass FP(lane)=${report.avgSelectedPassForwardProgress.toFixed(1)}m realΔx=${report.avgPassRealForwardGain.toFixed(1)}m |err|=${report.avgLaneVsRealAbsError.toFixed(1)} effective≥8m=${(report.passEffectiveProgressiveRate * 100).toFixed(1)}% n=${report.completedPassSamples}`,
       `ownHalfReturn avgTicks=${report.avgTicksUntilOwnHalfReturn.toFixed(1)} (n=${report.ownHalfReturnSamples})`,
-      `progressive=${report.progressivePassCount} lateral=${report.lateralPassCount} back=${report.backwardPassCount}`,
       `decisions total=${report.totalPossessionDecisions} SHOT=${report.shotDecisions} PASS=${report.passDecisions} HOLD=${report.holdDecisions} DRIBBLE=${report.dribbleDecisions}`,
-      `SHOT in shooting zone=${report.shotDecisionsInShootingZone}`,
       `top decisions: ${top(report.possessionDecisions)}`,
-      `top in ATK third: ${top(report.possessionDecisionsInAttackingThird)}`,
-      `top in shoot zone: ${top(report.possessionDecisionsInShootingZone)}`,
     ].join("\n");
   }
 
