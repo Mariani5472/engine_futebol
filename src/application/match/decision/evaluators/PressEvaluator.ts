@@ -5,6 +5,7 @@ import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { FieldThirdResolver } from "../../../../core/pitch/FieldThirdResolver";
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
+import { ActionReadiness } from "./ActionReadiness";
 
 export class PressEvaluator implements ActionEvaluator {
   private readonly fieldThirdResolver = new FieldThirdResolver(105);
@@ -12,20 +13,20 @@ export class PressEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     if (context.player.hasBall) return [];
 
-    const ball = context.match.ball;
-    if (!ball.owner) return [];
+    const ballOwner = context.match.ball.owner;
+    if (!ballOwner) return [];
 
     const isHome = context.match.home.players.includes(context.player);
     const ownerIsOpponent = isHome
-      ? context.match.away.players.includes(ball.owner)
-      : context.match.home.players.includes(ball.owner);
+      ? context.match.away.players.includes(ballOwner)
+      : context.match.home.players.includes(ballOwner);
 
     if (!ownerIsOpponent) return [];
 
-    const distance = context.player.position.distanceTo(ball.owner.position);
+    const distance = context.player.position.distanceTo(ballOwner.position);
     if (distance > 18) return [];
 
-    const score = this.calculateUtility(context, distance, ball.owner);
+    const score = this.calculateUtility(context, distance, ballOwner);
     if (score.total < 10) return [];
 
     return [new Decision(DecisionType.PRESS, score.total)];
@@ -48,6 +49,8 @@ export class PressEvaluator implements ActionEvaluator {
     const ballOwnerPressure = this.calculateBallOwnerPressure(context, ballOwner);
     const fieldThirdBonus = this.calculateFieldThirdBonus(context);
     const roleBonus = this.calculateRoleBonus(context);
+    const actionCommitmentBonus = this.calculateActionCommitmentBonus(context, ballOwner);
+    const exposureBonus = this.calculatePreparationExposureBonus(context, ballOwner);
     const staminaModifier = Math.max(0.6, 0.5 + stamina * 0.5);
 
     const base = (
@@ -58,7 +61,9 @@ export class PressEvaluator implements ActionEvaluator {
       pressureLaneBonus +
       ballOwnerPressure +
       fieldThirdBonus +
-      roleBonus
+      roleBonus +
+      actionCommitmentBonus +
+      exposureBonus
     ) * staminaModifier;
 
     return new UtilityScore(Math.max(0, base), 0, 0, 0, [
@@ -68,8 +73,49 @@ export class PressEvaluator implements ActionEvaluator {
       { code: "PROXIMITY", value: pressureLaneBonus },
       { code: "BALL_OWNER_PRESSURE", value: ballOwnerPressure },
       { code: "FIELD_THIRD", value: fieldThirdBonus },
-      { code: "ROLE_BONUS", value: roleBonus }
+      { code: "ROLE_BONUS", value: roleBonus },
+      { code: "ACTION_COMMITMENT", value: actionCommitmentBonus },
+      { code: "PREPARATION_EXPOSURE", value: exposureBonus },
     ]);
+  }
+
+  private calculateActionCommitmentBonus(
+    context: DecisionContext,
+    ballOwner: PlayerMatchState
+  ): number {
+    const opportunity = ActionReadiness.interruptionOpportunity(
+      ballOwner,
+      context.player,
+      ActionReadiness.currentTime(context),
+    );
+
+    if (opportunity <= 0) return 0;
+
+    const actionBonus: Partial<Record<DecisionType, number>> = {
+      [DecisionType.PASS]: 10,
+      [DecisionType.CROSS]: 12,
+      [DecisionType.SHOT]: 14,
+      [DecisionType.CLEAR]: 10,
+      [DecisionType.CONTROL]: 6,
+      [DecisionType.DRIBBLE]: 8,
+      [DecisionType.SKILL_MOVE]: 10,
+      [DecisionType.FAKE]: 5,
+    };
+
+    return (actionBonus[ballOwner.activeAction?.type ?? DecisionType.NONE] ?? 0) * opportunity;
+  }
+
+  private calculatePreparationExposureBonus(
+    context: DecisionContext,
+    ballOwner: PlayerMatchState
+  ): number {
+    const opportunity = ActionReadiness.interruptionOpportunity(
+      ballOwner,
+      context.player,
+      ActionReadiness.currentTime(context),
+    );
+
+    return opportunity * 8;
   }
 
   private calculateBallOwnerPressure(
