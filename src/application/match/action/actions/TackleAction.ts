@@ -49,10 +49,13 @@ export class TackleAction {
     }
 
     if (success) {
-      // A successful tackle is also an external interruption of the victim's
-      // current physical action. The victim does not simply lose possession;
-      // the action is interrupted and the body enters a new recovery window.
-      ballOwner.activeAction?.interrupt("TACKLE", matchSecond);
+      // Successful tackle interrupts the entire play sequence, not just the
+      // current step — remaining pipeline steps (e.g. CONTROL → SHOT) are cancelled.
+      if (ballOwner.activePipeline?.isBusy()) {
+        ballOwner.activePipeline.interrupt("TACKLE", matchSecond);
+      } else {
+        ballOwner.activeAction?.interrupt("TACKLE", matchSecond);
+      }
 
       ballOwner.hasBall = false;
       player.hasBall = true;
