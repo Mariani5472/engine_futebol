@@ -270,7 +270,7 @@ export class MatchEngine {
         : offBallDecisionSystem.decide(decisionCtx);
 
       if (player.hasBall && attackFunnel) {
-        attackFunnel.onPossessionDecision(decision.type, player, world);
+        attackFunnel.onPossessionDecision(decision.type, player, world, decision);
       }
 
       const started = actionFactory.tryStart(decision, player, state.currentSecond);
