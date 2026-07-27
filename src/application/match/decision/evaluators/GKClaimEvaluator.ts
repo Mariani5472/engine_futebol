@@ -27,30 +27,33 @@ export class GKClaimEvaluator implements ActionEvaluator {
 
     const distanceToBall = player.position.distanceTo(match.ball.position);
     const ballHeight = match.ball.height;
-    const handling = player.player.attributes.technical.handling / 20;
-    const reflexes = player.player.attributes.mental.reflexes / 20;
     const anticipation = player.player.attributes.mental.anticipation / 20;
     const composure = player.player.attributes.mental.composure / 20;
+    const positioning = player.player.attributes.mental.positioning / 20;
+    const decisions = player.player.attributes.mental.decisions / 20;
+    const jumpingReach = player.player.attributes.physical.jumpingReach / 20;
 
     const distanceScore = Math.max(0, 22 - distanceToBall * 5.5);
     const heightScore = ballHeight > 1 ? 10 : 4;
-    const handlingScore = handling * 16;
-    const reflexScore = reflexes * 14;
-    const anticipationScore = anticipation * 10;
+    const jumpingScore = jumpingReach * 12;
+    const anticipationScore = anticipation * 12;
     const composureScore = composure * 8;
+    const positioningScore = positioning * 6;
+    const decisionsScore = decisions * 6;
 
     const total = Math.max(
       0,
-      distanceScore + heightScore + handlingScore + reflexScore + anticipationScore + composureScore
+      distanceScore + heightScore + jumpingScore + anticipationScore + composureScore + positioningScore + decisionsScore
     );
 
     return new UtilityScore(total, 0, 0, 0, [
       { code: "DISTANCE", value: distanceScore },
       { code: "HEIGHT", value: heightScore },
-      { code: "HANDLING", value: handlingScore },
-      { code: "REFLEXES", value: reflexScore },
+      { code: "JUMPING", value: jumpingScore },
       { code: "ANTICIPATION", value: anticipationScore },
       { code: "COMPOSURE", value: composureScore },
+      { code: "POSITIONING", value: positioningScore },
+      { code: "DECISIONS", value: decisionsScore },
     ]);
   }
 
