@@ -19,6 +19,7 @@ import { PredictionSystem } from "../awareness/prediction/PredictionSystem";
 import { WorldAwarenessSystem } from "../awareness/WorldAwarenessSystem";
 import { PerceptionSystem } from "../perception/PerceptionSystem";
 import { DecisionContext } from "../decision/DecisionContext";
+import { DecisionType } from "../decision/DecisionType";
 import { PossessionDecisionSystem } from "../decision/possession/PossessionDecisionSystem";
 import { OffBallDecisionSystem } from "../decision/offball/OffBallDecisionSystem";
 import { createPossessionEvaluators } from "../decision/possession/PossessionEvaluators";
@@ -253,6 +254,19 @@ export class MatchEngine {
 
       const result = actionFactory.resolveExecuting(execution, actionCtx);
       events.push(...result.events);
+
+      if (
+        attackFunnel &&
+        (execution.decision.type === DecisionType.PASS ||
+          execution.decision.type === DecisionType.CROSS) &&
+        result.meta?.passRealForwardGain !== undefined
+      ) {
+        attackFunnel.onPassResolved(
+          result.meta.passRealForwardGain,
+          result.meta.laneForwardProgress,
+          result.success,
+        );
+      }
     }
 
     for (const player of players) {
