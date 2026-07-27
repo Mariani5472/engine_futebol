@@ -1,27 +1,24 @@
 import { MatchState } from "../../../core/movement/MatchState";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import { Decision } from "../decision/Decision";
 import { DecisionType } from "../decision/DecisionType";
 import { WorldAwareness } from "../awareness/WorldAwareness";
 import { FieldThird } from "../../../domain";
 
-/** Metres from goal centre treated as "can shoot with high priority". */
 export const SHOOTING_ZONE_DISTANCE = 20;
 
 export interface AttackFunnelReport {
   readonly ticks: number;
   readonly possessionTicks: number;
-  /** Ball owner in attacking third of their team. */
   readonly attackingThirdPossessionTicks: number;
-  /** Ball owner within SHOOTING_ZONE_DISTANCE of opponent goal. */
   readonly shootingZoneTicks: number;
-  /** Ball owner beyond halfway toward attack. */
   readonly opponentHalfPossessionTicks: number;
 
   readonly attackingThirdShareOfPossession: number;
   readonly shootingZoneShareOfPossession: number;
   readonly opponentHalfShareOfPossession: number;
+  readonly ownershipRatio: number;
 
-  /** Decisions started while player had the ball (from onDecision). */
   readonly possessionDecisions: Readonly<Record<string, number>>;
   readonly possessionDecisionsInAttackingThird: Readonly<Record<string, number>>;
   readonly possessionDecisionsInShootingZone: Readonly<Record<string, number>>;
@@ -35,28 +32,38 @@ export interface AttackFunnelReport {
 
   readonly avgGoalDistanceWhenInPossession: number;
   readonly minGoalDistanceObserved: number;
+
+  /** Mean forwardProgress (m) of selected PASS decisions. */
+  readonly avgSelectedPassForwardProgress: number;
+  readonly progressivePassCount: number;
+  readonly lateralPassCount: number;
+  readonly backwardPassCount: number;
+  /** Share of ticks with ≥1 teammate ahead of the ball line. */
+  readonly supportAheadShareOfPossession: number;
 }
 
-/**
- * Samples match state each tick to prove whether chances are created.
- * Wired optionally from MatchEngine when diagnostics are enabled.
- */
 export class AttackFunnelCollector {
   private ticks = 0;
   private possessionTicks = 0;
   private attackingThirdPossessionTicks = 0;
   private shootingZoneTicks = 0;
   private opponentHalfPossessionTicks = 0;
+  private supportAheadTicks = 0;
 
   private goalDistanceSum = 0;
   private goalDistanceSamples = 0;
   private minGoalDistance = Number.POSITIVE_INFINITY;
 
+  private passForwardSum = 0;
+  private passForwardSamples = 0;
+  private progressivePassCount = 0;
+  private lateralPassCount = 0;
+  private backwardPassCount = 0;
+
   private readonly possessionDecisions: Record<string, number> = {};
   private readonly possessionDecisionsInAttackingThird: Record<string, number> = {};
   private readonly possessionDecisionsInShootingZone: Record<string, number> = {};
 
-  /** Call once per tick after possession is synced. */
   public sampleState(state: MatchState): void {
     this.ticks++;
 
@@ -86,24 +93,31 @@ export class AttackFunnelCollector {
     if (this.isAttackingThird(owner.position.x, dir, pitchLength)) {
       this.attackingThirdPossessionTicks++;
     }
-
     if (this.isOpponentHalf(owner.position.x, dir, pitchLength)) {
       this.opponentHalfPossessionTicks++;
     }
-
     if (goalDistance <= SHOOTING_ZONE_DISTANCE) {
       this.shootingZoneTicks++;
     }
+
+    // Support ahead of ball line?
+    let supportAhead = false;
+    for (const tm of team.players) {
+      if (tm === owner) continue;
+      const progress = (tm.position.x - owner.position.x) * dir;
+      if (progress >= 5) {
+        supportAhead = true;
+        break;
+      }
+    }
+    if (supportAhead) this.supportAheadTicks++;
   }
 
-  /**
-   * Call when a free player with the ball starts a decision/pipeline.
-   * Pass world snapshot so zone classification matches the decision moment.
-   */
   public onPossessionDecision(
     decisionType: DecisionType,
     player: PlayerMatchState,
     world: WorldAwareness,
+    decision?: Decision,
   ): void {
     if (!player.hasBall) return;
 
@@ -119,6 +133,16 @@ export class AttackFunnelCollector {
 
     if (world.goalDistance <= SHOOTING_ZONE_DISTANCE) {
       this.bump(this.possessionDecisionsInShootingZone, name);
+    }
+
+    if (decisionType === DecisionType.PASS && decision?.targetId) {
+      const lane = world.passingLanes.find((l) => l.targetId === decision.targetId);
+      const fp = lane?.forwardProgress ?? 0;
+      this.passForwardSum += fp;
+      this.passForwardSamples++;
+      if (fp >= 6) this.progressivePassCount++;
+      else if (fp <= -2) this.backwardPassCount++;
+      else this.lateralPassCount++;
     }
   }
 
@@ -140,6 +164,7 @@ export class AttackFunnelCollector {
         this.attackingThirdPossessionTicks / poss,
       shootingZoneShareOfPossession: this.shootingZoneTicks / poss,
       opponentHalfShareOfPossession: this.opponentHalfPossessionTicks / poss,
+      ownershipRatio: this.ticks > 0 ? this.possessionTicks / this.ticks : 0,
 
       possessionDecisions: { ...this.possessionDecisions },
       possessionDecisionsInAttackingThird: {
@@ -164,6 +189,15 @@ export class AttackFunnelCollector {
       minGoalDistanceObserved: Number.isFinite(this.minGoalDistance)
         ? this.minGoalDistance
         : 0,
+
+      avgSelectedPassForwardProgress:
+        this.passForwardSamples > 0
+          ? this.passForwardSum / this.passForwardSamples
+          : 0,
+      progressivePassCount: this.progressivePassCount,
+      lateralPassCount: this.lateralPassCount,
+      backwardPassCount: this.backwardPassCount,
+      supportAheadShareOfPossession: this.supportAheadTicks / poss,
     };
   }
 
@@ -177,11 +211,13 @@ export class AttackFunnelCollector {
 
     return [
       "=== Attack funnel report ===",
-      `ticks=${report.ticks} possessionTicks=${report.possessionTicks}`,
+      `ticks=${report.ticks} possessionTicks=${report.possessionTicks} ownership=${(report.ownershipRatio * 100).toFixed(1)}%`,
       `attackingThird: ${report.attackingThirdPossessionTicks} (${(report.attackingThirdShareOfPossession * 100).toFixed(1)}% of poss)`,
       `opponentHalf:   ${report.opponentHalfPossessionTicks} (${(report.opponentHalfShareOfPossession * 100).toFixed(1)}% of poss)`,
       `shootingZone≤${SHOOTING_ZONE_DISTANCE}m: ${report.shootingZoneTicks} (${(report.shootingZoneShareOfPossession * 100).toFixed(1)}% of poss)`,
+      `supportAhead: ${(report.supportAheadShareOfPossession * 100).toFixed(1)}% of poss`,
       `avgGoalDist=${report.avgGoalDistanceWhenInPossession.toFixed(1)}m minGoalDist=${report.minGoalDistanceObserved.toFixed(1)}m`,
+      `pass FP avg=${report.avgSelectedPassForwardProgress.toFixed(1)}m progressive=${report.progressivePassCount} lateral=${report.lateralPassCount} back=${report.backwardPassCount}`,
       `decisions total=${report.totalPossessionDecisions} SHOT=${report.shotDecisions} PASS=${report.passDecisions} HOLD=${report.holdDecisions} DRIBBLE=${report.dribbleDecisions}`,
       `SHOT in shooting zone=${report.shotDecisionsInShootingZone}`,
       `top decisions: ${top(report.possessionDecisions)}`,
