@@ -8,23 +8,29 @@ import { DribbleEvaluator } from "../../../src/application/match/decision/evalua
 import { InterceptEvaluator } from "../../../src/application/match/decision/evaluators/InterceptEvaluator";
 import { PressEvaluator } from "../../../src/application/match/decision/evaluators/PressEvaluator";
 import { TackleEvaluator } from "../../../src/application/match/decision/evaluators/TackleEvaluator";
+import { WorldAwarenessSystem } from "../../../src/application/match/awareness/WorldAwarenessSystem";
+import { PlayerAwareness } from "../../../src/application/match/awareness/memory/PlayerAwareness";
 import { BallState } from "../../../src/core/movement/BallMatchState";
 import { Vector2 } from "../../../src/core/geometry/Vector2";
 import { buildMinimalMatchState, buildPlayerMatchState } from "../../helpers/builders";
 
 let match = buildMinimalMatchState();
+const worldSystem = new WorldAwarenessSystem();
 
 function contextFor(
   player: DecisionContext["player"],
   currentTick = 0,
   currentMatch = match,
 ): DecisionContext {
+  const awareness = PlayerAwareness.create(player.player.id);
+  const world = worldSystem.build(currentMatch, player, awareness);
   return new DecisionContext(
     currentMatch,
     player,
-    {} as DecisionContext["awareness"],
+    awareness,
     currentTick,
     1,
+    world,
   );
 }
 
@@ -168,8 +174,8 @@ describe("Evaluator behavior relationships", () => {
     highOpponent.position = new Vector2(90, 34);
     lowOpponent.position = new Vector2(90, 34);
 
-    highMatch.ball.owner = undefined;
-    lowMatch.ball.owner = undefined;
+    highMatch.ball.owner = undefined as never;
+    lowMatch.ball.owner = undefined as never;
     highMatch.ball.state = BallState.IN_FLIGHT;
     lowMatch.ball.state = BallState.IN_FLIGHT;
     highMatch.ball.position = new Vector2(80.5, 34);
