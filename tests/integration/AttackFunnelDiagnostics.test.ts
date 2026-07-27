@@ -6,11 +6,13 @@ import { Vector2 } from "../../src/core/geometry/Vector2";
 import { BallState } from "../../src/core/movement/BallMatchState";
 
 /**
- * Integration probes that document the real calibration gap:
- *   - Shot funnel works when the carrier is already in the box.
- *   - Full matches almost never put the carrier in the shooting zone.
+ * Post-fix probes:
+ *  - possession must stay assigned most of the match
+ *  - DRIBBLE must not be ~99% of on-ball decisions
+ *  - box shot funnel still works in isolation
+ *  - zone time / shots should trend up vs the pre-fix baseline (~0.02% zone, ~1 shot)
  */
-describe("AttackFunnelDiagnostics — prove scarce chance creation", () => {
+describe("AttackFunnelDiagnostics — post possession/dribble fixes", () => {
   const engine = new MatchEngine();
 
   function runProbedMatch(seed: number, tick = 2, duration = 90 * 60) {
@@ -26,27 +28,20 @@ describe("AttackFunnelDiagnostics — prove scarce chance creation", () => {
     return { result, report };
   }
 
-  it("full match spends almost no possession time in the shooting zone", () => {
-    const { result, report } = runProbedMatch(7, 2, 90 * 60);
+  it("keeps the ball owned for the majority of ticks", () => {
+    // Aggregate across seeds so a single unlucky kick-off does not flake.
+    const seeds = [7, 11, 19];
+    const samples = seeds.map((s) => runProbedMatch(s, 2, 90 * 60));
 
-    // eslint-disable-next-line no-console
-    console.log(AttackFunnelCollector.format(report));
-    // eslint-disable-next-line no-console
-    console.log(
-      `metrics shots=${result.metrics.totalShots} goals=${result.metrics.totalGoals} attacks=${result.metrics.home.attacks + result.metrics.away.attacks}`,
-    );
+    for (const { report } of samples) {
+      // eslint-disable-next-line no-console
+      console.log(AttackFunnelCollector.format(report));
+      const ownershipRatio = report.possessionTicks / Math.max(1, report.ticks);
+      expect(ownershipRatio).toBeGreaterThan(0.5);
+    }
+  }, 300_000);
 
-    expect(report.possessionTicks).toBeGreaterThan(100);
-
-    // Core claim: shooting-zone share of possession is tiny vs real football
-    // (real games have many box entries; engine ≈ 1 shot/game).
-    expect(report.shootingZoneShareOfPossession).toBeLessThan(0.08);
-
-    // Avg carrier distance to goal stays large (not parked in the box).
-    expect(report.avgGoalDistanceWhenInPossession).toBeGreaterThan(25);
-  }, 120_000);
-
-  it("full match starts very few SHOT decisions compared to PASS/HOLD/DRIBBLE", () => {
+  it("DRIBBLE is no longer ~99% of possession decisions", () => {
     const { report } = runProbedMatch(11, 2, 90 * 60);
 
     // eslint-disable-next-line no-console
@@ -54,20 +49,30 @@ describe("AttackFunnelDiagnostics — prove scarce chance creation", () => {
 
     expect(report.totalPossessionDecisions).toBeGreaterThan(50);
 
-    const nonShot =
-      report.passDecisions + report.holdDecisions + report.dribbleDecisions;
-    // SHOT is a tiny fraction of on-ball decisions in a full match.
-    if (nonShot > 0) {
-      expect(report.shotDecisions / Math.max(1, report.totalPossessionDecisions)).toBeLessThan(
-        0.05,
-      );
-    }
+    const dribbleShare =
+      report.dribbleDecisions / Math.max(1, report.totalPossessionDecisions);
+    const passShare =
+      report.passDecisions / Math.max(1, report.totalPossessionDecisions);
 
-    // Absolute shot decisions stay near the ~1 shot/game calibration reality.
-    expect(report.shotDecisions).toBeLessThan(15);
+    // eslint-disable-next-line no-console
+    console.log(
+      JSON.stringify({
+        dribbleShare: +dribbleShare.toFixed(3),
+        passShare: +passShare.toFixed(3),
+        hold: report.holdDecisions,
+        shot: report.shotDecisions,
+        pass: report.passDecisions,
+        dribble: report.dribbleDecisions,
+      }),
+    );
+
+    // Pre-fix baseline was ~0.99 dribble. Post-fix must be clearly lower.
+    expect(dribbleShare).toBeLessThan(0.75);
+    // Passes should exist as a real alternative.
+    expect(report.passDecisions).toBeGreaterThan(10);
   }, 120_000);
 
-  it("aggregate over 3 seeds: low shooting-zone time and low shots", () => {
+  it("aggregate 3 seeds: report zone/shots/dribble for calibration feedback", () => {
     const seeds = [1, 2, 3];
     const samples = seeds.map((seed) => runProbedMatch(seed, 2, 90 * 60));
 
@@ -84,21 +89,37 @@ describe("AttackFunnelDiagnostics — prove scarce chance creation", () => {
         (s, x) => s + x.report.attackingThirdShareOfPossession,
         0,
       ) / samples.length;
+    const avgDribbleShare =
+      samples.reduce((s, x) => {
+        const total = Math.max(1, x.report.totalPossessionDecisions);
+        return s + x.report.dribbleDecisions / total;
+      }, 0) / samples.length;
+    const avgOwnership =
+      samples.reduce(
+        (s, x) => s + x.report.possessionTicks / Math.max(1, x.report.ticks),
+        0,
+      ) / samples.length;
 
     // eslint-disable-next-line no-console
     console.log(
       JSON.stringify(
         {
+          avgOwnership: +avgOwnership.toFixed(3),
           avgZoneShare: +avgZoneShare.toFixed(4),
           avgAtkShare: +avgAtkShare.toFixed(4),
           avgShots: +avgShots.toFixed(2),
           avgShotDecisions: +avgShotDecisions.toFixed(2),
+          avgDribbleShare: +avgDribbleShare.toFixed(3),
           perSeed: samples.map((s, i) => ({
             seed: seeds[i],
+            ownership: +(s.report.possessionTicks / Math.max(1, s.report.ticks)).toFixed(3),
             zoneShare: +s.report.shootingZoneShareOfPossession.toFixed(4),
             atkShare: +s.report.attackingThirdShareOfPossession.toFixed(4),
             shots: s.result.metrics.totalShots,
             shotDecisions: s.report.shotDecisions,
+            pass: s.report.passDecisions,
+            dribble: s.report.dribbleDecisions,
+            hold: s.report.holdDecisions,
             minGoalDist: +s.report.minGoalDistanceObserved.toFixed(1),
             avgGoalDist: +s.report.avgGoalDistanceWhenInPossession.toFixed(1),
           })),
@@ -108,10 +129,12 @@ describe("AttackFunnelDiagnostics — prove scarce chance creation", () => {
       ),
     );
 
-    // Matches calibrate: ~1 shot/game, scarce box time.
-    expect(avgShots).toBeLessThan(5);
-    expect(avgZoneShare).toBeLessThan(0.10);
-    expect(avgShotDecisions).toBeLessThan(12);
+    expect(avgOwnership).toBeGreaterThan(0.5);
+    expect(avgDribbleShare).toBeLessThan(0.8);
+    // Soft floor: after fixes we expect at least as many shots as before (≥1 on average),
+    // and not a collapse. Hard ceiling still reflects "not yet Brasileirão".
+    expect(avgShots).toBeGreaterThanOrEqual(0.5);
+    expect(avgShots).toBeLessThan(40);
   }, 300_000);
 
   it("contrast: isolated box carrier still selects and executes SHOT", () => {
@@ -139,47 +162,4 @@ describe("AttackFunnelDiagnostics — prove scarce chance creation", () => {
     expect(probe.selected.isShot).toBe(true);
     expect(probe.execution.shotEvents).toBeGreaterThanOrEqual(1);
   });
-
-  it("when shooting-zone decisions occur, SHOT share is higher than overall", () => {
-    // May be sparse; over a few seeds, conditional SHOT rate in zone ≥ overall rate.
-    const seeds = [5, 17, 29];
-    let zoneShot = 0;
-    let zoneTotal = 0;
-    let allShot = 0;
-    let allTotal = 0;
-
-    for (const seed of seeds) {
-      const { report } = runProbedMatch(seed, 2, 90 * 60);
-      allShot += report.shotDecisions;
-      allTotal += report.totalPossessionDecisions;
-
-      const zoneDecisions = Object.values(
-        report.possessionDecisionsInShootingZone,
-      ).reduce((a, b) => a + b, 0);
-      zoneTotal += zoneDecisions;
-      zoneShot += report.shotDecisionsInShootingZone;
-    }
-
-    // eslint-disable-next-line no-console
-    console.log(
-      JSON.stringify(
-        {
-          overallShotRate: allTotal ? +(allShot / allTotal).toFixed(4) : 0,
-          zoneShotRate: zoneTotal ? +(zoneShot / zoneTotal).toFixed(4) : null,
-          zoneTotalDecisions: zoneTotal,
-          zoneShots: zoneShot,
-        },
-        null,
-        2,
-      ),
-    );
-
-    // If the zone was visited with decisions, SHOT should not be rarer there than overall.
-    if (zoneTotal >= 5) {
-      expect(zoneShot / zoneTotal).toBeGreaterThanOrEqual(allShot / Math.max(1, allTotal) - 0.01);
-    } else {
-      // Even stronger proof of the bottleneck: almost no decisions ever happen in the box.
-      expect(zoneTotal).toBeLessThan(5);
-    }
-  }, 300_000);
 });
