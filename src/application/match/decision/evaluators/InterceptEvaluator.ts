@@ -4,18 +4,11 @@ import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
+import { ActionReadiness } from "./ActionReadiness";
 
-/**
- * Evaluates interception opportunities.
- *
- * INTERCEPT represents anticipation of a pass lane rather than an immediate
- * tackle. The player should be close enough to the opponent ball carrier and
- * positioned on a plausible passing line to justify stepping in.
- */
 export class InterceptEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     const { player, match } = context;
-
     if (player.hasBall) return [];
 
     const ballOwner = match.ball.owner;
@@ -29,7 +22,7 @@ export class InterceptEvaluator implements ActionEvaluator {
     if (!ownerIsOpponent) return [];
 
     const distanceToOwner = player.position.distanceTo(ballOwner.position);
-    if (distanceToOwner > 10) return [];
+    if (distanceToOwner > 12) return [];
 
     const score = this.calculateUtility(context, ballOwner, distanceToOwner);
     if (score.total < 12) return [];
@@ -47,17 +40,9 @@ export class InterceptEvaluator implements ActionEvaluator {
     const ownerTeam = isHome ? match.away : match.home;
     const opponents = isHome ? match.away.players : match.home.players;
 
-    const nearestPotentialReceiver = this.getNearestTeammateToOwner(
-      ballOwner,
-      ownerTeam.players
-    );
-
-    const laneScore = nearestPotentialReceiver
-      ? this.calculatePassingLaneScore(
-          player.position,
-          ballOwner.position,
-          nearestPotentialReceiver.position
-        )
+    const receiver = this.getNearestTeammateToOwner(ballOwner, ownerTeam.players);
+    const laneScore = receiver
+      ? this.calculatePassingLaneScore(player.position, ballOwner.position, receiver.position)
       : 0;
 
     const anticipation = player.player.attributes.mental.anticipation / 20;
@@ -70,6 +55,7 @@ export class InterceptEvaluator implements ActionEvaluator {
     const pressureScore = this.calculatePressureScore(player, opponents);
     const roleBonus = this.calculateRoleBonus(player);
     const laneBonus = laneScore * 18;
+    const preparationBonus = this.calculatePassPreparationBonus(context, ballOwner, receiver);
     const anticipationBonus = anticipation * 14;
     const positioningBonus = positioning * 10;
     const decisionsBonus = decisions * 8;
@@ -83,6 +69,7 @@ export class InterceptEvaluator implements ActionEvaluator {
         proximityScore +
         pressureScore +
         laneBonus +
+        preparationBonus +
         anticipationBonus +
         positioningBonus +
         decisionsBonus +
@@ -96,11 +83,37 @@ export class InterceptEvaluator implements ActionEvaluator {
       { code: "PROXIMITY", value: proximityScore },
       { code: "PRESSURE", value: pressureScore },
       { code: "LANE", value: laneBonus },
+      { code: "PASS_PREPARATION", value: preparationBonus },
       { code: "ANTICIPATION", value: anticipationBonus },
       { code: "POSITIONING", value: positioningBonus },
       { code: "DECISIONS", value: decisionsBonus },
       { code: "ROLE_BONUS", value: roleBonus },
     ]);
+  }
+
+  private calculatePassPreparationBonus(
+    context: DecisionContext,
+    ballOwner: PlayerMatchState,
+    receiver: PlayerMatchState | null
+  ): number {
+    if (ballOwner.activeAction?.type !== DecisionType.PASS) return 0;
+    if (!receiver) return 0;
+
+    const opportunity = ActionReadiness.interruptionOpportunity(
+      ballOwner,
+      context.player,
+      ActionReadiness.currentTime(context),
+    );
+
+    if (opportunity <= 0) return 0;
+
+    const laneScore = this.calculatePassingLaneScore(
+      context.player.position,
+      ballOwner.position,
+      receiver.position,
+    );
+
+    return 24 * opportunity * laneScore;
   }
 
   private getNearestTeammateToOwner(
@@ -141,21 +154,15 @@ export class InterceptEvaluator implements ActionEvaluator {
     const aby = b.y - a.y;
     const apx = p.x - a.x;
     const apy = p.y - a.y;
-
     const ab2 = abx * abx + aby * aby;
-    if (ab2 === 0) {
-      const dx = p.x - a.x;
-      const dy = p.y - a.y;
-      return Math.sqrt(dx * dx + dy * dy);
-    }
+
+    if (ab2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
 
     const t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / ab2));
     const closestX = a.x + t * abx;
     const closestY = a.y + t * aby;
-    const dx = p.x - closestX;
-    const dy = p.y - closestY;
 
-    return Math.sqrt(dx * dx + dy * dy);
+    return Math.hypot(p.x - closestX, p.y - closestY);
   }
 
   private calculatePressureScore(
@@ -163,8 +170,7 @@ export class InterceptEvaluator implements ActionEvaluator {
     opponents: PlayerMatchState[]
   ): number {
     const nearestOpponentDistance = opponents.reduce((nearest, opponent) => {
-      const distance = player.position.distanceTo(opponent.position);
-      return Math.min(nearest, distance);
+      return Math.min(nearest, player.position.distanceTo(opponent.position));
     }, Infinity);
 
     if (!Number.isFinite(nearestOpponentDistance)) return 0;
@@ -176,7 +182,6 @@ export class InterceptEvaluator implements ActionEvaluator {
 
   private calculateRoleBonus(player: PlayerMatchState): number {
     const role = String(player.currentRole).toUpperCase();
-
     if (role.includes("CB") || role.includes("DEF") || role.includes("DM")) return 10;
     if (role.includes("FB") || role.includes("WB")) return 8;
     if (role.includes("CM")) return 6;
