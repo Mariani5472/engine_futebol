@@ -4,11 +4,12 @@ import { ActionEvaluator } from "../ActionEvaluator";
 import { Decision } from "../Decision";
 import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
+import { UtilityScore } from "../UtilityScore";
 import { ActionReadiness } from "./ActionReadiness";
 
 export class ControlEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
-    const { player, match } = context;
+    const { player, match, world } = context;
     const ball = match.ball;
 
     if (player.hasBall) return [];
@@ -17,26 +18,24 @@ export class ControlEvaluator implements ActionEvaluator {
     const distanceToBall = player.position.distanceTo(ball.position);
     if (distanceToBall > 3.5) return [];
 
-    const isHome = match.home.players.includes(player);
-    const opponents = isHome ? match.away.players : match.home.players;
-    const score = this.calculateUtility(player, ball.height, distanceToBall, opponents);
-
-    if (score < 20) return [];
-    return [new Decision(DecisionType.CONTROL, score)];
+    const score = this.calculateUtility(context, ball.height, distanceToBall);
+    if (score.total < 20) return [];
+    return [new Decision(DecisionType.CONTROL, score.total)];
   }
 
   private calculateUtility(
-    player: PlayerMatchState,
+    context: DecisionContext,
     ballHeight: number,
     distanceToBall: number,
-    opponents: PlayerMatchState[]
-  ): number {
+  ): UtilityScore {
+    const player = context.player;
+    const world = context.world;
     const attrs = player.player.attributes;
     const technical = attrs.technical as unknown as Record<string, number>;
-    const technique = technical.technique / 20;
+    const technique = (technical.technique ?? 10) / 20;
     const firstTouch = (technical.firstTouch ?? technical.technique ?? 10) / 20;
-    const anticipation = attrs.mental.anticipation / 20;
-    const composure = attrs.mental.composure / 20;
+    const anticipation = (attrs.mental.anticipation ?? 10) / 20;
+    const composure = (attrs.mental.composure ?? 10) / 20;
 
     const controlQuality =
       technique * 0.25 +
@@ -44,11 +43,14 @@ export class ControlEvaluator implements ActionEvaluator {
       anticipation * 0.20 +
       composure * 0.15;
 
-    const pressure = ActionReadiness.opponentPressure(player, opponents);
-    const nearestOpponentDistance = this.nearestOpponentDistance(player, opponents);
+    const pressure = world?.pressure ?? ActionReadiness.opponentPressure(
+      player,
+      world?.opponents ? [...world.opponents] : [],
+    );
+    const nearestOpponentDistance = world?.nearestOpponentDistance ?? Infinity;
     const pressurePenalty = pressure * 22;
-    const bodyQuality = this.bodyQuality(player);
-    const orientationQuality = this.orientationQuality(player, opponents);
+    const bodyQuality = ActionReadiness.bodyQualityOf(player);
+    const orientationQuality = this.orientationQuality(player, world?.opponents ?? []);
 
     const proximityScore = Math.max(0, 36 - distanceToBall * 10);
     const aerialControlBonus = ballHeight > 1.2 ? 8 : 0;
@@ -59,14 +61,12 @@ export class ControlEvaluator implements ActionEvaluator {
       nearestOpponentDistance,
     );
 
-    return Math.max(
-      0,
-      proximityScore +
-        firstTouchQuality +
-        aerialControlBonus +
-        pressureEscapeBonus -
-        pressurePenalty
-    );
+    return UtilityScore.fromComponents({
+      SPACE: proximityScore + aerialControlBonus,
+      TECHNIQUE: firstTouchQuality,
+      PRESSURE: pressureEscapeBonus - pressurePenalty,
+      BODY: bodyQuality * 8,
+    });
   }
 
   private calculatePressureEscapeBonus(
@@ -74,43 +74,24 @@ export class ControlEvaluator implements ActionEvaluator {
     composure: number,
     nearestOpponentDistance: number,
   ): number {
-    if (nearestOpponentDistance > 5) return 0;
+    if (!Number.isFinite(nearestOpponentDistance) || nearestOpponentDistance > 5) return 0;
     return (firstTouch * 0.6 + composure * 0.4) * 12;
   }
 
-  private bodyQuality(player: PlayerMatchState): number {
-    const bodyStateQuality = {
-      STANDING: 1,
-      BALANCED: 1,
-      LEANING: 0.78,
-      FALLING: 0.25,
-      GROUND: 0,
-    }[player.bodyState];
-
-    const balance = this.normalize(player.balance);
-    const stability = this.normalize(player.stability);
-    return Math.max(0, Math.min(1, bodyStateQuality * 0.45 + balance * 0.3 + stability * 0.25));
-  }
-
-  private orientationQuality(player: PlayerMatchState, opponents: PlayerMatchState[]): number {
-    const nearest = opponents.reduce((closest, opponent) => {
-      const distance = player.position.distanceTo(opponent.position);
-      return distance < closest.distance ? { opponent, distance } : closest;
-    }, { opponent: undefined as PlayerMatchState | undefined, distance: Infinity });
+  private orientationQuality(
+    player: PlayerMatchState,
+    opponents: readonly PlayerMatchState[],
+  ): number {
+    const nearest = opponents.reduce(
+      (closest, opponent) => {
+        const distance = player.position.distanceTo(opponent.position);
+        return distance < closest.distance ? { opponent, distance } : closest;
+      },
+      { opponent: undefined as PlayerMatchState | undefined, distance: Infinity },
+    );
 
     if (!nearest.opponent) return 1;
     const toOpponent = nearest.opponent.position.subtract(player.position);
     return ActionReadiness.orientationQuality(player.facingDirection, toOpponent) * 0.35 + 0.65;
-  }
-
-  private nearestOpponentDistance(player: PlayerMatchState, opponents: PlayerMatchState[]): number {
-    return opponents.reduce((nearest, opponent) => {
-      return Math.min(nearest, player.position.distanceTo(opponent.position));
-    }, Infinity);
-  }
-
-  private normalize(value: number): number {
-    if (value <= 1) return Math.max(0, value);
-    return Math.max(0, Math.min(1, value / 100));
   }
 }
