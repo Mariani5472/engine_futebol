@@ -24,6 +24,8 @@ import { createPossessionEvaluators } from "../decision/possession/PossessionEva
 import { createOffBallEvaluators } from "../decision/offball/OffBallEvaluators";
 import { ActionFactory } from "../action/ActionFactory";
 import { ActionContext } from "../action/ActionContext";
+import { ActionExecution, ActionExecutionPhase } from "../action/ActionExecution";
+import { ActionArbitrator } from "../action/ActionArbitrator";
 import { recoverIdleActionState } from "../action/IdleActionRecovery";
 import { BallPhysicsSystem } from "../physics/BallPhysicsSystem";
 import { TacticalEngine } from "../tactical/TacticalEngine";
@@ -53,6 +55,7 @@ export interface MatchResult {
 
 export class MatchEngine {
   private readonly initializer = new MatchInitializer();
+  private readonly arbitrator = new ActionArbitrator();
 
   public simulate(config: SimulationConfig): MatchResult {
     const rng = new SeededRandom(config.seed);
@@ -151,6 +154,19 @@ export class MatchEngine {
     };
   }
 
+  /**
+   * Tick order (Phase 2 — scheduler):
+   *
+   * 1. Recover idle body state
+   * 2. Perception + cognition
+   * 3. Advance existing ActionExecutions
+   * 4. Collect actions that reached EXECUTING
+   * 5. ActionArbitrator resolves conflicts
+   * 6. Apply consequences of winning actions
+   * 7. Evaluate new decisions for free players
+   * 8. Create new ActionExecutions
+   * 9. Ball physics / tactical / movement / possession
+   */
   private runTick(
     state: MatchState,
     awarenessMap: Map<string, PlayerAwareness>,
@@ -170,14 +186,17 @@ export class MatchEngine {
     period: MatchPeriod
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
+    const players = this.allPlayers(state);
 
-    for (const player of this.allPlayers(state)) {
+    // 1. Passive recovery for players without an active action.
+    for (const player of players) {
       recoverIdleActionState(player, deltaTime);
     }
 
+    // 2. Perception + cognition.
     const perceptions = perceptionSystem.update(state);
 
-    for (const player of this.allPlayers(state)) {
+    for (const player of players) {
       const awareness = awarenessMap.get(player.player.id);
       const perception = perceptions.get(player.player.id);
       if (!awareness || !perception) continue;
@@ -191,23 +210,37 @@ export class MatchEngine {
       } satisfies CognitiveContext);
     }
 
-    for (const player of this.allPlayers(state)) {
-      const awareness = awarenessMap.get(player.player.id);
-      if (!awareness) continue;
+    // 3 + 4. Advance existing actions and collect those that reached EXECUTING.
+    const executingCandidates: ActionExecution[] = [];
 
-      const decisionCtx = new DecisionContext(state, player, awareness, tick, deltaTime);
-      const decision = player.isActionBusy() && player.activeAction
-        ? player.activeAction.decision
-        : player.hasBall
-          ? possessionDecisionSystem.decide(decisionCtx)
-          : offBallDecisionSystem.decide(decisionCtx);
+    for (const player of players) {
+      if (!player.activeAction) continue;
+
+      const phase = actionFactory.advanceOnly(player, state.currentSecond);
+
+      if (phase === ActionExecutionPhase.EXECUTING && player.activeAction) {
+        executingCandidates.push(player.activeAction);
+      }
+    }
+
+    // 5. Arbitrate concurrent executions.
+    const winners = this.arbitrator.resolve(
+      executingCandidates,
+      state,
+      state.currentSecond,
+    );
+
+    // 6. Apply consequences of winning actions.
+    for (const execution of winners) {
+      const player = players.find((p) => p.activeAction === execution);
+      if (!player) continue;
 
       const isHome = state.home.players.includes(player);
       const teamState = isHome ? state.home : state.away;
 
       const actionCtx: ActionContext = {
         player,
-        decision,
+        decision: execution.decision,
         match: state,
         pitch: state.pitch,
         random: rng,
@@ -215,12 +248,32 @@ export class MatchEngine {
         deltaTime,
         teamSide: isHome ? "HOME" : "AWAY",
         attackingDirection: teamState.attackingDirection,
-        matchSecond: state.currentSecond
+        matchSecond: state.currentSecond,
       };
-      const result = actionFactory.execute(decision, actionCtx);
+
+      const result = actionFactory.resolveExecuting(execution, actionCtx);
       events.push(...result.events);
     }
 
+    // 7 + 8. Evaluate new decisions and start ActionExecutions for free players.
+    for (const player of players) {
+      // Still busy (preparing / recovering / just executed) → skip decision.
+      if (player.isActionBusy()) continue;
+
+      const awareness = awarenessMap.get(player.player.id);
+      if (!awareness) continue;
+
+      const decisionCtx = new DecisionContext(state, player, awareness, tick, deltaTime);
+      const decision = player.hasBall
+        ? possessionDecisionSystem.decide(decisionCtx)
+        : offBallDecisionSystem.decide(decisionCtx);
+
+      // Continuous positional actions are applied as no-ops (no lifecycle).
+      // Discrete actions start a full ActionExecution (PREPARING → …).
+      actionFactory.tryStart(decision, player, state.currentSecond);
+    }
+
+    // 9. World systems.
     ballPhysics.update(state, deltaTime);
     tacticalEngine.update(state);
     teamBehaviour.update(state);
