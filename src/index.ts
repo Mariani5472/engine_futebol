@@ -12,6 +12,7 @@
  * const engine = new MatchEngine();
  * const result = engine.simulate(config);
  * console.log(`${result.homeScore} - ${result.awayScore}`);
+ * console.log(result.metrics.totalxG);
  * ```
  */
 
@@ -19,6 +20,28 @@
 export { MatchEngine, MatchResult } from "./application/match/engine/MatchEngine";
 export { MatchInitializer } from "./application/match/engine/MatchInitializer";
 export { SimulationConfig } from "./application/match/engine/SimulationConfig";
+
+// Metrics (Phase 9)
+export type { MatchMetrics } from "./application/match/metrics/MatchMetrics";
+export type { TeamMatchMetrics } from "./application/match/metrics/TeamMatchMetrics";
+export { MatchMetricsCollector } from "./application/match/metrics/MatchMetricsCollector";
+
+// Calibration (Phase 10)
+export {
+  CalibrationRunner,
+  BRASILEIRAO_2025_TARGETS,
+  buildCalibrationReport,
+  formatCalibrationReport,
+  DEFAULT_CALIBRATION_PARAMETERS,
+  suggestAdjustments,
+} from "./application/match/calibration";
+export type {
+  CalibrationReport,
+  CalibrationRunOptions,
+  CalibrationBatchResult,
+  CalibrationParameters,
+  MetricComparison,
+} from "./application/match/calibration";
 
 // Domain
 export {
