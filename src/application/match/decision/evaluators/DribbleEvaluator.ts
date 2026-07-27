@@ -36,10 +36,10 @@ export class DribbleEvaluator implements ActionEvaluator {
   private calculateDribbleUtility(context: DecisionContext): UtilityScore {
     const attrs = context.player.player.attributes;
     const world = context.world;
-    const dribbling = attrs.technical.dribbling / 20;
-    const pace = attrs.physical.pace / 20;
-    const flair = attrs.mental.flair / 20;
-    const agility = attrs.physical.agility / 20;
+    const dribbling = (attrs.technical.dribbling ?? 10) / 20;
+    const pace = (attrs.physical.pace ?? 10) / 20;
+    const flair = (attrs.mental.flair ?? 10) / 20;
+    const agility = (attrs.physical.agility ?? 10) / 20;
 
     const pitchCentreX = context.match.pitch.length / 2;
     const playerX = context.player.position.x;
@@ -66,59 +66,38 @@ export class DribbleEvaluator implements ActionEvaluator {
     );
     const spaceBonus = world.freeSpace * 8;
 
-    const total =
-      dribbling * 20 +
-      pace * 8 +
-      flair * 6 +
-      agility * 4 +
-      roleBonus +
-      escapeBonus +
-      spaceBonus -
-      pressurePenalty;
-
-    return new UtilityScore(Math.max(0, total), 0, 0, 0, [
-      { code: "DRIBBLING", value: dribbling * 20 },
-      { code: "ROLE_BONUS", value: roleBonus },
-      { code: "FIELD_ADVANCE", value: fieldAdvanceFactor },
-      { code: "PRESSURE", value: pressure },
-      { code: "FREE_SPACE", value: world.freeSpace },
-      { code: "ESCAPE_BONUS", value: escapeBonus },
-      { code: "PRESSURE_PENALTY", value: -pressurePenalty },
-    ]);
+    return UtilityScore.fromComponents({
+      TECHNIQUE: dribbling * 20 + pace * 8 + flair * 6 + agility * 4,
+      ROLE: roleBonus,
+      SPACE: spaceBonus + escapeBonus,
+      PRESSURE: -pressurePenalty,
+    });
   }
 
   private calculateHoldBallUtility(context: DecisionContext): UtilityScore {
     const attrs = context.player.player.attributes;
     const world = context.world;
-    const composure = attrs.mental.composure / 20;
-    const strength = attrs.physical.strength / 20;
-    const balance = this.normalize(context.player.balance);
-    const stability = this.normalize(context.player.stability);
+    const composure = (attrs.mental.composure ?? 10) / 20;
+    const strength = (attrs.physical.strength ?? 10) / 20;
+    const balance = this.normalize(context.player.balance ?? 100);
+    const stability = this.normalize(context.player.stability ?? 100);
 
     const pressure = world.pressure;
-    const total =
-      composure * 12 +
-      strength * 10 +
-      balance * 8 +
-      stability * 8 +
-      pressure * 18;
 
-    return new UtilityScore(total, 0, 0, 0, [
-      { code: "COMPOSURE", value: composure * 12 },
-      { code: "STRENGTH", value: strength * 10 },
-      { code: "BALANCE", value: balance * 8 },
-      { code: "STABILITY", value: stability * 8 },
-      { code: "PRESSURE_RESPONSE", value: pressure * 18 },
-    ]);
+    return UtilityScore.fromComponents({
+      TECHNIQUE: composure * 12 + strength * 10,
+      BODY: balance * 8 + stability * 8,
+      PRESSURE: pressure * 18, // hold-ball is MORE attractive under pressure
+    });
   }
 
   private calculateSkillMoveUtility(context: DecisionContext): UtilityScore {
     const attrs = context.player.player.attributes;
     const world = context.world;
-    const dribbling = attrs.technical.dribbling / 20;
-    const flair = attrs.mental.flair / 20;
-    const agility = attrs.physical.agility / 20;
-    const technique = attrs.technical.technique / 20;
+    const dribbling = (attrs.technical.dribbling ?? 10) / 20;
+    const flair = (attrs.mental.flair ?? 10) / 20;
+    const agility = (attrs.physical.agility ?? 10) / 20;
+    const technique = (attrs.technical.technique ?? 10) / 20;
 
     const pressure = world.pressure;
     const nearestOpponentDistance = world.nearestOpponentDistance;
@@ -129,22 +108,11 @@ export class DribbleEvaluator implements ActionEvaluator {
     );
     const spacePenalty = nearestOpponentDistance < 1.2 ? 18 : 0;
 
-    const total =
-      dribbling * 18 +
-      flair * 16 +
-      agility * 10 +
-      technique * 8 +
-      pressureWindow * 14 -
-      spacePenalty;
-
-    return new UtilityScore(Math.max(0, total), 0, 0, 0, [
-      { code: "DRIBBLING", value: dribbling * 18 },
-      { code: "FLAIR", value: flair * 16 },
-      { code: "AGILITY", value: agility * 10 },
-      { code: "TECHNIQUE", value: technique * 8 },
-      { code: "PRESSURE_WINDOW", value: pressureWindow * 14 },
-      { code: "SPACE_PENALTY", value: -spacePenalty },
-    ]);
+    return UtilityScore.fromComponents({
+      TECHNIQUE: dribbling * 18 + flair * 16 + agility * 10 + technique * 8,
+      PRESSURE: pressureWindow * 14,
+      SPACE: -spacePenalty,
+    });
   }
 
   private calculateEscapeBonus(
@@ -161,6 +129,7 @@ export class DribbleEvaluator implements ActionEvaluator {
   }
 
   private normalize(value: number): number {
+    if (typeof value !== "number" || !Number.isFinite(value)) return 1;
     if (value <= 1) return Math.max(0, value);
     return Math.max(0, Math.min(1, value / 100));
   }
