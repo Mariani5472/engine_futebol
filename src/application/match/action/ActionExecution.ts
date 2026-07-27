@@ -71,10 +71,14 @@ export class ActionExecution {
       profile,
     );
 
-    execution.begin();
+    execution.begin(currentTime);
     return execution;
   }
 
+  /**
+   * Advance lifecycle. With large ticks (e.g. 2s) a near-zero windup action
+   * must be able to reach EXECUTING in the same advance call that starts it.
+   */
   public advance(currentTime: number): ActionExecutionPhase {
     if (this.phase === ActionExecutionPhase.COMPLETED) return this.phase;
 
@@ -83,8 +87,9 @@ export class ActionExecution {
       return this.phase;
     }
 
-    if (this.phase === ActionExecutionPhase.EXECUTING && currentTime >= this.executeAt) {
-      this.phase = ActionExecutionPhase.RECOVERING;
+    if (this.phase === ActionExecutionPhase.EXECUTING) {
+      // Stay in EXECUTING until the scheduler resolves the outcome, then
+      // markStepResolved advances into RECOVERING.
       return this.phase;
     }
 
@@ -96,7 +101,6 @@ export class ActionExecution {
     return this.phase;
   }
 
-  /** Interrupts an action because of an external football event. */
   public interrupt(
     reason: ActionInterruptionReason,
     currentTime: number,
@@ -132,7 +136,7 @@ export class ActionExecution {
       && this.phase !== ActionExecutionPhase.COMPLETED;
   }
 
-  private begin(): void {
+  private begin(currentTime: number): void {
     this.phase = ActionExecutionPhase.PREPARING;
 
     this.player.balance = subtractStateCost(this.player.balance, this.timing.balanceCost);
@@ -145,6 +149,11 @@ export class ActionExecution {
     this.player.actionLockUntil = this.executeAt;
     this.player.recoveryUntil = this.recoveryUntil;
     this.player.lastActionType = this.decision.type;
+
+    // Zero / elapsed windup → ready to execute immediately.
+    if (currentTime >= this.executeAt) {
+      this.phase = ActionExecutionPhase.EXECUTING;
+    }
   }
 
   private finishRecovery(): void {
