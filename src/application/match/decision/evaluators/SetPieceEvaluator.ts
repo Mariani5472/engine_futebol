@@ -27,7 +27,6 @@ export class SetPieceEvaluator implements ActionEvaluator {
   private calculateUtility(context: DecisionContext): UtilityScore {
     const { player, match } = context;
     const isHome = match.home.players.includes(player);
-    const team = isHome ? match.home : match.away;
     const opponents = isHome ? match.away.players : match.home.players;
 
     const nearestOpponentDistance = opponents.reduce((nearest, opponent) => {
@@ -38,10 +37,9 @@ export class SetPieceEvaluator implements ActionEvaluator {
     const vision = player.player.attributes.mental.vision / 20;
     const decisions = player.player.attributes.mental.decisions / 20;
     const composure = player.player.attributes.mental.composure / 20;
-    const teamwork = player.player.attributes.mental.teamwork / 20;
     const passing = player.player.attributes.technical.passing / 20;
 
-    const shapeBonus = team.players.length >= 8 ? 6 : 2;
+    const shapeBonus = match.home.players.length + match.away.players.length >= 20 ? 6 : 2;
     const pressurePenalty = Number.isFinite(nearestOpponentDistance)
       ? Math.max(0, 10 - nearestOpponentDistance * 1.8)
       : 0;
@@ -53,7 +51,6 @@ export class SetPieceEvaluator implements ActionEvaluator {
       vision * 14 +
         decisions * 10 +
         composure * 10 +
-        teamwork * 6 +
         passing * 8 +
         shapeBonus +
         calmBallBonus +
@@ -65,7 +62,6 @@ export class SetPieceEvaluator implements ActionEvaluator {
       { code: "VISION", value: vision * 14 },
       { code: "DECISIONS", value: decisions * 10 },
       { code: "COMPOSURE", value: composure * 10 },
-      { code: "TEAMWORK", value: teamwork * 6 },
       { code: "PASSING", value: passing * 8 },
       { code: "SHAPE", value: shapeBonus },
       { code: "CALM_BALL", value: calmBallBonus },
