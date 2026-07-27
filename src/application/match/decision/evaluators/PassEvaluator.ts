@@ -7,15 +7,25 @@ import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCal
 import { PassingLane } from "../../awareness/WorldAwareness";
 import { ActionReadiness } from "./ActionReadiness";
 
+/**
+ * Progressive passing is the main lever for chance creation.
+ * When at least one forward lane exists, lateral/back options are heavily demoted.
+ */
 export class PassEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     if (!context.player.hasBall) return [];
     if (!ActionReadiness.canStartAction(context, 0.2)) return [];
 
+    const lanes = context.world.passingLanes;
+    if (lanes.length === 0) return [];
+
+    const bestForward = Math.max(...lanes.map((l) => l.forwardProgress));
+    const hasProgressiveOption = bestForward >= 6;
+
     const decisions: Decision[] = [];
 
-    for (const lane of context.world.passingLanes) {
-      const score = this.scoreLane(context, lane);
+    for (const lane of lanes) {
+      const score = this.scoreLane(context, lane, hasProgressiveOption, bestForward);
       if (score.total <= 0) continue;
       decisions.push(
         new Decision(
@@ -31,9 +41,13 @@ export class PassEvaluator implements ActionEvaluator {
     return decisions;
   }
 
-  private scoreLane(context: DecisionContext, lane: PassingLane): UtilityScore {
-    const player = context.player.player;
-    const attrs = player.attributes;
+  private scoreLane(
+    context: DecisionContext,
+    lane: PassingLane,
+    hasProgressiveOption: boolean,
+    bestForward: number,
+  ): UtilityScore {
+    const attrs = context.player.player.attributes;
     const world = context.world;
 
     const passing = (attrs.technical.passing ?? 10) / 20;
@@ -44,11 +58,13 @@ export class PassEvaluator implements ActionEvaluator {
       context.player.currentRole,
     );
 
-    const distanceScore = Math.max(0, 22 - lane.distance * 0.45);
-    // Progressive passes are the primary antidote to dribble loops.
-    const progressBonus = Math.max(-8, Math.min(42, lane.forwardProgress * 1.15));
+    const distanceScore = Math.max(0, 20 - lane.distance * 0.4);
+
+    // Strong continuous reward for metres gained toward the opponent goal.
+    const progressBonus = Math.max(-20, Math.min(55, lane.forwardProgress * 1.6));
+
     const certaintyBonus = lane.certainty * 6;
-    const clearanceBonus = lane.clear ? 10 : -8;
+    const clearanceBonus = lane.clear ? 12 : -6;
 
     const desiredDirection = lane.targetPosition.subtract(context.player.position);
     const orientationQuality = ActionReadiness.orientationQuality(
@@ -56,25 +72,26 @@ export class PassEvaluator implements ActionEvaluator {
       desiredDirection,
     );
     const bodyQuality = ActionReadiness.bodyQuality(context);
-
     const pressure = world.pressure;
 
-    // Under pressure, a clear progressive pass is highly attractive.
     let pressureRelief = 0;
-    if (pressure > 0.35) {
-      pressureRelief = pressure * (lane.clear ? 28 : 10);
-      if (lane.forwardProgress > 5) pressureRelief += 12;
+    if (pressure > 0.3) {
+      pressureRelief = pressure * (lane.clear ? 24 : 8);
+      if (lane.forwardProgress > 4) pressureRelief += 14;
     }
 
-    // Lateral / backward under no pressure is only a modest option.
-    const backwardPenalty =
-      lane.forwardProgress < -3 && pressure < 0.25 ? -14 : 0;
-
-    if (
-      world.nearestOpponent?.isTackling &&
-      world.nearestOpponentDistance <= 4.5
-    ) {
-      pressureRelief += lane.clear ? 8 : -6;
+    // When a progressive lane exists, punish sideways / backward retention.
+    let antiStagnation = 0;
+    if (hasProgressiveOption) {
+      if (lane.forwardProgress < 0) {
+        antiStagnation = -35;
+      } else if (lane.forwardProgress < 3) {
+        antiStagnation = -22;
+      } else if (lane.forwardProgress < bestForward * 0.5) {
+        antiStagnation = -10;
+      }
+    } else if (lane.forwardProgress < -2 && pressure < 0.3) {
+      antiStagnation = -18;
     }
 
     const bodyExecutionQuality = Math.max(
@@ -88,24 +105,26 @@ export class PassEvaluator implements ActionEvaluator {
       progressBonus +
       certaintyBonus +
       clearanceBonus +
-      backwardPenalty;
-    const pressureComp = pressureRelief;
+      antiStagnation;
 
-    const raw = technique + space + pressureComp;
+    const progressiveFloor =
+      lane.forwardProgress >= 8 && lane.clear
+        ? 28 * bodyExecutionQuality
+        : lane.forwardProgress >= 4
+          ? 12 * bodyExecutionQuality
+          : 0;
+
+    const raw = technique + space + pressureRelief + progressiveFloor;
     const scaled = Math.max(0, raw * roleQuality * bodyExecutionQuality);
     const scale = raw !== 0 ? scaled / raw : 0;
 
-    // Floor boost so progressive clear lanes compete with residual dribble scores.
-    const progressiveFloor =
-      lane.forwardProgress > 8 && lane.clear ? 18 * bodyExecutionQuality : 0;
-
     return UtilityScore.fromComponents({
-      SPACE: space * scale + progressiveFloor * 0.4,
+      SPACE: space * scale,
       TECHNIQUE: technique * scale,
-      PRESSURE: pressureComp * scale,
+      PRESSURE: pressureRelief * scale,
       ROLE: roleQuality * 12 * bodyExecutionQuality * 0.35,
       BODY: bodyQuality * 8 * roleQuality * 0.3,
-      TACTICAL: progressiveFloor * 0.6,
+      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4,
     });
   }
 }
