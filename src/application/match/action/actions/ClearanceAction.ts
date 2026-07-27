@@ -4,10 +4,7 @@ import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 
-/** Clearance speed (m/s). */
-const CLEARANCE_POWER = 25;
-/** Clearance height when kicked high. */
-const CLEARANCE_HEIGHT = 2.5;
+const CLEARANCE_DISTANCE = 28;
 
 export class ClearanceAction {
 
@@ -15,22 +12,25 @@ export class ClearanceAction {
 
     const { player, match, random, attackingDirection } = context;
 
-    // Kick ball away from danger: toward the opponent's half.
-    const forwardX = attackingDirection * CLEARANCE_POWER;
-
-    // Add spread: wide clearances are imprecise.
-    const lateralSpread = random.nextFloat(-8, 8);
-    const velocity = new Vector2(forwardX, lateralSpread);
-
-    // Normalize and apply power.
-    const normalizedVelocity = velocity.normalize().multiply(CLEARANCE_POWER);
-
     player.hasBall = false;
     match.ball.owner = null;
 
-    (match.ball as { velocity: Vector2 }).velocity = normalizedVelocity;
-    (match.ball as { height: number }).height = CLEARANCE_HEIGHT;
-    (match.ball as { state: BallState }).state = BallState.IN_FLIGHT;
+    const lateral = random.nextFloat(-12, 12);
+    const land = new Vector2(
+      Math.max(
+        0,
+        Math.min(
+          match.pitch.length,
+          player.position.x + attackingDirection * CLEARANCE_DISTANCE,
+        ),
+      ),
+      Math.max(0, Math.min(match.pitch.width, player.position.y + lateral)),
+    );
+
+    match.ball.position = land;
+    match.ball.velocity = Vector2.zero();
+    match.ball.height = 0;
+    match.ball.state = BallState.FREE;
 
     return {
       actorId: player.player.id,
@@ -38,7 +38,5 @@ export class ClearanceAction {
       success: true,
       events: []
     };
-
   }
-
 }
