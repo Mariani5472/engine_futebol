@@ -16,7 +16,6 @@ export enum ActionPriority {
 const PRIORITY_MAP: Readonly<Record<DecisionType, ActionPriority>> = {
   [DecisionType.NONE]: ActionPriority.LOW,
 
-  // Ball control / possession management
   [DecisionType.CONTROL]: ActionPriority.NORMAL,
   [DecisionType.RECEIVE]: ActionPriority.NORMAL,
   [DecisionType.HOLD_BALL]: ActionPriority.NORMAL,
@@ -29,18 +28,16 @@ const PRIORITY_MAP: Readonly<Record<DecisionType, ActionPriority>> = {
   [DecisionType.GK_DISTRIBUTE]: ActionPriority.NORMAL,
   [DecisionType.SET_PIECE]: ActionPriority.NORMAL,
 
-  // High-impact attacking / defensive actions
-  [DecisionType.SHOT]: ActionPriority.HIGH,
+  // Finishing wins conflicts with most other discrete actions.
+  [DecisionType.SHOT]: ActionPriority.CRITICAL,
   [DecisionType.HEADER]: ActionPriority.HIGH,
   [DecisionType.TACKLE]: ActionPriority.HIGH,
   [DecisionType.INTERCEPT]: ActionPriority.HIGH,
   [DecisionType.BLOCK]: ActionPriority.HIGH,
   [DecisionType.TACTICAL_FOUL]: ActionPriority.HIGH,
 
-  // Goalkeeper claim is the highest-priority discrete action
   [DecisionType.GK_CLAIM]: ActionPriority.CRITICAL,
 
-  // Continuous / positional (low competitive priority)
   [DecisionType.PRESS]: ActionPriority.LOW,
   [DecisionType.MARK]: ActionPriority.LOW,
   [DecisionType.COVER]: ActionPriority.LOW,
