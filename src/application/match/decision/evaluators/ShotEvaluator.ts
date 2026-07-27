@@ -14,7 +14,15 @@ export class ShotEvaluator implements ActionEvaluator {
     if (!ActionReadiness.canStartAction(context, 0.15)) return [];
 
     const score = this.calculateUtility(context);
-    return [new Decision(DecisionType.SHOT, score.total)];
+    return [
+      new Decision(
+        DecisionType.SHOT,
+        score.total,
+        undefined,
+        score.reasons,
+        score.components,
+      ),
+    ];
   }
 
   private calculateUtility(context: DecisionContext): UtilityScore {
@@ -53,7 +61,6 @@ export class ShotEvaluator implements ActionEvaluator {
 
     const windowBoost = 0.75 + world.shotWindow * 0.50;
 
-    // Decompose into components, then scale by execution/window.
     const space = distanceBase * windowBoost;
     const techniqueComp = attrScore * distanceBase * 0.35 * windowBoost;
     const role = roleQuality * 20 * windowBoost;
