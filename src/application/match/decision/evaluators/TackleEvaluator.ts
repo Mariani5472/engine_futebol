@@ -24,7 +24,15 @@ export class TackleEvaluator implements ActionEvaluator {
     const score = this.calculateUtility(context, ballOwner, distance);
     if (score.total < 14) return [];
 
-    return [new Decision(DecisionType.TACKLE, score.total)];
+    return [
+      new Decision(
+        DecisionType.TACKLE,
+        score.total,
+        undefined,
+        score.reasons,
+        score.components,
+      ),
+    ];
   }
 
   private calculateUtility(
