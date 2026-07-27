@@ -7,17 +7,13 @@ import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCal
 import { FieldThird } from "../../../../domain";
 import { ActionReadiness } from "./ActionReadiness";
 
-/**
- * After throughput fix, SHOT utility 1.85 + box boost produced 300–600 shots/game.
- * Scale down so finishing competes only when the chance is real.
- */
-const SHOT_UTILITY_SCALE = 0.55;
+/** Toward ~25–35 shots/game with tick=2s + 30s lock. */
+const SHOT_UTILITY_SCALE = 0.35;
 
-/** Soft boost inside the box — much lower than the previous +55. */
-const BOX_FLAT_BOOST = 16;
+const BOX_FLAT_BOOST = 12;
 
-/** Max shots a team may take during one continuous possession spell. */
-const MAX_SHOTS_PER_POSSESSION = 2;
+/** One finishing attempt per continuous possession spell. */
+const MAX_SHOTS_PER_POSSESSION = 1;
 
 export class ShotEvaluator implements ActionEvaluator {
 
@@ -29,8 +25,11 @@ export class ShotEvaluator implements ActionEvaluator {
     if (team?.isShotLocked(context.match.currentSecond)) return [];
     if ((team?.shotsThisPossession ?? 0) >= MAX_SHOTS_PER_POSSESSION) return [];
 
-    // Need a minimum shooting window or be very close.
-    if (context.world.goalDistance > 22 && context.world.shotWindow < 0.35) {
+    // Stricter window: only clear chances beyond close range.
+    if (context.world.goalDistance > 18 && context.world.shotWindow < 0.50) {
+      return [];
+    }
+    if (context.world.goalDistance > 14 && context.world.shotWindow < 0.28) {
       return [];
     }
 
@@ -72,8 +71,8 @@ export class ShotEvaluator implements ActionEvaluator {
 
     const pressure = world.pressure;
     const attackingBonus =
-      world.fieldThird === FieldThird.ATTACKING ? 22 : 0;
-    const angleBonus = world.goalAngleQuality * 8;
+      world.fieldThird === FieldThird.ATTACKING ? 16 : 0;
+    const angleBonus = world.goalAngleQuality * 6;
 
     const desiredDirection = world.goalCenter.subtract(player.position);
     const orientationQuality = ActionReadiness.orientationQuality(
@@ -86,34 +85,27 @@ export class ShotEvaluator implements ActionEvaluator {
       orientationQuality * 0.50 + bodyQuality * 0.50,
     );
 
-    const windowBoost = 0.70 + world.shotWindow * 0.45;
+    const windowBoost = 0.55 + world.shotWindow * 0.50;
 
     const space = distanceBase * windowBoost;
-    const techniqueComp = attrScore * distanceBase * 0.35 * windowBoost;
-    const role = roleQuality * 18 * windowBoost;
-    // Stronger pressure penalty — closed-down shots are rare.
-    const pressureComp = -pressure * distanceBase * 0.40 * windowBoost;
-    const body = (executionQuality - 0.25) / 0.75 * 10;
+    const techniqueComp = attrScore * distanceBase * 0.30 * windowBoost;
+    const role = roleQuality * 14 * windowBoost;
+    const pressureComp = -pressure * distanceBase * 0.48 * windowBoost;
+    const body = (executionQuality - 0.25) / 0.75 * 8;
     const tactical = (angleBonus + attackingBonus) * executionQuality;
     const proximityBoost =
-      distance <= 16 ? BOX_FLAT_BOOST * (1 - distance / 32) : 0;
+      distance <= 14 ? BOX_FLAT_BOOST * (1 - distance / 28) : 0;
 
-    // Second shot in same possession is heavily demoted.
-    const team = this.ownTeam(context);
-    const multiShotPenalty =
-      (team?.shotsThisPossession ?? 0) >= 1 ? -35 : 0;
-
-    // Recent SHOT by this player (even if lock expired) — prefer pass/hold.
     const repeatPlayerPenalty =
-      player.lastActionType === DecisionType.SHOT ? -25 : 0;
+      player.lastActionType === DecisionType.SHOT ? -30 : 0;
 
     const raw = UtilityScore.fromComponents({
-      SPACE: space * executionQuality * 0.40,
+      SPACE: space * executionQuality * 0.38,
       TECHNIQUE: techniqueComp * executionQuality,
-      ROLE: role * executionQuality * 0.30,
+      ROLE: role * executionQuality * 0.28,
       PRESSURE: pressureComp * executionQuality,
       BODY: body,
-      TACTICAL: tactical + proximityBoost + multiShotPenalty + repeatPlayerPenalty,
+      TACTICAL: tactical + proximityBoost + repeatPlayerPenalty,
     });
 
     const scaledTotal = raw.total * SHOT_UTILITY_SCALE;
@@ -130,14 +122,14 @@ export class ShotEvaluator implements ActionEvaluator {
     finishing: number,
     longShots: number
   ): number {
-    if (distance <= 6) return 95;
-    if (distance <= 12) return 72 + finishing * 1.2;
-    if (distance <= 16) return 52 + finishing * 0.9;
-    if (distance <= 20) return 32 + finishing * 0.6;
-    if (distance <= 25) return 14 + finishing * 0.35;
+    if (distance <= 6) return 88;
+    if (distance <= 12) return 62 + finishing * 1.0;
+    if (distance <= 16) return 42 + finishing * 0.7;
+    if (distance <= 20) return 24 + finishing * 0.45;
+    if (distance <= 25) return 10 + finishing * 0.25;
 
-    const longBonus = Math.max(0, (longShots - 12) * 1.2);
-    if (distance <= 32) return Math.max(0, 4 + longBonus);
+    const longBonus = Math.max(0, (longShots - 14) * 1.0);
+    if (distance <= 30) return Math.max(0, 2 + longBonus);
 
     return 0;
   }
