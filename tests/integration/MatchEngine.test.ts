@@ -5,7 +5,7 @@ import { SimulationConfig } from "../../src/application/match/engine/SimulationC
 /**
  * Fast integration ticks — large delta keeps the suite inside Jest timeout
  * while still exercising the full engine pipeline (decision → pipeline →
- * arbitration → physics).
+ * arbitration → physics → metrics).
  */
 function fastConfig(seed: number): SimulationConfig {
   return {
@@ -46,6 +46,21 @@ describe("MatchEngine — full match simulation", () => {
   it("echoes the seed in the result", () => {
     const result = engine.simulate(fastConfig(123));
     expect(result.seed).toBe(123);
+  }, 120_000);
+
+  it("populates Phase 9 metrics (shots, possession, xG)", () => {
+    const result = engine.simulate(fastConfig(42));
+    expect(result.metrics).toBeDefined();
+    expect(result.metrics.home.shots + result.metrics.away.shots).toBe(
+      result.homeShots + result.awayShots,
+    );
+    expect(result.metrics.home.possessionPercent + result.metrics.away.possessionPercent).toBeCloseTo(
+      100,
+      0,
+    );
+    expect(result.metrics.totalGoals).toBe(result.homeScore + result.awayScore);
+    expect(result.metrics.home.xG).toBeGreaterThanOrEqual(0);
+    expect(result.metrics.away.xG).toBeGreaterThanOrEqual(0);
   }, 120_000);
 });
 
