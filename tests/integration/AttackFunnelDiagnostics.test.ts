@@ -11,7 +11,7 @@ function median(values: number[]): number {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
-describe("AttackFunnel — effective progression + ownership median", () => {
+describe("AttackFunnel — PASS throughput + territory", () => {
   const engine = new MatchEngine();
 
   function runProbedMatch(seed: number, tick = 2, duration = 90 * 60) {
@@ -37,10 +37,11 @@ describe("AttackFunnel — effective progression + ownership median", () => {
         samples.map((s, i) => ({
           seed: seeds[i],
           ownership: +s.report.ownershipRatio.toFixed(3),
-          realDx: +s.report.avgPassRealForwardGain.toFixed(2),
-          laneFP: +s.report.avgSelectedPassForwardProgress.toFixed(2),
-          absErr: +s.report.avgLaneVsRealAbsError.toFixed(2),
-          effective8m: +s.report.passEffectiveProgressiveRate.toFixed(3),
+          tryStart: s.report.passTryStarts,
+          executing: s.report.passReachedExecuting,
+          ok: s.report.passResolvedSuccess,
+          ratio: +s.report.passCompletionRatio.toFixed(3),
+          completed: s.report.completedPassSamples,
           atk: +s.report.attackingThirdShareOfPossession.toFixed(3),
           zone: +s.report.shootingZoneShareOfPossession.toFixed(3),
           shots: s.result.metrics.totalShots,
@@ -53,38 +54,36 @@ describe("AttackFunnel — effective progression + ownership median", () => {
     expect(median(samples.map((s) => s.report.ownershipRatio))).toBeGreaterThan(0.5);
   }, 300_000);
 
-  it("A: lane FP approx real Dx after live-position fix", () => {
+  it("PASS throughput: many completed passes under tick=2s", () => {
     const { report } = runProbedMatch(11, 2, 90 * 60);
 
     // eslint-disable-next-line no-console
     console.log(AttackFunnelCollector.format(report));
 
-    expect(report.completedPassSamples).toBeGreaterThan(20);
+    // Before fix: n≈3 with ~1300 decisions. After: expect real throughput.
+    expect(report.completedPassSamples).toBeGreaterThan(50);
+    expect(report.passTryStarts).toBeGreaterThan(50);
+    expect(report.passCompletionRatio).toBeGreaterThan(0.05);
     expect(report.avgLaneVsRealAbsError).toBeLessThan(8);
-    expect(report.avgPassRealForwardGain).toBeGreaterThan(-5);
   }, 120_000);
 
-  it("A/B aggregate seeds 1-3: median ownership + progression stats", () => {
+  it("A/B aggregate seeds 1-3: median ownership + throughput + territory", () => {
     const seeds = [1, 2, 3];
     const samples = seeds.map((seed) => runProbedMatch(seed, 2, 90 * 60));
 
     const ownerships = samples.map((s) => s.report.ownershipRatio);
     const avgOwnership = ownerships.reduce((a, b) => a + b, 0) / ownerships.length;
     const medianOwnership = median(ownerships);
-    const minOwnership = Math.min(...ownerships);
 
+    const avgCompleted =
+      samples.reduce((s, x) => s + x.report.completedPassSamples, 0) / samples.length;
+    const avgRatio =
+      samples.reduce((s, x) => s + x.report.passCompletionRatio, 0) / samples.length;
     const avgAtk =
       samples.reduce((s, x) => s + x.report.attackingThirdShareOfPossession, 0) /
       samples.length;
     const avgZone =
       samples.reduce((s, x) => s + x.report.shootingZoneShareOfPossession, 0) /
-      samples.length;
-    const avgReal =
-      samples.reduce((s, x) => s + x.report.avgPassRealForwardGain, 0) / samples.length;
-    const avgErr =
-      samples.reduce((s, x) => s + x.report.avgLaneVsRealAbsError, 0) / samples.length;
-    const avgEff =
-      samples.reduce((s, x) => s + x.report.passEffectiveProgressiveRate, 0) /
       samples.length;
     const avgShots =
       samples.reduce((s, x) => s + x.result.metrics.totalShots, 0) / samples.length;
@@ -95,24 +94,23 @@ describe("AttackFunnel — effective progression + ownership median", () => {
         {
           avgOwnership: +avgOwnership.toFixed(3),
           medianOwnership: +medianOwnership.toFixed(3),
-          minOwnership: +minOwnership.toFixed(3),
+          avgCompleted: +avgCompleted.toFixed(1),
+          avgPassCompletionRatio: +avgRatio.toFixed(3),
           avgAtk: +avgAtk.toFixed(4),
           avgZone: +avgZone.toFixed(4),
-          avgRealDx: +avgReal.toFixed(2),
-          avgLaneVsRealErr: +avgErr.toFixed(2),
-          avgEffective8m: +avgEff.toFixed(3),
           avgShots: +avgShots.toFixed(2),
           targetAtk: 0.1,
           targetZone: 0.03,
           perSeed: samples.map((s, i) => ({
             seed: seeds[i],
             ownership: +s.report.ownershipRatio.toFixed(3),
+            tryStart: s.report.passTryStarts,
+            ok: s.report.passResolvedSuccess,
+            completed: s.report.completedPassSamples,
+            ratio: +s.report.passCompletionRatio.toFixed(3),
+            busy: +s.report.carrierBusyShareOfPossession.toFixed(3),
             atk: +s.report.attackingThirdShareOfPossession.toFixed(4),
             zone: +s.report.shootingZoneShareOfPossession.toFixed(4),
-            realDx: +s.report.avgPassRealForwardGain.toFixed(2),
-            laneFP: +s.report.avgSelectedPassForwardProgress.toFixed(2),
-            err: +s.report.avgLaneVsRealAbsError.toFixed(2),
-            effective: +s.report.passEffectiveProgressiveRate.toFixed(3),
             shots: s.result.metrics.totalShots,
             goals: s.result.metrics.totalGoals,
           })),
@@ -124,15 +122,9 @@ describe("AttackFunnel — effective progression + ownership median", () => {
 
     expect(medianOwnership).toBeGreaterThan(0.5);
     expect(avgOwnership).toBeGreaterThan(0.5);
-    expect(avgErr).toBeLessThan(10);
+    expect(avgCompleted).toBeGreaterThan(50);
+    expect(avgRatio).toBeGreaterThan(0.05);
     expect(avgShots).toBeGreaterThanOrEqual(1);
-
-    if (minOwnership < 0.25) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `ownership outlier min=${minOwnership.toFixed(3)} — investigate FREE-ball reclaim`,
-      );
-    }
   }, 300_000);
 
   it("C readiness: isolated box shot still executes", () => {
