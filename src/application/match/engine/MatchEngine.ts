@@ -63,7 +63,6 @@ export class MatchEngine {
     const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
     const halfTime = matchDuration / 2;
 
-    // Build all systems.
     const pitchGrid = PitchGrid.create(config.pitch);
     const perceptionSystem = new PerceptionSystem(pitchGrid);
     const cognitiveSystem = new CognitiveSystem(
@@ -95,7 +94,6 @@ export class MatchEngine {
     const movementSystem = new MovementSystem();
     const possessionSystem = new PossessionSystem(rng, new ReachCalculator());
 
-    // Initialize simulation state.
     const { state, awarenessMap } = this.initializer.initialize(config);
 
     let period: MatchPeriod = "FIRST_HALF";
@@ -107,7 +105,6 @@ export class MatchEngine {
 
     allEvents.push(this.makePeriodStarted("FIRST_HALF", 0));
 
-    // Main simulation loop.
     while (state.currentSecond < matchDuration) {
       if (!halfTimeHandled && state.currentSecond >= halfTime) {
         allEvents.push(this.makePeriodEnded("FIRST_HALF", state.currentSecond));
@@ -155,16 +152,16 @@ export class MatchEngine {
   }
 
   /**
-   * Tick order (Phase 2 — scheduler):
+   * Tick order:
    *
    * 1. Recover idle body state
    * 2. Perception + cognition
-   * 3. Advance existing ActionExecutions
-   * 4. Collect actions that reached EXECUTING
-   * 5. ActionArbitrator resolves conflicts
-   * 6. Apply consequences of winning actions
+   * 3. Advance existing PipelineExecutions / ActionExecutions
+   * 4. Collect steps that reached EXECUTING
+   * 5. ActionArbitrator resolves conflicts (cancels losing pipelines)
+   * 6. Apply consequences of winning steps
    * 7. Evaluate new decisions for free players
-   * 8. Create new ActionExecutions
+   * 8. Create new PipelineExecutions (multi-step plays)
    * 9. Ball physics / tactical / movement / possession
    */
   private runTick(
@@ -188,7 +185,7 @@ export class MatchEngine {
     const events: MatchEvent[] = [];
     const players = this.allPlayers(state);
 
-    // 1. Passive recovery for players without an active action.
+    // 1. Passive recovery for players without an active action/pipeline.
     for (const player of players) {
       recoverIdleActionState(player, deltaTime);
     }
@@ -210,11 +207,11 @@ export class MatchEngine {
       } satisfies CognitiveContext);
     }
 
-    // 3 + 4. Advance existing actions and collect those that reached EXECUTING.
+    // 3 + 4. Advance pipelines / actions and collect EXECUTING steps.
     const executingCandidates: ActionExecution[] = [];
 
     for (const player of players) {
-      if (!player.activeAction) continue;
+      if (!player.activeAction && !player.activePipeline) continue;
 
       const phase = actionFactory.advanceOnly(player, state.currentSecond);
 
@@ -223,17 +220,21 @@ export class MatchEngine {
       }
     }
 
-    // 5. Arbitrate concurrent executions.
+    // 5. Arbitrate concurrent executions (losing pipelines are cancelled).
     const winners = this.arbitrator.resolve(
       executingCandidates,
       state,
       state.currentSecond,
     );
 
-    // 6. Apply consequences of winning actions.
+    // 6. Apply consequences of winning steps.
     for (const execution of winners) {
       const player = players.find((p) => p.activeAction === execution);
       if (!player) continue;
+
+      // Skip if arbitration interrupted this player's pipeline meanwhile.
+      if (player.activePipeline && !player.activePipeline.isBusy()) continue;
+      if (execution.interruptionReason) continue;
 
       const isHome = state.home.players.includes(player);
       const teamState = isHome ? state.home : state.away;
@@ -255,9 +256,8 @@ export class MatchEngine {
       events.push(...result.events);
     }
 
-    // 7 + 8. Evaluate new decisions and start ActionExecutions for free players.
+    // 7 + 8. New decisions → PipelineExecution for free players.
     for (const player of players) {
-      // Still busy (preparing / recovering / just executed) → skip decision.
       if (player.isActionBusy()) continue;
 
       const awareness = awarenessMap.get(player.player.id);
@@ -268,8 +268,8 @@ export class MatchEngine {
         ? possessionDecisionSystem.decide(decisionCtx)
         : offBallDecisionSystem.decide(decisionCtx);
 
-      // Continuous positional actions are applied as no-ops (no lifecycle).
-      // Discrete actions start a full ActionExecution (PREPARING → …).
+      // Discrete decisions become pipelines (possibly multi-step plays).
+      // Continuous positional actions are no-ops at the action layer.
       actionFactory.tryStart(decision, player, state.currentSecond);
     }
 
