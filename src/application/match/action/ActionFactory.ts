@@ -10,6 +10,7 @@ import { PassAction } from "./actions/PassAction";
 import { ShotAction } from "./actions/ShotAction";
 import { TackleAction } from "./actions/TackleAction";
 import { RefereeSystem } from "../referee/RefereeSystem";
+import { applyActionExecutionProfile } from "./ActionExecutionProfile";
 
 /**
  * Routes a Decision to its corresponding action implementation
@@ -29,6 +30,25 @@ export class ActionFactory {
   }
 
   public execute(
+    decision: Decision,
+    context: ActionContext
+  ): ActionResult {
+    const result = this.executeAction(decision, context);
+
+    // Execution cost is applied after the action has actually been selected.
+    // The outcome may fail while the physical commitment still happened.
+    applyActionExecutionProfile(
+      context.player,
+      decision.type,
+      context.tick,
+      context.deltaTime,
+      result.type !== DecisionType.NONE
+    );
+
+    return result;
+  }
+
+  private executeAction(
     decision: Decision,
     context: ActionContext
   ): ActionResult {
@@ -72,10 +92,17 @@ export class ActionFactory {
       case DecisionType.COVER:
       case DecisionType.MOVE:
       case DecisionType.POSITION:
-      case DecisionType.NONE:
         return {
           actorId: context.player.player.id,
           type: decision.type,
+          success: true,
+          events: []
+        };
+
+      case DecisionType.NONE:
+        return {
+          actorId: context.player.player.id,
+          type: DecisionType.NONE,
           success: true,
           events: []
         };
