@@ -150,12 +150,18 @@ export function buildPlayerMatchState(overrides: {
     player,
     position,
     Vector2.zero(),
-    100,
+    100, // stamina
     overrides.fatigue ?? 0,
     overrides.hasBall ?? false,
     (overrides.role ?? "CENTRAL_MIDFIELDER") as any,
-    position,
-    new Vector2(1, 0)
+    position, // targetPosition
+    new Vector2(1, 0), // facingDirection
+    0, // actionLockUntil
+    0, // recoveryUntil
+    "STANDING", // bodyState
+    0, // bodyOrientation
+    100, // balance
+    100, // stability
   );
 }
 
@@ -253,12 +259,14 @@ export function buildMinimalMatchState(): MatchState {
   const pitch = buildPitch();
 
   const striker = buildPlayerMatchState({ position: new Vector2(80, 34), hasBall: true, role: "STRIKER" });
+  // Second home attacker so intercept/pass-lane tests have a receiver.
+  const support = buildPlayerMatchState({ position: new Vector2(70, 40), hasBall: false, role: "STRIKER" });
   const gk = buildPlayerMatchState({ position: new Vector2(104, 34), role: "GOALKEEPER" });
 
   const home = new TeamMatchState(
     buildTeam("home-mini"),
     1,
-    [striker],
+    [striker, support],
     buildTactic(),
     0
   );
