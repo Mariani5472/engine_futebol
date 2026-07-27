@@ -1,4 +1,3 @@
-import { DecisionType } from "../DecisionType";
 import { DecisionContext } from "../DecisionContext";
 import { Vector2 } from "../../../../core/geometry/Vector2";
 
@@ -62,20 +61,8 @@ export class ActionReadiness {
     return Math.max(0, Math.min(1, (dot + 1) / 2));
   }
 
-  public static transitionPenalty(
-    context: DecisionContext,
-    ...forbiddenPreviousActions: DecisionType[]
-  ): number {
-    const lastAction = context.player.lastActionType;
-
-    if (!lastAction || !forbiddenPreviousActions.includes(lastAction)) {
-      return 0;
-    }
-
-    return 0.15;
-  }
-
   private static normalize(value: number): number {
+    if (value <= 1) return Math.max(0, value);
     return Math.max(0, Math.min(1, value / 100));
   }
 }
