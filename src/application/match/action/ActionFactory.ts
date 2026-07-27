@@ -11,13 +11,16 @@ import { ShotAction } from "./actions/ShotAction";
 import { TackleAction } from "./actions/TackleAction";
 import { RefereeSystem } from "../referee/RefereeSystem";
 import { ActionExecution, ActionExecutionPhase } from "./ActionExecution";
+import { getActionExecutionProfile } from "./ActionExecutionProfile";
 
 /**
  * Creates and advances physical action executions.
  *
- * The factory does not resolve the football outcome immediately anymore.
- * A decision first creates an ActionExecution. The concrete action is
- * resolved when that execution reaches EXECUTING.
+ * Contract (Phase 1):
+ * - Evaluators only produce Decision.
+ * - Every discrete action is born as an ActionExecution.
+ * - MatchState is mutated ONLY when an execution reaches EXECUTING.
+ * - Nothing executes instantaneously.
  */
 export class ActionFactory {
   private readonly pass = new PassAction();
@@ -32,6 +35,73 @@ export class ActionFactory {
     this.tackle = new TackleAction(referee);
   }
 
+  /**
+   * Start a new ActionExecution from a Decision.
+   * Returns the execution if created (player is now busy).
+   * Continuous / positional decisions (PRESS, MOVE, …) return undefined.
+   */
+  public tryStart(
+    decision: Decision,
+    player: import("../../../core/movement/PlayerMatchState").PlayerMatchState,
+    currentTime: number,
+  ): ActionExecution | undefined {
+    if (player.isActionBusy()) return undefined;
+
+    if (isContinuousAction(decision.type)) {
+      return undefined;
+    }
+
+    const profile = getActionExecutionProfile(decision.type);
+    if (!profile) return undefined;
+
+    const execution = ActionExecution.start(decision, player, currentTime);
+    if (execution) {
+      player.activeAction = execution;
+    }
+    return execution;
+  }
+
+  /**
+   * Advance an existing ActionExecution and, if it just reached EXECUTING,
+   * resolve the football outcome (mutate MatchState).
+   *
+   * Call this ONLY for actions that the ActionArbitrator has approved.
+   */
+  public resolveExecuting(
+    execution: ActionExecution,
+    context: ActionContext,
+  ): ActionResult {
+    const result = this.executeAction(execution.decision, context);
+
+    // Move into RECOVERING immediately after the physical outcome is applied.
+    execution.advance(context.matchSecond);
+
+    return result;
+  }
+
+  /**
+   * Advance a single player's active action without applying outcome.
+   * Used by the tick scheduler before arbitration.
+   */
+  public advanceOnly(
+    player: import("../../../core/movement/PlayerMatchState").PlayerMatchState,
+    currentTime: number,
+  ): ActionExecutionPhase | undefined {
+    if (!player.activeAction) return undefined;
+
+    const phase = player.activeAction.advance(currentTime);
+
+    if (phase === ActionExecutionPhase.COMPLETED) {
+      player.activeAction = undefined;
+    }
+
+    return phase;
+  }
+
+  /**
+   * @deprecated Prefer the scheduler flow: tryStart → advanceOnly → resolveExecuting.
+   * Kept for backward-compatible unit tests that still call execute() directly.
+   */
   public execute(
     decision: Decision,
     context: ActionContext,
@@ -46,7 +116,6 @@ export class ActionFactory {
           player.activeAction.decision,
           context,
         );
-
         player.activeAction.advance(context.matchSecond);
         return result;
       }
@@ -61,18 +130,22 @@ export class ActionFactory {
       );
     }
 
-    const execution = ActionExecution.start(
-      decision,
-      player,
-      context.matchSecond,
-    );
-
+    // Start a new lifecycle — never execute immediately.
+    const execution = this.tryStart(decision, player, context.matchSecond);
     if (execution) {
-      player.activeAction = execution;
       return this.noopResult(player.player.id, decision.type);
     }
 
-    return this.executeAction(decision, context);
+    if (isContinuousAction(decision.type)) {
+      return {
+        actorId: player.player.id,
+        type: decision.type,
+        success: true,
+        events: [],
+      };
+    }
+
+    return this.noopResult(player.player.id, decision.type);
   }
 
   private executeAction(
@@ -112,8 +185,6 @@ export class ActionFactory {
       case DecisionType.SET_PIECE:
         return this.holdBall.execute(context);
 
-      // Off-ball / positional decisions and other non-discrete actions:
-      // they update positioning elsewhere and do not resolve as a direct action here.
       case DecisionType.PRESS:
       case DecisionType.MARK:
       case DecisionType.COVER:
@@ -152,4 +223,15 @@ export class ActionFactory {
       events: [],
     };
   }
+}
+
+function isContinuousAction(type: DecisionType): boolean {
+  return (
+    type === DecisionType.PRESS ||
+    type === DecisionType.MARK ||
+    type === DecisionType.COVER ||
+    type === DecisionType.MOVE ||
+    type === DecisionType.POSITION ||
+    type === DecisionType.NONE
+  );
 }
