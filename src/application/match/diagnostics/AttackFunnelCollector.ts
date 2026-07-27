@@ -33,13 +33,22 @@ export interface AttackFunnelReport {
   readonly avgGoalDistanceWhenInPossession: number;
   readonly minGoalDistanceObserved: number;
 
-  /** Mean forwardProgress (m) of selected PASS decisions. */
   readonly avgSelectedPassForwardProgress: number;
   readonly progressivePassCount: number;
   readonly lateralPassCount: number;
   readonly backwardPassCount: number;
-  /** Share of ticks with ≥1 teammate ahead of the ball line. */
   readonly supportAheadShareOfPossession: number;
+
+  /** Mean real Δx (attack axis) after successful pass completion. */
+  readonly avgPassRealForwardGain: number;
+  /** Share of completed passes with real Δx ≥ 8m. */
+  readonly passEffectiveProgressiveRate: number;
+  /** Mean |laneFP − realΔx| for completed passes (paradox detector). */
+  readonly avgLaneVsRealAbsError: number;
+  readonly completedPassSamples: number;
+  /** Mean ticks from opponent-half entry until return to own half. */
+  readonly avgTicksUntilOwnHalfReturn: number;
+  readonly ownHalfReturnSamples: number;
 }
 
 export class AttackFunnelCollector {
@@ -60,6 +69,16 @@ export class AttackFunnelCollector {
   private lateralPassCount = 0;
   private backwardPassCount = 0;
 
+  private passRealGainSum = 0;
+  private passRealGainSamples = 0;
+  private passEffectiveProgressive = 0;
+  private laneVsRealAbsErrorSum = 0;
+
+  private opponentHalfStreak = 0;
+  private ownHalfReturnSum = 0;
+  private ownHalfReturnSamples = 0;
+  private wasInOpponentHalf = false;
+
   private readonly possessionDecisions: Record<string, number> = {};
   private readonly possessionDecisionsInAttackingThird: Record<string, number> = {};
   private readonly possessionDecisionsInShootingZone: Record<string, number> = {};
@@ -68,7 +87,11 @@ export class AttackFunnelCollector {
     this.ticks++;
 
     const owner = state.ball.owner;
-    if (!owner) return;
+    if (!owner) {
+      this.wasInOpponentHalf = false;
+      this.opponentHalfStreak = 0;
+      return;
+    }
 
     this.possessionTicks++;
 
@@ -93,14 +116,22 @@ export class AttackFunnelCollector {
     if (this.isAttackingThird(owner.position.x, dir, pitchLength)) {
       this.attackingThirdPossessionTicks++;
     }
-    if (this.isOpponentHalf(owner.position.x, dir, pitchLength)) {
+    const inOppHalf = this.isOpponentHalf(owner.position.x, dir, pitchLength);
+    if (inOppHalf) {
       this.opponentHalfPossessionTicks++;
+      this.opponentHalfStreak++;
+      this.wasInOpponentHalf = true;
+    } else if (this.wasInOpponentHalf) {
+      this.ownHalfReturnSum += this.opponentHalfStreak;
+      this.ownHalfReturnSamples++;
+      this.opponentHalfStreak = 0;
+      this.wasInOpponentHalf = false;
     }
+
     if (goalDistance <= SHOOTING_ZONE_DISTANCE) {
       this.shootingZoneTicks++;
     }
 
-    // Support ahead of ball line?
     let supportAhead = false;
     for (const tm of team.players) {
       if (tm === owner) continue;
@@ -146,12 +177,28 @@ export class AttackFunnelCollector {
     }
   }
 
+  /** Call when a PASS action resolves (success or fail) with real Δx. */
+  public onPassResolved(
+    realForwardGain: number,
+    laneForwardProgress?: number,
+    success: boolean = true,
+  ): void {
+    if (!success) return;
+    this.passRealGainSum += realForwardGain;
+    this.passRealGainSamples++;
+    if (realForwardGain >= 8) this.passEffectiveProgressive++;
+    if (laneForwardProgress !== undefined) {
+      this.laneVsRealAbsErrorSum += Math.abs(laneForwardProgress - realForwardGain);
+    }
+  }
+
   public finalize(): AttackFunnelReport {
     const poss = Math.max(1, this.possessionTicks);
     const totalDecisions = Object.values(this.possessionDecisions).reduce(
       (a, b) => a + b,
       0,
     );
+    const completed = Math.max(1, this.passRealGainSamples);
 
     return {
       ticks: this.ticks,
@@ -198,6 +245,25 @@ export class AttackFunnelCollector {
       lateralPassCount: this.lateralPassCount,
       backwardPassCount: this.backwardPassCount,
       supportAheadShareOfPossession: this.supportAheadTicks / poss,
+
+      avgPassRealForwardGain:
+        this.passRealGainSamples > 0
+          ? this.passRealGainSum / this.passRealGainSamples
+          : 0,
+      passEffectiveProgressiveRate:
+        this.passRealGainSamples > 0
+          ? this.passEffectiveProgressive / this.passRealGainSamples
+          : 0,
+      avgLaneVsRealAbsError:
+        this.passRealGainSamples > 0
+          ? this.laneVsRealAbsErrorSum / this.passRealGainSamples
+          : 0,
+      completedPassSamples: this.passRealGainSamples,
+      avgTicksUntilOwnHalfReturn:
+        this.ownHalfReturnSamples > 0
+          ? this.ownHalfReturnSum / this.ownHalfReturnSamples
+          : 0,
+      ownHalfReturnSamples: this.ownHalfReturnSamples,
     };
   }
 
@@ -217,7 +283,9 @@ export class AttackFunnelCollector {
       `shootingZone≤${SHOOTING_ZONE_DISTANCE}m: ${report.shootingZoneTicks} (${(report.shootingZoneShareOfPossession * 100).toFixed(1)}% of poss)`,
       `supportAhead: ${(report.supportAheadShareOfPossession * 100).toFixed(1)}% of poss`,
       `avgGoalDist=${report.avgGoalDistanceWhenInPossession.toFixed(1)}m minGoalDist=${report.minGoalDistanceObserved.toFixed(1)}m`,
-      `pass FP avg=${report.avgSelectedPassForwardProgress.toFixed(1)}m progressive=${report.progressivePassCount} lateral=${report.lateralPassCount} back=${report.backwardPassCount}`,
+      `pass FP(lane)=${report.avgSelectedPassForwardProgress.toFixed(1)}m realΔx=${report.avgPassRealForwardGain.toFixed(1)}m |err|=${report.avgLaneVsRealAbsError.toFixed(1)} effective≥8m=${(report.passEffectiveProgressiveRate * 100).toFixed(1)}% n=${report.completedPassSamples}`,
+      `ownHalfReturn avgTicks=${report.avgTicksUntilOwnHalfReturn.toFixed(1)} (n=${report.ownHalfReturnSamples})`,
+      `progressive=${report.progressivePassCount} lateral=${report.lateralPassCount} back=${report.backwardPassCount}`,
       `decisions total=${report.totalPossessionDecisions} SHOT=${report.shotDecisions} PASS=${report.passDecisions} HOLD=${report.holdDecisions} DRIBBLE=${report.dribbleDecisions}`,
       `SHOT in shooting zone=${report.shotDecisionsInShootingZone}`,
       `top decisions: ${top(report.possessionDecisions)}`,
