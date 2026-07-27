@@ -6,7 +6,7 @@ import { UtilityScore } from "../UtilityScore";
 
 /**
  * Hold ball is the safe option under pressure when pass/shot lanes are poor.
- * Must beat mindless dribbling into traffic, but stay below clear shots.
+ * Under zero pressure / open pitch it must not dominate possession ticks.
  */
 export class HoldBallEvaluator implements ActionEvaluator {
 
@@ -39,17 +39,26 @@ export class HoldBallEvaluator implements ActionEvaluator {
     const pressure = world.pressure;
     const freeSpace = world.freeSpace;
 
-    // Base shielding skill.
-    const technique = composure * 14 + strength * 10;
-    const body = balance * 8 + stability * 6;
+    // Without meaningful pressure, holding is almost never correct.
+    if (pressure < 0.25 && freeSpace > 0.4) {
+      return UtilityScore.fromComponents({ SPACE: 0 });
+    }
 
-    // Pressure is the main reason to hold — rises steeply when closed down.
-    const pressureValue = pressure * 36;
+    const technique = composure * 12 + strength * 8;
+    const body = balance * 6 + stability * 5;
 
-    // Open pitch: holding is a waste of possession.
-    const openPitchPenalty = freeSpace > 0.55 ? -(freeSpace * 18) : 0;
+    // Pressure is the main reason to hold — steep when closed down.
+    const pressureValue = pressure * 40;
 
-    // After a failed progressive action, holding stabilises.
+    // Open pitch: holding wastes possession.
+    const openPitchPenalty = freeSpace > 0.45 ? -(freeSpace * 28) : 0;
+
+    // Repeat HOLD under low pressure collapses utility further.
+    const repeatHoldPenalty =
+      context.player.lastActionType === DecisionType.HOLD_BALL && pressure < 0.45
+        ? -18
+        : 0;
+
     const recoveryBonus =
       context.player.lastActionType === DecisionType.DRIBBLE && pressure > 0.4
         ? 12
@@ -60,7 +69,7 @@ export class HoldBallEvaluator implements ActionEvaluator {
       BODY: body,
       PRESSURE: pressureValue,
       SPACE: openPitchPenalty,
-      TACTICAL: recoveryBonus,
+      TACTICAL: recoveryBonus + repeatHoldPenalty,
     });
   }
 
