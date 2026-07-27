@@ -10,27 +10,16 @@ export class DribbleEvaluator implements ActionEvaluator {
     if (!context.player.hasBall) return [];
 
     const options = [
-      this.createDribbleDecision(context),
-      this.createHoldBallDecision(context),
-      this.createSkillMoveDecision(context),
+      this.createDecision(DecisionType.DRIBBLE, this.calculateDribbleUtility(context)),
+      this.createDecision(DecisionType.HOLD_BALL, this.calculateHoldBallUtility(context)),
+      this.createDecision(DecisionType.SKILL_MOVE, this.calculateSkillMoveUtility(context)),
     ];
 
     return options.filter((decision) => decision.utility > 0);
   }
 
-  private createDribbleDecision(context: DecisionContext): Decision {
-    const score = this.calculateDribbleUtility(context);
-    return new Decision(DecisionType.DRIBBLE, score.total);
-  }
-
-  private createHoldBallDecision(context: DecisionContext): Decision {
-    const score = this.calculateHoldBallUtility(context);
-    return new Decision(DecisionType.HOLD_BALL, score.total);
-  }
-
-  private createSkillMoveDecision(context: DecisionContext): Decision {
-    const score = this.calculateSkillMoveUtility(context);
-    return new Decision(DecisionType.SKILL_MOVE, score.total);
+  private createDecision(type: DecisionType, score: UtilityScore): Decision {
+    return new Decision(type, score.total, undefined, score.reasons, score.components);
   }
 
   private calculateDribbleUtility(context: DecisionContext): UtilityScore {
@@ -87,7 +76,7 @@ export class DribbleEvaluator implements ActionEvaluator {
     return UtilityScore.fromComponents({
       TECHNIQUE: composure * 12 + strength * 10,
       BODY: balance * 8 + stability * 8,
-      PRESSURE: pressure * 18, // hold-ball is MORE attractive under pressure
+      PRESSURE: pressure * 18,
     });
   }
 
