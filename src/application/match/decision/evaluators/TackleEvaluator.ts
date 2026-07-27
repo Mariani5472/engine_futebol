@@ -4,13 +4,14 @@ import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
+import { ActionReadiness } from "./ActionReadiness";
 
 /**
  * Evaluates direct tackle attempts.
  *
- * TACKLE is the last aggressive defensive step before a foul-prone duels.
- * It should appear less often than PRESS or INTERCEPT and only when the player
- * is close enough to the ball carrier to attempt a real dispossession.
+ * A tackle is not only a function of distance and tackling skill. The defender
+ * should recognize when the ball carrier is physically committed to a technical
+ * action and therefore temporarily vulnerable to an interruption.
  */
 export class TackleEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
@@ -61,6 +62,29 @@ export class TackleEvaluator implements ActionEvaluator {
       match.pitch.length
     );
     const roleBonus = this.calculateRoleBonus(player);
+
+    const currentTime = ActionReadiness.currentTime(context);
+    const interruptionOpportunity = ActionReadiness.interruptionOpportunity(
+      ballOwner,
+      player,
+      currentTime,
+    );
+
+    const targetBodyQuality = ActionReadiness.bodyQuality({
+      ...context,
+      player: ballOwner,
+    } as DecisionContext);
+
+    const preparationBonus = this.calculatePreparationBonus(
+      ballOwner,
+      interruptionOpportunity,
+    );
+
+    const vulnerabilityBonus = this.calculateVulnerabilityBonus(
+      targetBodyQuality,
+      interruptionOpportunity,
+    );
+
     const staminaModifier = Math.max(0.65, 0.45 + stamina * 0.55);
 
     const base = (
@@ -72,7 +96,9 @@ export class TackleEvaluator implements ActionEvaluator {
       proximityBonus +
       ballOwnerPressure +
       ownGoalBonus +
-      roleBonus
+      roleBonus +
+      preparationBonus +
+      vulnerabilityBonus
     ) * staminaModifier;
 
     return new UtilityScore(Math.max(0, base), 0, 0, 0, [
@@ -83,8 +109,41 @@ export class TackleEvaluator implements ActionEvaluator {
       { code: "PROXIMITY", value: proximityBonus },
       { code: "BALL_OWNER_PRESSURE", value: ballOwnerPressure },
       { code: "OWN_GOAL_URGENCY", value: ownGoalBonus },
-      { code: "ROLE_BONUS", value: roleBonus }
+      { code: "ROLE_BONUS", value: roleBonus },
+      { code: "PREPARATION_WINDOW", value: preparationBonus },
+      { code: "TARGET_VULNERABILITY", value: vulnerabilityBonus },
     ]);
+  }
+
+  private calculatePreparationBonus(
+    ballOwner: PlayerMatchState,
+    interruptionOpportunity: number,
+  ): number {
+    const actionType = ballOwner.activeAction?.type;
+    if (!actionType || interruptionOpportunity <= 0) return 0;
+
+    const technicalCommitment = {
+      [DecisionType.PASS]: 14,
+      [DecisionType.CROSS]: 16,
+      [DecisionType.SHOT]: 18,
+      [DecisionType.CLEAR]: 15,
+      [DecisionType.HEADER]: 13,
+      [DecisionType.CONTROL]: 8,
+      [DecisionType.RECEIVE]: 8,
+      [DecisionType.DRIBBLE]: 10,
+      [DecisionType.SKILL_MOVE]: 12,
+      [DecisionType.FAKE]: 8,
+    }[actionType] ?? 0;
+
+    return technicalCommitment * interruptionOpportunity;
+  }
+
+  private calculateVulnerabilityBonus(
+    bodyQuality: number,
+    interruptionOpportunity: number,
+  ): number {
+    const poorBodyQuality = 1 - bodyQuality;
+    return poorBodyQuality * 8 * interruptionOpportunity;
   }
 
   private calculateBallOwnerPressure(
