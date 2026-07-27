@@ -5,6 +5,7 @@ import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 import { Vector2 } from "../../../../core/geometry/Vector2";
+import { ActionReadiness } from "./ActionReadiness";
 
 /**
  * Evaluates crosses from wide attacking areas.
@@ -16,6 +17,10 @@ import { Vector2 } from "../../../../core/geometry/Vector2";
 export class CrossEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     const { player, match } = context;
+
+    if (!player.hasBall) return [];
+    if (!ActionReadiness.canStartAction(context, 0.3)) return [];
+
     const isHome = match.home.players.includes(player);
     const team = isHome ? match.home : match.away;
     const attackingDirection = team.attackingDirection;
@@ -23,7 +28,6 @@ export class CrossEvaluator implements ActionEvaluator {
     const forwardDistance = (match.pitch.length - player.position.x) * attackingDirection;
     const lateralDistance = Math.abs(player.position.y - match.pitch.width / 2);
 
-    // Crosses are mainly generated from wide attacking channels.
     if (forwardDistance < 18) return [];
     if (lateralDistance < match.pitch.width * 0.18) return [];
 
@@ -84,6 +88,20 @@ export class CrossEvaluator implements ActionEvaluator {
 
     const pressure = this.calculatePressure(context);
 
+    const desiredDirection = new Vector2(
+      targetPosition.x - player.position.x,
+      targetPosition.y - player.position.y
+    );
+    const orientationQuality = ActionReadiness.orientationQuality(
+      context.player.facingDirection,
+      desiredDirection
+    );
+    const bodyQuality = ActionReadiness.bodyQuality(context);
+    const executionQuality = Math.max(
+      0.25,
+      orientationQuality * 0.55 + bodyQuality * 0.45
+    );
+
     const base = (
       crossing * 28 +
       technique * 10 +
@@ -93,7 +111,7 @@ export class CrossEvaluator implements ActionEvaluator {
       targetZoneBonus +
       centralTargetBonus -
       pressure * 12
-    ) * roleQuality;
+    ) * roleQuality * executionQuality;
 
     return new UtilityScore(Math.max(0, base), 0, 0, 0, [
       { code: "CROSSING", value: crossing * 28 },
@@ -102,7 +120,10 @@ export class CrossEvaluator implements ActionEvaluator {
       { code: "TARGET_DISTANCE", value: distanceScore },
       { code: "TARGET_ZONE", value: targetZoneBonus },
       { code: "PRESSURE", value: -pressure * 12 },
-      { code: "ROLE_QUALITY", value: roleQuality }
+      { code: "ROLE_QUALITY", value: roleQuality },
+      { code: "BODY_QUALITY", value: bodyQuality },
+      { code: "ORIENTATION", value: orientationQuality },
+      { code: "EXECUTION_QUALITY", value: executionQuality },
     ]);
   }
 
