@@ -7,10 +7,15 @@ import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCal
 import { FieldThird } from "../../../../domain";
 import { ActionReadiness } from "./ActionReadiness";
 
-/** Toward ~25–35 shots/game with tick=2s + 30s lock. */
-const SHOT_UTILITY_SCALE = 0.35;
+/**
+ * Scale tuned so clear box chances beat DRIBBLE (~80) while not returning
+ * to the 300–600 shots/game regime. Lock (20s) + 1/possession remain the
+ * primary volume control.
+ */
+const SHOT_UTILITY_SCALE = 0.95;
 
-const BOX_FLAT_BOOST = 12;
+/** Strong boost inside the box so finishing wins the selector. */
+const BOX_FLAT_BOOST = 48;
 
 /** One finishing attempt per continuous possession spell. */
 const MAX_SHOTS_PER_POSSESSION = 1;
@@ -25,11 +30,8 @@ export class ShotEvaluator implements ActionEvaluator {
     if (team?.isShotLocked(context.match.currentSecond)) return [];
     if ((team?.shotsThisPossession ?? 0) >= MAX_SHOTS_PER_POSSESSION) return [];
 
-    // Stricter window: only clear chances beyond close range.
-    if (context.world.goalDistance > 18 && context.world.shotWindow < 0.50) {
-      return [];
-    }
-    if (context.world.goalDistance > 14 && context.world.shotWindow < 0.28) {
+    // Outside the box need a reasonable window; inside 14m always eligible.
+    if (context.world.goalDistance > 20 && context.world.shotWindow < 0.40) {
       return [];
     }
 
@@ -71,8 +73,8 @@ export class ShotEvaluator implements ActionEvaluator {
 
     const pressure = world.pressure;
     const attackingBonus =
-      world.fieldThird === FieldThird.ATTACKING ? 16 : 0;
-    const angleBonus = world.goalAngleQuality * 6;
+      world.fieldThird === FieldThird.ATTACKING ? 28 : 0;
+    const angleBonus = world.goalAngleQuality * 10;
 
     const desiredDirection = world.goalCenter.subtract(player.position);
     const orientationQuality = ActionReadiness.orientationQuality(
@@ -85,24 +87,26 @@ export class ShotEvaluator implements ActionEvaluator {
       orientationQuality * 0.50 + bodyQuality * 0.50,
     );
 
-    const windowBoost = 0.55 + world.shotWindow * 0.50;
+    const windowBoost = 0.70 + world.shotWindow * 0.50;
 
     const space = distanceBase * windowBoost;
-    const techniqueComp = attrScore * distanceBase * 0.30 * windowBoost;
-    const role = roleQuality * 14 * windowBoost;
-    const pressureComp = -pressure * distanceBase * 0.48 * windowBoost;
-    const body = (executionQuality - 0.25) / 0.75 * 8;
+    const techniqueComp = attrScore * distanceBase * 0.35 * windowBoost;
+    const role = roleQuality * 20 * windowBoost;
+    const pressureComp = -pressure * distanceBase * 0.32 * windowBoost;
+    const body = (executionQuality - 0.25) / 0.75 * 12;
     const tactical = (angleBonus + attackingBonus) * executionQuality;
+
+    // Box priority: must clear DRIBBLE (~80) on clear chances at ~9m.
     const proximityBoost =
-      distance <= 14 ? BOX_FLAT_BOOST * (1 - distance / 28) : 0;
+      distance <= 18 ? BOX_FLAT_BOOST * (1 - distance / 36) : 0;
 
     const repeatPlayerPenalty =
-      player.lastActionType === DecisionType.SHOT ? -30 : 0;
+      player.lastActionType === DecisionType.SHOT ? -20 : 0;
 
     const raw = UtilityScore.fromComponents({
-      SPACE: space * executionQuality * 0.38,
+      SPACE: space * executionQuality * 0.42,
       TECHNIQUE: techniqueComp * executionQuality,
-      ROLE: role * executionQuality * 0.28,
+      ROLE: role * executionQuality * 0.32,
       PRESSURE: pressureComp * executionQuality,
       BODY: body,
       TACTICAL: tactical + proximityBoost + repeatPlayerPenalty,
@@ -122,14 +126,14 @@ export class ShotEvaluator implements ActionEvaluator {
     finishing: number,
     longShots: number
   ): number {
-    if (distance <= 6) return 88;
-    if (distance <= 12) return 62 + finishing * 1.0;
-    if (distance <= 16) return 42 + finishing * 0.7;
-    if (distance <= 20) return 24 + finishing * 0.45;
-    if (distance <= 25) return 10 + finishing * 0.25;
+    if (distance <= 6) return 120;
+    if (distance <= 12) return 90 + finishing * 1.4;
+    if (distance <= 16) return 65 + finishing * 1.0;
+    if (distance <= 20) return 40 + finishing * 0.7;
+    if (distance <= 25) return 18 + finishing * 0.4;
 
-    const longBonus = Math.max(0, (longShots - 14) * 1.0);
-    if (distance <= 30) return Math.max(0, 2 + longBonus);
+    const longBonus = Math.max(0, (longShots - 12) * 1.2);
+    if (distance <= 32) return Math.max(0, 6 + longBonus);
 
     return 0;
   }
