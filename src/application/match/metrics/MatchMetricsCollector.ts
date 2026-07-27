@@ -90,7 +90,13 @@ export class MatchMetricsCollector {
           this.handleGoal(event.teamId);
           break;
         case "CARD":
-          this.handleCard(event.teamId, event.cardType, event.reason);
+          this.handleCard(event.teamId, event.cardType);
+          break;
+        case "CORNER":
+          this.handleCorner(event.teamId);
+          break;
+        case "FOUL":
+          this.handleFoul(event.teamId);
           break;
         default:
           break;
@@ -228,25 +234,24 @@ export class MatchMetricsCollector {
     stats.attackActive = false;
   }
 
-  private handleCard(
-    teamId: string,
-    cardType: "YELLOW" | "RED",
-    reason: string,
-  ): void {
+  private handleCard(teamId: string, cardType: "YELLOW" | "RED"): void {
     const stats = this.statsForTeam(teamId);
     if (!stats) return;
 
     if (cardType === "YELLOW") stats.yellowCards++;
     else stats.redCards++;
+  }
 
-    // Cards from tackles imply a foul was also awarded.
-    // "Second yellow" is still one foul context (already counted on first yellow's play).
-    const r = reason.toLowerCase();
-    if (r.includes("tackle") || r.includes("foul") || r.includes("conduct")) {
-      if (!r.includes("second yellow")) {
-        stats.fouls++;
-      }
-    }
+  private handleCorner(teamId: string): void {
+    const stats = this.statsForTeam(teamId);
+    if (!stats) return;
+    stats.corners++;
+  }
+
+  private handleFoul(teamId: string): void {
+    const stats = this.statsForTeam(teamId);
+    if (!stats) return;
+    stats.fouls++;
   }
 
   private statsForTeam(teamId: string): MutableTeamStats | null {
