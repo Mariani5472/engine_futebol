@@ -8,6 +8,14 @@ export class TeamMatchState {
   /** Last successful pass forward gain (m) along attack axis. */
   public lastPassForwardGain = 0;
 
+  /**
+   * Match second until which this team cannot select/execute SHOT.
+   * Prevents tick=2s from producing hundreds of shots per match.
+   */
+  public shotLockUntil = 0;
+  /** Shots taken while the current continuous ownership spell lasts. */
+  public shotsThisPossession = 0;
+
   constructor(
 
     public readonly team: Team,
@@ -21,7 +29,6 @@ export class TeamMatchState {
   public noteProgressivePass(matchSecond: number, forwardGain: number): void {
     this.lastPassForwardGain = forwardGain;
     if (forwardGain >= 8) {
-      // Hold progressive intent for a few seconds of simulation time.
       this.progressiveHoldUntil = Math.max(
         this.progressiveHoldUntil,
         matchSecond + 6,
@@ -31,5 +38,26 @@ export class TeamMatchState {
 
   public inProgressiveHold(matchSecond: number): boolean {
     return matchSecond < this.progressiveHoldUntil;
+  }
+
+  public isShotLocked(matchSecond: number): boolean {
+    return matchSecond < this.shotLockUntil;
+  }
+
+  /**
+   * After a shot is executed: lock further shots for a cool-down window and
+   * count this possession's attempts.
+   */
+  public noteShotTaken(matchSecond: number, cooldownSeconds = 14): void {
+    this.shotsThisPossession += 1;
+    this.shotLockUntil = Math.max(
+      this.shotLockUntil,
+      matchSecond + cooldownSeconds,
+    );
+  }
+
+  /** Call when this team loses or regains a fresh possession spell. */
+  public resetPossessionShotCount(): void {
+    this.shotsThisPossession = 0;
   }
 }
