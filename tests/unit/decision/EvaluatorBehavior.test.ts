@@ -10,14 +10,17 @@ import { PressEvaluator } from "../../../src/application/match/decision/evaluato
 import { TackleEvaluator } from "../../../src/application/match/decision/evaluators/TackleEvaluator";
 import { BallState } from "../../../src/core/movement/BallMatchState";
 import { Vector2 } from "../../../src/core/geometry/Vector2";
-import { buildMinimalMatchState, buildPlayer } from "../../helpers/builders";
+import { buildMinimalMatchState, buildPlayerMatchState } from "../../helpers/builders";
+
+let match = buildMinimalMatchState();
 
 function contextFor(
   player: DecisionContext["player"],
   currentTick = 0,
+  currentMatch = match,
 ): DecisionContext {
   return new DecisionContext(
-    match,
+    currentMatch,
     player,
     {} as DecisionContext["awareness"],
     currentTick,
@@ -45,8 +48,6 @@ function decisionScore(
 ): number {
   return decisions.find((decision) => decision.type === type)?.utility ?? 0;
 }
-
-let match = buildMinimalMatchState();
 
 beforeEach(() => {
   match = buildMinimalMatchState();
@@ -79,13 +80,17 @@ describe("Evaluator behavior relationships", () => {
     const defender = match.away.players[0];
     const evaluator = new PressEvaluator();
 
-    const withoutPreparation = evaluator.evaluate(contextFor(defender));
-    const baseline = decisionScore(withoutPreparation, DecisionType.PRESS);
+    const baseline = decisionScore(
+      evaluator.evaluate(contextFor(defender)),
+      DecisionType.PRESS,
+    );
 
     preparedAction(attacker, DecisionType.PASS);
 
-    const duringPreparation = evaluator.evaluate(contextFor(defender));
-    const prepared = decisionScore(duringPreparation, DecisionType.PRESS);
+    const prepared = decisionScore(
+      evaluator.evaluate(contextFor(defender)),
+      DecisionType.PRESS,
+    );
 
     expect(prepared).toBeGreaterThan(baseline);
   });
@@ -95,13 +100,17 @@ describe("Evaluator behavior relationships", () => {
     const defender = match.away.players[0];
     const evaluator = new InterceptEvaluator();
 
-    const withoutPreparation = evaluator.evaluate(contextFor(defender));
-    const baseline = decisionScore(withoutPreparation, DecisionType.INTERCEPT);
+    const baseline = decisionScore(
+      evaluator.evaluate(contextFor(defender)),
+      DecisionType.INTERCEPT,
+    );
 
     preparedAction(attacker, DecisionType.PASS);
 
-    const duringPreparation = evaluator.evaluate(contextFor(defender));
-    const prepared = decisionScore(duringPreparation, DecisionType.INTERCEPT);
+    const prepared = decisionScore(
+      evaluator.evaluate(contextFor(defender)),
+      DecisionType.INTERCEPT,
+    );
 
     expect(prepared).toBeGreaterThan(baseline);
   });
@@ -111,13 +120,17 @@ describe("Evaluator behavior relationships", () => {
     const defender = match.away.players[0];
     const evaluator = new BlockEvaluator();
 
-    const withoutPreparation = evaluator.evaluate(contextFor(defender));
-    const baseline = decisionScore(withoutPreparation, DecisionType.BLOCK);
+    const baseline = decisionScore(
+      evaluator.evaluate(contextFor(defender)),
+      DecisionType.BLOCK,
+    );
 
     preparedAction(attacker, DecisionType.SHOT);
 
-    const duringPreparation = evaluator.evaluate(contextFor(defender));
-    const prepared = decisionScore(duringPreparation, DecisionType.BLOCK);
+    const prepared = decisionScore(
+      evaluator.evaluate(contextFor(defender)),
+      DecisionType.BLOCK,
+    );
 
     expect(prepared).toBeGreaterThan(baseline);
   });
@@ -137,38 +150,42 @@ describe("Evaluator behavior relationships", () => {
   });
 
   it("makes a high first-touch player more likely to control the ball", () => {
-    const defender = match.away.players[0];
+    const highMatch = buildMinimalMatchState();
+    const lowMatch = buildMinimalMatchState();
+
+    const highController = highMatch.home.players[0];
+    const lowController = lowMatch.home.players[0];
+    const highOpponent = highMatch.away.players[0];
+    const lowOpponent = lowMatch.away.players[0];
+
+    highController.player.attributes.technical.firstTouch = 20;
+    lowController.player.attributes.technical.firstTouch = 1;
+
+    highController.hasBall = false;
+    lowController.hasBall = false;
+    highController.position = new Vector2(80, 34);
+    lowController.position = new Vector2(80, 34);
+    highOpponent.position = new Vector2(90, 34);
+    lowOpponent.position = new Vector2(90, 34);
+
+    highMatch.ball.owner = undefined;
+    lowMatch.ball.owner = undefined;
+    highMatch.ball.state = BallState.IN_FLIGHT;
+    lowMatch.ball.state = BallState.IN_FLIGHT;
+    highMatch.ball.position = new Vector2(80.5, 34);
+    lowMatch.ball.position = new Vector2(80.5, 34);
+    highMatch.ball.velocity = new Vector2(1, 0);
+    lowMatch.ball.velocity = new Vector2(1, 0);
+
     const evaluator = new ControlEvaluator();
 
-    const highFirstTouch = buildPlayer({
-      attributes: undefined,
-    });
-
-    const lowFirstTouch = buildPlayer();
-
-    highFirstTouch.attributes.technical.firstTouch = 20;
-    lowFirstTouch.attributes.technical.firstTouch = 1;
-
-    const highState = match.home.players[0];
-    const lowState = match.home.players[0];
-
-    highState.player.attributes.technical.firstTouch = 20;
-    lowState.player.attributes.technical.firstTouch = 1;
-
-    match.ball.owner = undefined;
-    match.ball.state = BallState.IN_FLIGHT;
-    match.ball.position = new Vector2(80.5, 34);
-    match.ball.velocity = new Vector2(1, 0);
-
-    defender.position = new Vector2(90, 34);
-
     const highScore = decisionScore(
-      evaluator.evaluate(contextFor(highState)),
+      evaluator.evaluate(contextFor(highController, 0, highMatch)),
       DecisionType.CONTROL,
     );
 
     const lowScore = decisionScore(
-      evaluator.evaluate(contextFor(lowState)),
+      evaluator.evaluate(contextFor(lowController, 0, lowMatch)),
       DecisionType.CONTROL,
     );
 
