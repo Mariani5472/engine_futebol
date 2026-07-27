@@ -5,7 +5,16 @@ import { ReachCalculator } from "./ReachCalculator";
 import { BallState } from "./BallMatchState";
 import { Random } from "../random/Random";
 
-const CLAIM_RADIUS = 6;
+/** Primary contest radius around a free ball. */
+const CLAIM_RADIUS = 14;
+
+/**
+ * If nobody is inside CLAIM_RADIUS, still hand the ball to the nearest player
+ * within this secondary radius so FREE balls after shots/failed passes do not
+ * sit unowned for hundreds of ticks (ownership collapse ~0.5%).
+ */
+const FALLBACK_CLAIM_RADIUS = 40;
+
 const SLOW_BALL_SPEED = 4;
 
 export class PossessionSystem {
@@ -29,7 +38,6 @@ export class PossessionSystem {
       ball.state = BallState.FREE;
     }
 
-    // Slow airborne balls become ground contests.
     if (
       ball.state === BallState.IN_FLIGHT &&
       ball.velocity.magnitude() < SLOW_BALL_SPEED &&
@@ -39,7 +47,27 @@ export class PossessionSystem {
       ball.height = 0;
     }
 
-    const candidates = this.getCandidates(state);
+    // Only contest FREE (or slow) balls.
+    if (ball.state === BallState.IN_FLIGHT && ball.velocity.magnitude() > SLOW_BALL_SPEED) {
+      return;
+    }
+
+    let candidates = this.getCandidates(state, CLAIM_RADIUS);
+
+    // Fallback: never leave a stationary/slow FREE ball without an owner.
+    if (candidates.length === 0 && ball.state === BallState.FREE) {
+      candidates = this.getCandidates(state, FALLBACK_CLAIM_RADIUS);
+    }
+
+    if (candidates.length === 0 && ball.state === BallState.FREE) {
+      // Absolute fallback — nearest player on the pitch claims.
+      const nearest = this.nearestPlayer(state);
+      if (nearest) {
+        this.givePossession(state, nearest);
+      }
+      return;
+    }
+
     if (candidates.length === 0) return;
 
     candidates.sort((a, b) => b.score - a.score);
@@ -68,7 +96,10 @@ export class PossessionSystem {
     }
   }
 
-  private getCandidates(state: MatchState): PossessionCandidate[] {
+  private getCandidates(
+    state: MatchState,
+    radius: number,
+  ): PossessionCandidate[] {
     const players = [...state.home.players, ...state.away.players];
     const candidates: PossessionCandidate[] = [];
     const ballSpeed = state.ball.velocity.magnitude();
@@ -77,7 +108,6 @@ export class PossessionSystem {
       const distance = player.position.distanceTo(state.ball.position);
       const reach = this.reachCalculator.calculateReachTime(player, state.ball);
 
-      // Fast pure flight stays unclaimed unless almost on the player.
       if (
         state.ball.state === BallState.IN_FLIGHT &&
         ballSpeed > SLOW_BALL_SPEED &&
@@ -86,7 +116,10 @@ export class PossessionSystem {
         continue;
       }
 
-      if (distance > CLAIM_RADIUS && reach > 4) continue;
+      if (distance > radius) continue;
+
+      // Soften reach gate: far-but-in-radius players still contest slowly.
+      if (reach > 6 && distance > radius * 0.6) continue;
 
       candidates.push({
         player,
@@ -96,6 +129,22 @@ export class PossessionSystem {
     }
 
     return candidates;
+  }
+
+  private nearestPlayer(state: MatchState): PlayerMatchState | null {
+    const players = [...state.home.players, ...state.away.players];
+    if (players.length === 0) return null;
+
+    let best = players[0];
+    let bestDist = best.position.distanceTo(state.ball.position);
+    for (let i = 1; i < players.length; i++) {
+      const d = players[i].position.distanceTo(state.ball.position);
+      if (d < bestDist) {
+        best = players[i];
+        bestDist = d;
+      }
+    }
+    return best;
   }
 
   private calculateControlScore(
