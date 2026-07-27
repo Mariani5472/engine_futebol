@@ -1,5 +1,6 @@
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import { BallState } from "../../../../core/movement/BallMatchState";
+import { FoulEvent, Milliseconds, PlayerId, TeamId } from "../../../../domain";
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
@@ -37,7 +38,6 @@ export class TackleAction {
       };
     }
 
-    // Sent-off players should not produce further discipline events.
     if (this.referee.isPlayerSentOff(player.player.id)) {
       return {
         actorId: player.player.id,
@@ -53,7 +53,6 @@ export class TackleAction {
     const tacklerTeam = isHomePlayer ? match.home : match.away;
     const victimTeam = isHomePlayer ? match.away : match.home;
 
-    // Referee sees whether the ball was won cleanly — success suppresses soft fouls.
     const foulOutcome = this.referee.evaluateTackle(
       player,
       tacklerTeam,
@@ -69,7 +68,16 @@ export class TackleAction {
     const events: ActionEvent[] = [...foulOutcome.events];
 
     if (foulOutcome.isFoul) {
-      // Foul: challenge fails, no possession change.
+      const foul: FoulEvent = {
+        id: `foul-${player.player.id}-${matchSecond.toFixed(1)}`,
+        type: "FOUL",
+        timestamp: (matchSecond * 1000) as Milliseconds,
+        period,
+        teamId: tacklerTeam.team.id as TeamId,
+        playerId: player.player.id as PlayerId,
+      };
+      events.push(foul);
+
       return {
         actorId: player.player.id,
         type: DecisionType.TACKLE,
@@ -130,13 +138,6 @@ export class TackleAction {
       Math.min(0.85, tacklerScore / (tacklerScore + targetScore)),
     );
 
-    //
-    // Danger must stay mostly in 0.15–0.55 for average players.
-    // Old formula: aggression*0.5 + (1-tackling)*0.3 + U(0,0.2) ≈ 0.4–0.7
-    // which triggered fouls on nearly every challenge and cascaded into reds.
-    //
-    // New: skill reduces danger; only high aggression + poor technique spikes it.
-    //
     const dangerScore = Math.min(
       1,
       aggression * 0.28 +
