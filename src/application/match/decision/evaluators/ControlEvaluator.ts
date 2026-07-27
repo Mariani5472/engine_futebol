@@ -32,14 +32,15 @@ export class ControlEvaluator implements ActionEvaluator {
     opponents: PlayerMatchState[]
   ): number {
     const attrs = player.player.attributes;
-    const technique = attrs.technical.technique / 20;
+    const technical = attrs.technical as unknown as Record<string, number>;
+    const technique = technical.technique / 20;
+    const firstTouch = (technical.firstTouch ?? technical.technique ?? 10) / 20;
     const anticipation = attrs.mental.anticipation / 20;
     const composure = attrs.mental.composure / 20;
-    const firstTouch = attrs.technical.firstTouch / 20;
 
     const controlQuality =
-      technique * 0.30 +
-      firstTouch * 0.35 +
+      technique * 0.25 +
+      firstTouch * 0.40 +
       anticipation * 0.20 +
       composure * 0.15;
 
