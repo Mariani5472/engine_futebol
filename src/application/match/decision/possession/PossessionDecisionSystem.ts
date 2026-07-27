@@ -10,7 +10,7 @@ import { DefaultRiskCalculator } from "../risk/DefaultRiskCalculator";
 import { RiskCalculator } from "../risk/RiskCalculator";
 import { RiskContext } from "../risk/RiskContext";
 import { FieldThirdResolver } from "../../../../core/pitch/FieldThirdResolver";
-import { PlayerPosition } from "../../../../domain";
+import { ActionReadiness } from "../evaluators/ActionReadiness";
 
 export class PossessionDecisionSystem {
   private readonly fieldThirdResolver: FieldThirdResolver;
@@ -37,7 +37,11 @@ export class PossessionDecisionSystem {
       candidates.push(...evaluator.evaluate(context));
     }
 
-    const biasedCandidates = candidates.map((decision) => {
+    const readyCandidates = candidates.filter(() =>
+      ActionReadiness.canStartAction(context)
+    );
+
+    const biasedCandidates = readyCandidates.map((decision) => {
       const bias = this.personalityModifier.calculate({
         player: context.player,
         decisionType: decision.type,
