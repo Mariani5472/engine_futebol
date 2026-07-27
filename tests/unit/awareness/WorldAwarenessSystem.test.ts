@@ -54,8 +54,9 @@ describe("WorldAwarenessSystem", () => {
   it("builds passing lanes toward teammates", () => {
     const match = buildMinimalMatchState();
     const carrier = match.home.players[0];
+    // Place a unique teammate clearly closer than any existing support player.
     const teammate = buildPlayerMatchState({
-      position: new Vector2(70, 40),
+      position: new Vector2(62, 34),
       hasBall: false,
     });
     match.home.players.push(teammate);
@@ -67,6 +68,10 @@ describe("WorldAwarenessSystem", () => {
 
     expect(world.supportPlayers.length).toBeGreaterThan(0);
     expect(world.passingLanes.length).toBeGreaterThan(0);
+
+    // Must include the teammate we added (nearest by construction).
+    const ids = world.passingLanes.map((l) => l.targetId);
+    expect(ids).toContain(teammate.player.id);
     expect(world.passingLanes[0].targetId).toBe(teammate.player.id);
   });
 
