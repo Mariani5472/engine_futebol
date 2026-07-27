@@ -16,7 +16,15 @@ export class PassEvaluator implements ActionEvaluator {
 
     for (const lane of context.world.passingLanes) {
       const score = this.scoreLane(context, lane);
-      decisions.push(new Decision(DecisionType.PASS, score.total, lane.targetId));
+      decisions.push(
+        new Decision(
+          DecisionType.PASS,
+          score.total,
+          lane.targetId,
+          score.reasons,
+          score.components,
+        ),
+      );
     }
 
     return decisions;
@@ -27,9 +35,9 @@ export class PassEvaluator implements ActionEvaluator {
     const attrs = player.attributes;
     const world = context.world;
 
-    const passing = attrs.technical.passing / 20;
-    const vision = attrs.mental.vision / 20;
-    const decisions = attrs.mental.decisions / 20;
+    const passing = (attrs.technical.passing ?? 10) / 20;
+    const vision = (attrs.mental.vision ?? 10) / 20;
+    const decisions = (attrs.mental.decisions ?? 10) / 20;
 
     const roleQuality = PositionInfluenceCalculator.passingQuality(
       context.player.currentRole,
@@ -66,28 +74,22 @@ export class PassEvaluator implements ActionEvaluator {
       orientationQuality * 0.55 + bodyQuality * 0.45,
     );
 
-    const base = (
-      vision * 12 +
-      passing * 8 +
-      decisions * 5 +
-      distanceScore +
-      progressBonus +
-      certaintyBonus +
-      clearanceBonus -
-      pressurePenalty
-    ) * roleQuality * bodyExecutionQuality;
+    // Component model before role/body scaling — then scale the aggregate.
+    const technique = vision * 12 + passing * 8 + decisions * 5;
+    const space = distanceScore + progressBonus + certaintyBonus + clearanceBonus;
+    const pressureComp = -pressurePenalty;
+    const raw = technique + space + pressureComp;
+    const scaled = Math.max(0, raw * roleQuality * bodyExecutionQuality);
 
-    return new UtilityScore(Math.max(0, base), 0, 0, 0, [
-      { code: "PASSING", value: passing * 8 },
-      { code: "DISTANCE", value: distanceScore },
-      { code: "PROGRESS", value: progressBonus },
-      { code: "LANE_CLEAR", value: clearanceBonus },
-      { code: "ROLE_QUALITY", value: roleQuality },
-      { code: "BODY_QUALITY", value: bodyQuality },
-      { code: "ORIENTATION", value: orientationQuality },
-      { code: "PRESSURE", value: pressure },
-      { code: "PRESSURE_PENALTY", value: -pressurePenalty },
-      { code: "EXECUTION_QUALITY", value: bodyExecutionQuality },
-    ]);
+    // Distribute scale proportionally so components still sum to total.
+    const scale = raw !== 0 ? scaled / raw : 0;
+
+    return UtilityScore.fromComponents({
+      SPACE: space * scale,
+      TECHNIQUE: technique * scale,
+      PRESSURE: pressureComp * scale,
+      ROLE: roleQuality * 10 * bodyExecutionQuality * 0.3,
+      BODY: bodyQuality * 8 * roleQuality * 0.3,
+    });
   }
 }
