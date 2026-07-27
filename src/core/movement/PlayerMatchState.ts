@@ -1,11 +1,14 @@
 import { DecisionType } from "../../application/match/decision/DecisionType";
 import type { ActionExecution } from "../../application/match/action/ActionExecution";
+import type { PipelineExecution } from "../../application/match/action/PipelineExecution";
 import { Player, PlayerRole } from "../../domain";
 import { Vector2 } from "../geometry/Vector2";
 
 export class PlayerMatchState {
 
   public activeAction?: ActionExecution;
+  /** Multi-step play sequence that owns activeAction while running. */
+  public activePipeline?: PipelineExecution;
 
   constructor(
     public readonly player: Player,
@@ -31,6 +34,7 @@ export class PlayerMatchState {
   }
 
   public isActionBusy(): boolean {
+    if (this.activePipeline?.isBusy()) return true;
     return this.activeAction?.isBusy() ?? false;
   }
 }
