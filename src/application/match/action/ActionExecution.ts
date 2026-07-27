@@ -15,6 +15,13 @@ export enum ActionExecutionPhase {
   COMPLETED = "COMPLETED",
 }
 
+export type ActionInterruptionReason =
+  | "TACKLE"
+  | "INTERCEPTION"
+  | "BLOCK"
+  | "COLLISION"
+  | "LOSS_OF_BALANCE";
+
 export interface ActionExecutionTiming {
   readonly windupSeconds: number;
   readonly recoverySeconds: number;
@@ -22,19 +29,13 @@ export interface ActionExecutionTiming {
   readonly stabilityCost: number;
 }
 
-/**
- * Runtime lifecycle of a physical football action.
- *
- * The class deliberately knows nothing about the action's football outcome.
- * It only models commitment, timing, body state and recovery.
- */
 export class ActionExecution {
   public phase: ActionExecutionPhase = ActionExecutionPhase.IDLE;
-
   public readonly timing: ActionExecutionTiming;
   public readonly startedAt: number;
   public readonly executeAt: number;
-  public readonly recoveryUntil: number;
+  public recoveryUntil: number;
+  public interruptionReason?: ActionInterruptionReason;
 
   private constructor(
     public readonly decision: Decision,
@@ -75,9 +76,7 @@ export class ActionExecution {
   }
 
   public advance(currentTime: number): ActionExecutionPhase {
-    if (this.phase === ActionExecutionPhase.COMPLETED) {
-      return this.phase;
-    }
+    if (this.phase === ActionExecutionPhase.COMPLETED) return this.phase;
 
     if (this.phase === ActionExecutionPhase.PREPARING && currentTime >= this.executeAt) {
       this.phase = ActionExecutionPhase.EXECUTING;
@@ -97,6 +96,37 @@ export class ActionExecution {
     return this.phase;
   }
 
+  /** Interrupts an action because of an external football event. */
+  public interrupt(
+    reason: ActionInterruptionReason,
+    currentTime: number,
+  ): boolean {
+    if (
+      this.phase === ActionExecutionPhase.IDLE ||
+      this.phase === ActionExecutionPhase.COMPLETED
+    ) {
+      return false;
+    }
+
+    this.interruptionReason = reason;
+    this.phase = ActionExecutionPhase.RECOVERING;
+
+    const interruptionRecovery = getInterruptionRecoverySeconds(reason);
+    this.recoveryUntil = Math.max(
+      this.recoveryUntil,
+      currentTime + interruptionRecovery,
+    );
+
+    this.player.actionLockUntil = currentTime;
+    this.player.recoveryUntil = this.recoveryUntil;
+
+    if (reason === "TACKLE" || reason === "COLLISION") {
+      this.player.bodyState = "FALLING";
+    }
+
+    return true;
+  }
+
   public isBusy(): boolean {
     return this.phase !== ActionExecutionPhase.IDLE
       && this.phase !== ActionExecutionPhase.COMPLETED;
@@ -105,14 +135,8 @@ export class ActionExecution {
   private begin(): void {
     this.phase = ActionExecutionPhase.PREPARING;
 
-    this.player.balance = subtractStateCost(
-      this.player.balance,
-      this.timing.balanceCost,
-    );
-    this.player.stability = subtractStateCost(
-      this.player.stability,
-      this.timing.stabilityCost,
-    );
+    this.player.balance = subtractStateCost(this.player.balance, this.timing.balanceCost);
+    this.player.stability = subtractStateCost(this.player.stability, this.timing.stabilityCost);
 
     if (this.profile.resultingBodyState) {
       this.player.bodyState = this.profile.resultingBodyState;
@@ -132,30 +156,32 @@ export class ActionExecution {
   }
 }
 
+function getInterruptionRecoverySeconds(reason: ActionInterruptionReason): number {
+  switch (reason) {
+    case "TACKLE": return 0.45;
+    case "COLLISION": return 0.35;
+    case "INTERCEPTION": return 0.20;
+    case "BLOCK": return 0.25;
+    case "LOSS_OF_BALANCE": return 0.30;
+  }
+}
+
 function calculateTiming(
   profile: ActionExecutionProfile,
   attributes: PlayerAttributes,
 ): ActionExecutionTiming {
   return {
     windupSeconds: profile.windupSeconds * getAttributeMultiplier(
-      profile.attributeInfluence?.windup,
-      attributes,
-      { min: 0.70, max: 1.30 },
+      profile.attributeInfluence?.windup, attributes, { min: 0.70, max: 1.30 },
     ),
     recoverySeconds: profile.recoverySeconds * getAttributeMultiplier(
-      profile.attributeInfluence?.recovery,
-      attributes,
-      { min: 0.65, max: 1.40 },
+      profile.attributeInfluence?.recovery, attributes, { min: 0.65, max: 1.40 },
     ),
     balanceCost: profile.balanceCost * getAttributeMultiplier(
-      profile.attributeInfluence?.balanceCost,
-      attributes,
-      { min: 0.65, max: 1.35 },
+      profile.attributeInfluence?.balanceCost, attributes, { min: 0.65, max: 1.35 },
     ),
     stabilityCost: profile.stabilityCost * getAttributeMultiplier(
-      profile.attributeInfluence?.stabilityCost,
-      attributes,
-      { min: 0.65, max: 1.35 },
+      profile.attributeInfluence?.stabilityCost, attributes, { min: 0.65, max: 1.35 },
     ),
   };
 }
@@ -172,10 +198,8 @@ function getAttributeMultiplier(
 
   for (const [attribute, weight] of Object.entries(weights)) {
     if (!weight || weight <= 0) continue;
-
     const value = getAttributeValue(attributes, attribute);
     if (value === undefined) continue;
-
     weightedTotal += value * weight;
     totalWeight += weight;
   }
@@ -207,9 +231,6 @@ function getAttributeValue(
 }
 
 function subtractStateCost(value: number, normalizedCost: number): number {
-  if (value <= 1) {
-    return Math.max(0, value - normalizedCost);
-  }
-
+  if (value <= 1) return Math.max(0, value - normalizedCost);
   return Math.max(0, value - normalizedCost * 100);
 }
