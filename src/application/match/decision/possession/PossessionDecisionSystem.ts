@@ -1,6 +1,7 @@
 import { ActionEvaluator } from "../ActionEvaluator";
 import { Decision } from "../Decision";
 import { DecisionContext } from "../DecisionContext";
+import { DecisionDebug, globalDecisionDebug } from "../DecisionDebug";
 import { DecisionFilter } from "../DecisionFilter";
 import { DecisionSelector } from "../DecisionSelector";
 import { EvaluatedDecision } from "../EvaluatedDecision";
@@ -16,6 +17,7 @@ export class PossessionDecisionSystem {
   private readonly fieldThirdResolver: FieldThirdResolver;
   private readonly personalityModifier: PersonalityModifier;
   private readonly riskCalculator: RiskCalculator;
+  private readonly debug: DecisionDebug;
 
   constructor(
     private readonly evaluators: ActionEvaluator[],
@@ -23,11 +25,13 @@ export class PossessionDecisionSystem {
     private readonly selector: DecisionSelector = new DecisionSelector(),
     personalityModifier?: PersonalityModifier,
     riskCalculator?: RiskCalculator,
-    pitchLength: number = 105
+    pitchLength: number = 105,
+    debug: DecisionDebug = globalDecisionDebug,
   ) {
     this.personalityModifier = personalityModifier ?? new DefaultPersonalityModifier();
     this.riskCalculator = riskCalculator ?? new DefaultRiskCalculator();
     this.fieldThirdResolver = new FieldThirdResolver(pitchLength);
+    this.debug = debug;
   }
 
   public decide(context: DecisionContext): Decision {
@@ -51,7 +55,9 @@ export class PossessionDecisionSystem {
         decision: new Decision(
           decision.type,
           decision.utility + bias.utilityModifier,
-          decision.targetId
+          decision.targetId,
+          decision.reasons,
+          decision.components,
         ),
         riskToleranceModifier: bias.riskToleranceModifier,
       };
@@ -91,6 +97,12 @@ export class PossessionDecisionSystem {
     });
 
     const best = this.selector.select(evaluated);
+
+    this.debug.record(context.player, best.decision, {
+      tick: context.currentTick,
+      matchSecond: context.currentTick * context.deltaTime,
+    });
+
     return best.decision;
   }
 }
