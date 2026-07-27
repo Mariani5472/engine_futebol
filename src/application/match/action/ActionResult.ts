@@ -4,6 +4,12 @@ import { DecisionType } from "../decision/DecisionType";
 /** Events that an action can produce within a single tick. */
 export type ActionEvent = ShotEvent | GoalEvent | CardEvent;
 
+export interface ActionResultMeta {
+  passRealForwardGain?: number;
+  passReceiverId?: string;
+  laneForwardProgress?: number;
+}
+
 export interface ActionResult {
   /** ID of the player who took the action. */
   readonly actorId: string;
@@ -13,4 +19,6 @@ export interface ActionResult {
   readonly success: boolean;
   /** Zero or more domain events produced by this action. */
   readonly events: ActionEvent[];
+  /** Optional diagnostic payload (pass Δx, etc.). */
+  readonly meta?: ActionResultMeta;
 }
