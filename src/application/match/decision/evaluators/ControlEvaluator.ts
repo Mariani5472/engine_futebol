@@ -9,7 +9,7 @@ import { ActionReadiness } from "./ActionReadiness";
 
 export class ControlEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
-    const { player, match, world } = context;
+    const { player, match } = context;
     const ball = match.ball;
 
     if (player.hasBall) return [];
@@ -20,7 +20,15 @@ export class ControlEvaluator implements ActionEvaluator {
 
     const score = this.calculateUtility(context, ball.height, distanceToBall);
     if (score.total < 20) return [];
-    return [new Decision(DecisionType.CONTROL, score.total)];
+    return [
+      new Decision(
+        DecisionType.CONTROL,
+        score.total,
+        undefined,
+        score.reasons,
+        score.components,
+      ),
+    ];
   }
 
   private calculateUtility(
