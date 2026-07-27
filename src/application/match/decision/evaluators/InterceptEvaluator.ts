@@ -43,61 +43,52 @@ export class InterceptEvaluator implements ActionEvaluator {
     const receiver = this.getNearestTeammateToOwner(ballOwner, ownerTeam.players);
     const laneScore = receiver
       ? this.calculatePassingLaneScore(player.position, ballOwner.position, receiver.position)
-      : 0;
+      : 0.5; // unknown lane — neutral opportunity
 
-    const anticipation = player.player.attributes.mental.anticipation / 20;
-    const decisions = player.player.attributes.mental.decisions / 20;
-    const positioning = player.player.attributes.mental.positioning / 20;
-    const aggression = player.player.attributes.mental.aggression / 20;
-    const tackling = player.player.attributes.technical.tackling / 20;
+    const anticipation = (player.player.attributes.mental.anticipation ?? 10) / 20;
+    const decisions = (player.player.attributes.mental.decisions ?? 10) / 20;
+    const positioning = (player.player.attributes.mental.positioning ?? 10) / 20;
+    const aggression = (player.player.attributes.mental.aggression ?? 10) / 20;
+    const tackling = (player.player.attributes.technical.tackling ?? 10) / 20;
 
     const proximityScore = Math.max(0, 18 - distanceToOwner * 1.5);
     const pressureScore = this.calculatePressureScore(player, opponents);
     const roleBonus = this.calculateRoleBonus(player);
     const laneBonus = laneScore * 18;
-    const preparationBonus = this.calculatePassPreparationBonus(context, ballOwner, receiver);
+    const preparationBonus = this.calculatePassPreparationBonus(
+      context,
+      ballOwner,
+      receiver,
+      laneScore,
+    );
     const anticipationBonus = anticipation * 14;
     const positioningBonus = positioning * 10;
     const decisionsBonus = decisions * 8;
     const aggressionBonus = aggression * 5;
     const tacklingBonus = tackling * 4;
-    const staminaModifier = Math.max(0.65, 1 - player.fatigue / 170);
+    const staminaModifier = Math.max(0.65, 1 - (player.fatigue ?? 0) / 170);
 
-    const total = Math.max(
-      0,
-      (
-        proximityScore +
-        pressureScore +
-        laneBonus +
-        preparationBonus +
-        anticipationBonus +
-        positioningBonus +
-        decisionsBonus +
-        aggressionBonus +
-        tacklingBonus +
-        roleBonus
-      ) * staminaModifier
-    );
-
-    return new UtilityScore(total, 0, 0, 0, [
-      { code: "PROXIMITY", value: proximityScore },
-      { code: "PRESSURE", value: pressureScore },
-      { code: "LANE", value: laneBonus },
-      { code: "PASS_PREPARATION", value: preparationBonus },
-      { code: "ANTICIPATION", value: anticipationBonus },
-      { code: "POSITIONING", value: positioningBonus },
-      { code: "DECISIONS", value: decisionsBonus },
-      { code: "ROLE_BONUS", value: roleBonus },
-    ]);
+    return UtilityScore.fromComponents({
+      SPACE: proximityScore,
+      PRESSURE: pressureScore,
+      TECHNIQUE: anticipationBonus + positioningBonus + decisionsBonus + tacklingBonus,
+      ROLE: roleBonus,
+      TACTICAL: laneBonus + preparationBonus + aggressionBonus,
+      FATIGUE: (staminaModifier - 1) * (
+        proximityScore + pressureScore + laneBonus + preparationBonus +
+        anticipationBonus + positioningBonus + decisionsBonus +
+        aggressionBonus + tacklingBonus + roleBonus
+      ),
+    });
   }
 
   private calculatePassPreparationBonus(
     context: DecisionContext,
     ballOwner: PlayerMatchState,
-    receiver: PlayerMatchState | null
+    receiver: PlayerMatchState | null,
+    laneScore: number,
   ): number {
     if (ballOwner.activeAction?.type !== DecisionType.PASS) return 0;
-    if (!receiver) return 0;
 
     const opportunity = ActionReadiness.interruptionOpportunity(
       ballOwner,
@@ -107,13 +98,9 @@ export class InterceptEvaluator implements ActionEvaluator {
 
     if (opportunity <= 0) return 0;
 
-    const laneScore = this.calculatePassingLaneScore(
-      context.player.position,
-      ballOwner.position,
-      receiver.position,
-    );
-
-    return 24 * opportunity * laneScore;
+    // Even without a known receiver, preparing a pass is interceptable.
+    const effectiveLane = receiver ? laneScore : Math.max(0.45, laneScore);
+    return 24 * opportunity * effectiveLane;
   }
 
   private getNearestTeammateToOwner(
