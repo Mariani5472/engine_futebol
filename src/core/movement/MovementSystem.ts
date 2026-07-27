@@ -1,4 +1,3 @@
-import { PossessionCandidate } from "../../domain";
 import { Vector2 } from "../geometry/Vector2";
 import { MatchState } from "./MatchState";
 import { PlayerMatchState } from "./PlayerMatchState";
@@ -29,7 +28,7 @@ export class MovementSystem {
 
         if (movementMultiplier === 0) {
           player.velocity = new Vector2(0, 0);
-          return;
+          continue;
         }
 
         const direction = player.targetPosition
