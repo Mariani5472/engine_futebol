@@ -9,20 +9,17 @@ import { Vector2 } from "../../../../core/geometry/Vector2";
 import { ActionReadiness } from "./ActionReadiness";
 
 export class PassEvaluator implements ActionEvaluator {
-
   public evaluate(context: DecisionContext): Decision[] {
     if (!context.player.hasBall) return [];
     if (!ActionReadiness.canStartAction(context, 0.2)) return [];
 
     const decisions: Decision[] = [];
 
-    // Primary: use awareness memory (more accurate — includes noise/prediction).
     for (const teammate of context.awareness.teammates.values()) {
       const score = this.scorePassFromMemory(context, teammate);
       decisions.push(new Decision(DecisionType.PASS, score.total, teammate.playerId));
     }
 
-    // Fallback: awareness is empty on the first tick (memory not yet seeded).
     if (decisions.length === 0) {
       const isHome = context.match.home.players.includes(context.player);
       const teammatesInState = isHome
@@ -70,14 +67,27 @@ export class PassEvaluator implements ActionEvaluator {
 
     const certaintyBonus = certainty * 5;
 
-    // A pass is not just a tactical decision: the player must physically be
-    // able to prepare the body and execute it from the current posture.
     const desiredDirection = teammatePosition.subtract(playerPosition);
     const orientationQuality = ActionReadiness.orientationQuality(
       context.player.facingDirection,
       desiredDirection
     );
     const bodyQuality = ActionReadiness.bodyQuality(context);
+
+    const opponents = isHome
+      ? context.match.away.players
+      : context.match.home.players;
+
+    const pressure = ActionReadiness.opponentPressure(
+      context.player,
+      opponents,
+    );
+
+    const pressurePenalty = this.calculatePressurePenalty(
+      context,
+      opponents,
+      pressure,
+    );
 
     const bodyExecutionQuality = Math.max(
       0.25,
@@ -90,7 +100,8 @@ export class PassEvaluator implements ActionEvaluator {
       decisions * 5 +
       distanceScore +
       progressBonus +
-      certaintyBonus
+      certaintyBonus -
+      pressurePenalty
     ) * roleQuality * bodyExecutionQuality;
 
     return new UtilityScore(Math.max(0, base), 0, 0, 0, [
@@ -100,7 +111,40 @@ export class PassEvaluator implements ActionEvaluator {
       { code: "ROLE_QUALITY", value: roleQuality },
       { code: "BODY_QUALITY", value: bodyQuality },
       { code: "ORIENTATION", value: orientationQuality },
+      { code: "PRESSURE", value: pressure },
+      { code: "PRESSURE_PENALTY", value: -pressurePenalty },
       { code: "EXECUTION_QUALITY", value: bodyExecutionQuality },
     ]);
+  }
+
+  private calculatePressurePenalty(
+    context: DecisionContext,
+    opponents: import("../../../../core/movement/PlayerMatchState").PlayerMatchState[],
+    pressure: number,
+  ): number {
+    const nearestOpponent = opponents.reduce<{
+      player: import("../../../../core/movement/PlayerMatchState").PlayerMatchState | undefined;
+      distance: number;
+    }>((nearest, opponent) => {
+      const distance = context.player.position.distanceTo(opponent.position);
+      return distance < nearest.distance
+        ? { player: opponent, distance }
+        : nearest;
+    }, { player: undefined, distance: Infinity });
+
+    let penalty = pressure * 12;
+
+    if (
+      nearestOpponent.player?.activeAction?.type === DecisionType.TACKLE &&
+      nearestOpponent.distance <= 4.5
+    ) {
+      penalty += 14;
+    }
+
+    if (context.player.activeAction?.phase === "PREPARING") {
+      penalty += 5;
+    }
+
+    return penalty;
   }
 }
