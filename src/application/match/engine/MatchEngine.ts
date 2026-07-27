@@ -24,7 +24,7 @@ import { createPossessionEvaluators } from "../decision/possession/PossessionEva
 import { createOffBallEvaluators } from "../decision/offball/OffBallEvaluators";
 import { ActionFactory } from "../action/ActionFactory";
 import { ActionContext } from "../action/ActionContext";
-import { recoverActionState } from "../action/ActionExecutionProfile";
+import { recoverIdleActionState } from "../action/IdleActionRecovery";
 import { BallPhysicsSystem } from "../physics/BallPhysicsSystem";
 import { TacticalEngine } from "../tactical/TacticalEngine";
 import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
@@ -172,7 +172,7 @@ export class MatchEngine {
     const events: MatchEvent[] = [];
 
     for (const player of this.allPlayers(state)) {
-      recoverActionState(player, tick, deltaTime);
+      recoverIdleActionState(player, deltaTime);
     }
 
     const perceptions = perceptionSystem.update(state);
@@ -196,9 +196,11 @@ export class MatchEngine {
       if (!awareness) continue;
 
       const decisionCtx = new DecisionContext(state, player, awareness, tick, deltaTime);
-      const decision = player.hasBall
-        ? possessionDecisionSystem.decide(decisionCtx)
-        : offBallDecisionSystem.decide(decisionCtx);
+      const decision = player.isActionBusy() && player.activeAction
+        ? player.activeAction.decision
+        : player.hasBall
+          ? possessionDecisionSystem.decide(decisionCtx)
+          : offBallDecisionSystem.decide(decisionCtx);
 
       const isHome = state.home.players.includes(player);
       const teamState = isHome ? state.home : state.away;
