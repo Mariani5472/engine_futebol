@@ -5,6 +5,9 @@ import { ReachCalculator } from "./ReachCalculator";
 import { BallState } from "./BallMatchState";
 import { Random } from "../random/Random";
 
+/** Hard distance (m) within which a player can always contest a free ball. */
+const CLAIM_RADIUS = 4.5;
+
 export class PossessionSystem {
 
   constructor(
@@ -15,7 +18,6 @@ export class PossessionSystem {
   public update(state: MatchState): void {
     const ball = state.ball;
 
-    // Controlled with a living owner → keep owner and ball glued together.
     if (ball.state === BallState.CONTROLLED && ball.owner) {
       this.syncOwnerFlags(state, ball.owner);
       ball.position = ball.owner.position;
@@ -23,7 +25,6 @@ export class PossessionSystem {
       return;
     }
 
-    // Orphan CONTROLLED (owner lost / null) → treat as free and contest.
     if (ball.state === BallState.CONTROLLED && !ball.owner) {
       ball.state = BallState.FREE;
     }
@@ -50,7 +51,6 @@ export class PossessionSystem {
     state.ball.velocity = player.velocity;
   }
 
-  /** Exactly one player may have hasBall=true. */
   private syncOwnerFlags(state: MatchState, owner: PlayerMatchState): void {
     for (const p of [...state.home.players, ...state.away.players]) {
       p.hasBall = p === owner;
@@ -62,15 +62,16 @@ export class PossessionSystem {
     const candidates: PossessionCandidate[] = [];
 
     for (const player of players) {
+      const distance = player.position.distanceTo(state.ball.position);
       const reach = this.reachCalculator.calculateReachTime(player, state.ball);
 
-      // Slightly more generous contest window so loose balls are recovered.
-      if (reach > 2.8) continue;
+      // Either close in absolute distance OR can reach soon.
+      if (distance > CLAIM_RADIUS && reach > 3.5) continue;
 
       candidates.push({
         player,
-        distance: player.position.distanceTo(state.ball.position),
-        score: this.calculateControlScore(player, reach),
+        distance,
+        score: this.calculateControlScore(player, reach, distance),
       });
     }
 
@@ -80,6 +81,7 @@ export class PossessionSystem {
   private calculateControlScore(
     player: PlayerMatchState,
     reachTime: number,
+    distance: number,
   ): number {
     const a = player.player.attributes;
 
@@ -93,7 +95,8 @@ export class PossessionSystem {
     score += a.hidden.consistency;
 
     score *= 1 - player.fatigue / 100;
-    score -= reachTime * 15;
+    score -= reachTime * 12;
+    score -= distance * 2;
 
     return score;
   }
