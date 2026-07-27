@@ -16,6 +16,7 @@ import { NoiseSystem } from "../cognitive/NoiseSystem";
 import { PlayerAwareness } from "../awareness/memory/PlayerAwareness";
 import { MemorySystem } from "../awareness/memory/MemorySystem";
 import { PredictionSystem } from "../awareness/prediction/PredictionSystem";
+import { WorldAwarenessSystem } from "../awareness/WorldAwarenessSystem";
 import { PerceptionSystem } from "../perception/PerceptionSystem";
 import { DecisionContext } from "../decision/DecisionContext";
 import { PossessionDecisionSystem } from "../decision/possession/PossessionDecisionSystem";
@@ -70,6 +71,7 @@ export class MatchEngine {
       new MemorySystem(),
       new PredictionSystem()
     );
+    const worldAwarenessSystem = new WorldAwarenessSystem(config.pitch.length);
     const possessionDecisionSystem = new PossessionDecisionSystem(
       createPossessionEvaluators(),
       undefined,
@@ -116,7 +118,7 @@ export class MatchEngine {
 
       const tickEvents = this.runTick(
         state, awarenessMap, rng, deltaTime,
-        perceptionSystem, cognitiveSystem,
+        perceptionSystem, cognitiveSystem, worldAwarenessSystem,
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
         teamBehaviour, movementSystem, possessionSystem,
@@ -158,10 +160,10 @@ export class MatchEngine {
    * 2. Perception + cognition
    * 3. Advance existing PipelineExecutions / ActionExecutions
    * 4. Collect steps that reached EXECUTING
-   * 5. ActionArbitrator resolves conflicts (cancels losing pipelines)
+   * 5. ActionArbitrator resolves conflicts
    * 6. Apply consequences of winning steps
-   * 7. Evaluate new decisions for free players
-   * 8. Create new PipelineExecutions (multi-step plays)
+   * 7. Build WorldAwareness + evaluate decisions for free players
+   * 8. Create new PipelineExecutions
    * 9. Ball physics / tactical / movement / possession
    */
   private runTick(
@@ -171,6 +173,7 @@ export class MatchEngine {
     deltaTime: number,
     perceptionSystem: PerceptionSystem,
     cognitiveSystem: CognitiveSystem,
+    worldAwarenessSystem: WorldAwarenessSystem,
     possessionDecisionSystem: PossessionDecisionSystem,
     offBallDecisionSystem: OffBallDecisionSystem,
     actionFactory: ActionFactory,
@@ -185,12 +188,10 @@ export class MatchEngine {
     const events: MatchEvent[] = [];
     const players = this.allPlayers(state);
 
-    // 1. Passive recovery for players without an active action/pipeline.
     for (const player of players) {
       recoverIdleActionState(player, deltaTime);
     }
 
-    // 2. Perception + cognition.
     const perceptions = perceptionSystem.update(state);
 
     for (const player of players) {
@@ -207,7 +208,6 @@ export class MatchEngine {
       } satisfies CognitiveContext);
     }
 
-    // 3 + 4. Advance pipelines / actions and collect EXECUTING steps.
     const executingCandidates: ActionExecution[] = [];
 
     for (const player of players) {
@@ -220,19 +220,16 @@ export class MatchEngine {
       }
     }
 
-    // 5. Arbitrate concurrent executions (losing pipelines are cancelled).
     const winners = this.arbitrator.resolve(
       executingCandidates,
       state,
       state.currentSecond,
     );
 
-    // 6. Apply consequences of winning steps.
     for (const execution of winners) {
       const player = players.find((p) => p.activeAction === execution);
       if (!player) continue;
 
-      // Skip if arbitration interrupted this player's pipeline meanwhile.
       if (player.activePipeline && !player.activePipeline.isBusy()) continue;
       if (execution.interruptionReason) continue;
 
@@ -256,24 +253,24 @@ export class MatchEngine {
       events.push(...result.events);
     }
 
-    // 7 + 8. New decisions → PipelineExecution for free players.
+    // 7 + 8. WorldAwareness → Decision → PipelineExecution
     for (const player of players) {
       if (player.isActionBusy()) continue;
 
       const awareness = awarenessMap.get(player.player.id);
       if (!awareness) continue;
 
-      const decisionCtx = new DecisionContext(state, player, awareness, tick, deltaTime);
+      const world = worldAwarenessSystem.build(state, player, awareness);
+      const decisionCtx = new DecisionContext(
+        state, player, awareness, tick, deltaTime, world,
+      );
       const decision = player.hasBall
         ? possessionDecisionSystem.decide(decisionCtx)
         : offBallDecisionSystem.decide(decisionCtx);
 
-      // Discrete decisions become pipelines (possibly multi-step plays).
-      // Continuous positional actions are no-ops at the action layer.
       actionFactory.tryStart(decision, player, state.currentSecond);
     }
 
-    // 9. World systems.
     ballPhysics.update(state, deltaTime);
     tacticalEngine.update(state);
     teamBehaviour.update(state);
