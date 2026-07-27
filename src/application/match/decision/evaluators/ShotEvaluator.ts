@@ -4,16 +4,14 @@ import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
-import { Vector2 } from "../../../../core/geometry/Vector2";
-import { FieldThirdResolver } from "../../../../core/pitch/FieldThirdResolver";
 import { FieldThird } from "../../../../domain";
 import { ActionReadiness } from "./ActionReadiness";
 
 /**
  * Shot evaluator — produces a utility score for attempting a shot on goal.
  *
- * The score represents tactical value, but also incorporates the player's
- * transient ability to physically execute the shot from the current posture.
+ * Spatial / pressure perception comes from WorldAwareness.
+ * This class only combines those signals with attribute and body quality.
  */
 export class ShotEvaluator implements ActionEvaluator {
 
@@ -26,16 +24,10 @@ export class ShotEvaluator implements ActionEvaluator {
   }
 
   private calculateUtility(context: DecisionContext): UtilityScore {
-    const { player, match } = context;
+    const { player, world } = context;
     const attrs = player.player.attributes;
 
-    const isHome = match.home.players.includes(player);
-    const teamState = isHome ? match.home : match.away;
-    const attackingDirection = teamState.attackingDirection;
-
-    const goalCenter = this.getGoalCenter(match.pitch, attackingDirection);
-
-    const distance = player.position.distanceTo(goalCenter);
+    const distance = world.goalDistance;
     const distanceBase = this.distanceBase(
       distance,
       attrs.technical.finishing,
@@ -49,20 +41,16 @@ export class ShotEvaluator implements ActionEvaluator {
     const technique = attrs.technical.technique / 20;
     const attrScore = finishing * 0.55 + composure * 0.30 + technique * 0.15;
 
-    const pressure = this.calculatePressure(context);
+    const pressure = world.pressure;
 
-    const fieldThird = this.getFieldThird(
-      match.pitch.length,
-      player.position,
-      attackingDirection
-    );
-    const attackingBonus = fieldThird === "ATTACKING" ? 28 : 0;
+    const attackingBonus =
+      world.fieldThird === FieldThird.ATTACKING ? 28 : 0;
 
-    const angleBonus = this.calculateAngleBonus(player.position, goalCenter, match.pitch);
+    const angleBonus = world.goalAngleQuality * 8;
 
-    const desiredDirection = goalCenter.subtract(player.position);
+    const desiredDirection = world.goalCenter.subtract(player.position);
     const orientationQuality = ActionReadiness.orientationQuality(
-      context.player.facingDirection,
+      player.facingDirection,
       desiredDirection
     );
     const bodyQuality = ActionReadiness.bodyQuality(context);
@@ -71,11 +59,14 @@ export class ShotEvaluator implements ActionEvaluator {
       orientationQuality * 0.50 + bodyQuality * 0.50
     );
 
+    // shotWindow amplifies when the composite tactical window is open.
+    const windowBoost = 0.75 + world.shotWindow * 0.50;
+
     const base = (
       distanceBase * roleQuality * attrScore * (1 - pressure * 0.4) +
       angleBonus +
       attackingBonus
-    ) * executionQuality;
+    ) * executionQuality * windowBoost;
 
     return new UtilityScore(base, 0, 0, 0, [
       { code: "DISTANCE_BASE", value: distanceBase },
@@ -83,6 +74,7 @@ export class ShotEvaluator implements ActionEvaluator {
       { code: "ATTR_SCORE", value: attrScore },
       { code: "PRESSURE", value: -pressure },
       { code: "ANGLE_BONUS", value: angleBonus },
+      { code: "SHOT_WINDOW", value: world.shotWindow },
       { code: "BODY_QUALITY", value: bodyQuality },
       { code: "ORIENTATION", value: orientationQuality },
       { code: "EXECUTION_QUALITY", value: executionQuality },
@@ -103,56 +95,5 @@ export class ShotEvaluator implements ActionEvaluator {
     if (distance <= 38) return 18 + longBonus;
 
     return Math.max(0, longBonus * 0.6 - 8);
-  }
-
-  private calculatePressure(context: DecisionContext): number {
-    const { player, match } = context;
-    const isHome = match.home.players.includes(player);
-    const opponents = isHome ? match.away.players : match.home.players;
-
-    let pressureCount = 0;
-    for (const opp of opponents) {
-      if (player.position.distanceTo(opp.position) < 3) {
-        pressureCount++;
-      }
-    }
-    return Math.min(1, pressureCount * 0.35);
-  }
-
-  private calculateAngleBonus(
-    playerPos: Vector2,
-    _goalCenter: Vector2,
-    pitch: { width: number }
-  ): number {
-    const pitchCentreY = pitch.width / 2;
-    const yDeviation = Math.abs(playerPos.y - pitchCentreY);
-    const maxDeviation = pitch.width / 2;
-    return Math.max(0, 8 * (1 - yDeviation / maxDeviation));
-  }
-
-  private getGoalCenter(
-    pitch: {
-      length: number;
-      width: number;
-      geometry: {
-        leftGoal: { center: { x: number; y: number } };
-        rightGoal: { center: { x: number; y: number } };
-      };
-    },
-    attackingDirection: 1 | -1
-  ): Vector2 {
-    const goal = attackingDirection === 1
-      ? pitch.geometry.rightGoal
-      : pitch.geometry.leftGoal;
-    return new Vector2(goal.center.x, goal.center.y);
-  }
-
-  private getFieldThird(
-    pitchLength: number,
-    position: Vector2,
-    attackingDirection: 1 | -1
-  ): FieldThird {
-    const third = new FieldThirdResolver(pitchLength);
-    return third.resolve(position, attackingDirection);
   }
 }
