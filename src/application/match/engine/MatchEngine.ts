@@ -34,14 +34,12 @@ import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
 import { RefereeSystem } from "../referee/RefereeSystem";
 import { MatchMetricsCollector } from "../metrics/MatchMetricsCollector";
 import { MatchMetrics } from "../metrics/MatchMetrics";
+import { AttackFunnelCollector } from "../diagnostics/AttackFunnelCollector";
 import { MatchInitializer } from "./MatchInitializer";
 import { SimulationConfig } from "./SimulationConfig";
 
-/** Default simulation delta time in seconds per tick. */
 const DEFAULT_DELTA_TIME = 0.5;
-/** Default match duration in seconds (90 minutes). */
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
-/** Fatigue rate per second (percentage points). */
 const FATIGUE_RATE = 0.008;
 
 export interface MatchResult {
@@ -54,7 +52,6 @@ export interface MatchResult {
   readonly awayShots: number;
   readonly matchDurationSeconds: number;
   readonly seed: number;
-  /** Full Phase 9 metrics (xG, PPDA, field tilt, progressive passes, …). */
   readonly metrics: MatchMetrics;
 }
 
@@ -62,7 +59,10 @@ export class MatchEngine {
   private readonly initializer = new MatchInitializer();
   private readonly arbitrator = new ActionArbitrator();
 
-  public simulate(config: SimulationConfig): MatchResult {
+  public simulate(
+    config: SimulationConfig,
+    attackFunnel?: AttackFunnelCollector,
+  ): MatchResult {
     const rng = new SeededRandom(config.seed);
     const deltaTime = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
     const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
@@ -128,7 +128,7 @@ export class MatchEngine {
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
         teamBehaviour, movementSystem, possessionSystem,
-        tick, period, metrics
+        tick, period, metrics, attackFunnel
       );
 
       for (const event of tickEvents) {
@@ -141,6 +141,7 @@ export class MatchEngine {
 
       metrics.onEvents(tickEvents, state);
       metrics.sampleState(state);
+      attackFunnel?.sampleState(state);
 
       this.accumulateFatigue(state, deltaTime);
       state.currentSecond += deltaTime;
@@ -165,19 +166,6 @@ export class MatchEngine {
     };
   }
 
-  /**
-   * Tick order:
-   *
-   * 1. Recover idle body state
-   * 2. Perception + cognition
-   * 3. Advance existing PipelineExecutions / ActionExecutions
-   * 4. Collect steps that reached EXECUTING
-   * 5. ActionArbitrator resolves conflicts
-   * 6. Apply consequences of winning steps
-   * 7. Build WorldAwareness + evaluate decisions for free players
-   * 8. Create new PipelineExecutions (+ metrics.onActionStarted)
-   * 9. Ball physics / tactical / movement / possession
-   */
   private runTick(
     state: MatchState,
     awarenessMap: Map<string, PlayerAwareness>,
@@ -197,6 +185,7 @@ export class MatchEngine {
     tick: number,
     period: MatchPeriod,
     metrics: MatchMetricsCollector,
+    attackFunnel?: AttackFunnelCollector,
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
     const players = this.allPlayers(state);
@@ -266,7 +255,6 @@ export class MatchEngine {
       events.push(...result.events);
     }
 
-    // 7 + 8. WorldAwareness → Decision → PipelineExecution
     for (const player of players) {
       if (player.isActionBusy()) continue;
 
@@ -280,6 +268,10 @@ export class MatchEngine {
       const decision = player.hasBall
         ? possessionDecisionSystem.decide(decisionCtx)
         : offBallDecisionSystem.decide(decisionCtx);
+
+      if (player.hasBall && attackFunnel) {
+        attackFunnel.onPossessionDecision(decision.type, player, world);
+      }
 
       const started = actionFactory.tryStart(decision, player, state.currentSecond);
       if (started) {
