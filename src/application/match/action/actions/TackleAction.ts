@@ -20,7 +20,6 @@ export class TackleAction {
       return { actorId: player.player.id, type: DecisionType.TACKLE, success: false, events: [] };
     }
 
-    // Determine if this is a valid tackle (we must be on opposite teams).
     const isHomePlayer = match.home.players.includes(player);
     const ownerIsOpponent = isHomePlayer
       ? match.away.players.includes(ballOwner)
@@ -36,7 +35,6 @@ export class TackleAction {
     const tacklerTeam = isHomePlayer ? match.home : match.away;
     const victimTeam = isHomePlayer ? match.away : match.home;
 
-    // Referee assessment.
     const foulOutcome = this.referee.evaluateTackle(
       player, tacklerTeam,
       ballOwner, victimTeam,
@@ -47,12 +45,15 @@ export class TackleAction {
     const events: ActionEvent[] = [...foulOutcome.events];
 
     if (foulOutcome.isFoul) {
-      // Foul: ball stays with victim, tackler penalised.
       return { actorId: player.player.id, type: DecisionType.TACKLE, success: false, events };
     }
 
     if (success) {
-      // Possession transfer.
+      // A successful tackle is also an external interruption of the victim's
+      // current physical action. The victim does not simply lose possession;
+      // the action is interrupted and the body enters a new recovery window.
+      ballOwner.activeAction?.interrupt("TACKLE", matchSecond);
+
       ballOwner.hasBall = false;
       player.hasBall = true;
       match.ball.owner = player;
@@ -61,7 +62,6 @@ export class TackleAction {
     }
 
     return { actorId: player.player.id, type: DecisionType.TACKLE, success, events };
-
   }
 
   private calculateTackle(
@@ -89,11 +89,8 @@ export class TackleAction {
 
     const successProb = Math.max(0.05, Math.min(0.85, tacklerScore / (tacklerScore + targetScore)));
 
-    // Danger: high aggression + failed tackle = risky.
     const dangerScore = (aggression * 0.5 + (1 - tackling) * 0.3 + random.nextFloat(0, 0.2));
 
     return { successProb, dangerScore: Math.min(1, dangerScore) };
-
   }
-
 }
