@@ -2,6 +2,7 @@ import { ActionEvaluator } from "../ActionEvaluator";
 import { ControlEvaluator } from "../evaluators/ControlEvaluator";
 import { CoverEvaluator } from "../evaluators/CoverEvaluator";
 import { HeaderEvaluator } from "../evaluators/HeaderEvaluator";
+import { MarkEvaluator } from "../evaluators/MarkEvaluator";
 import { MoveEvaluator } from "../evaluators/MoveEvaluator";
 import { PressEvaluator } from "../evaluators/PressEvaluator";
 import { ReceiveEvaluator } from "../evaluators/ReceiveEvaluator";
@@ -16,5 +17,6 @@ export function createOffBallEvaluators(): ActionEvaluator[] {
     new HeaderEvaluator(),
     new ControlEvaluator(),
     new MoveEvaluator(),
+    new MarkEvaluator(),
   ];
 }
