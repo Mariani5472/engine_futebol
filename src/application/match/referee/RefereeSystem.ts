@@ -12,27 +12,11 @@ export interface FoulOutcome {
   readonly events: CardEvent[];
 }
 
-/**
- * Discipline model calibrated toward Brasileirão-like rates:
- *   ~25–30 fouls / game
- *   ~4–5 yellows / game
- *   ~0.2 reds / game
- */
-
-/** Base chance a contested tackle becomes a foul (before danger / strictness). */
-const BASE_FOUL_CHANCE = 0.34;
-
-/** Minimum danger before foul is even considered. */
+const BASE_FOUL_CHANCE = 0.32;
 const FOUL_DANGER_FLOOR = 0.28;
-
-/** Danger needed before a *direct* red is possible (rare). */
-const DIRECT_RED_DANGER = 0.95;
-
-/** Base P(direct red | foul & extreme danger). */
-const DIRECT_RED_CHANCE = 0.012;
-
-/** Base P(yellow | foul) before player traits. */
-const BASE_YELLOW_CHANCE = 0.11;
+const DIRECT_RED_DANGER = 0.97;
+const DIRECT_RED_CHANCE = 0.006;
+const BASE_YELLOW_CHANCE = 0.10;
 
 export class RefereeSystem {
   private readonly records: Map<string, FoulRecord> = new Map();
@@ -67,7 +51,7 @@ export class RefereeSystem {
 
     const successFactor = tackleSucceeded ? 0.28 : 1.0;
     const foulChance = Math.min(
-      0.62,
+      0.58,
       BASE_FOUL_CHANCE
         * successFactor
         * (0.55 + danger * 1.15)
@@ -98,7 +82,7 @@ export class RefereeSystem {
     const dirtiness = (tackler.player.attributes.hidden.dirtiness ?? 5) / 20;
 
     const yellowChance = Math.min(
-      0.28,
+      0.26,
       BASE_YELLOW_CHANCE
         * (0.65 + danger * 0.75)
         * (0.85 + aggression * 0.35 + dirtiness * 0.25)
