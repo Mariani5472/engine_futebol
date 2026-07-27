@@ -5,8 +5,8 @@ import { ReachCalculator } from "./ReachCalculator";
 import { BallState } from "./BallMatchState";
 import { Random } from "../random/Random";
 
-/** Hard distance (m) within which a player can always contest a free ball. */
-const CLAIM_RADIUS = 4.5;
+const CLAIM_RADIUS = 6;
+const SLOW_BALL_SPEED = 4;
 
 export class PossessionSystem {
 
@@ -29,6 +29,16 @@ export class PossessionSystem {
       ball.state = BallState.FREE;
     }
 
+    // Slow airborne balls become ground contests.
+    if (
+      ball.state === BallState.IN_FLIGHT &&
+      ball.velocity.magnitude() < SLOW_BALL_SPEED &&
+      (ball.height ?? 0) < 1.5
+    ) {
+      ball.state = BallState.FREE;
+      ball.height = 0;
+    }
+
     const candidates = this.getCandidates(state);
     if (candidates.length === 0) return;
 
@@ -49,6 +59,7 @@ export class PossessionSystem {
     state.ball.state = BallState.CONTROLLED;
     state.ball.position = player.position;
     state.ball.velocity = player.velocity;
+    state.ball.height = 0;
   }
 
   private syncOwnerFlags(state: MatchState, owner: PlayerMatchState): void {
@@ -60,13 +71,22 @@ export class PossessionSystem {
   private getCandidates(state: MatchState): PossessionCandidate[] {
     const players = [...state.home.players, ...state.away.players];
     const candidates: PossessionCandidate[] = [];
+    const ballSpeed = state.ball.velocity.magnitude();
 
     for (const player of players) {
       const distance = player.position.distanceTo(state.ball.position);
       const reach = this.reachCalculator.calculateReachTime(player, state.ball);
 
-      // Either close in absolute distance OR can reach soon.
-      if (distance > CLAIM_RADIUS && reach > 3.5) continue;
+      // Fast pure flight stays unclaimed unless almost on the player.
+      if (
+        state.ball.state === BallState.IN_FLIGHT &&
+        ballSpeed > SLOW_BALL_SPEED &&
+        distance > 2.5
+      ) {
+        continue;
+      }
+
+      if (distance > CLAIM_RADIUS && reach > 4) continue;
 
       candidates.push({
         player,
