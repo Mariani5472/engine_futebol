@@ -16,7 +16,7 @@ export class DribbleEvaluator implements ActionEvaluator {
       this.createSkillMoveDecision(context),
     ];
 
-    return options.filter((decision) => decision.score > 0);
+    return options.filter((decision) => decision.utility > 0);
   }
 
   private createDribbleDecision(context: DecisionContext): Decision {
