@@ -4,6 +4,7 @@ import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
+import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 
 /**
  * Evaluates off-ball movement.
@@ -68,7 +69,7 @@ export class MoveEvaluator implements ActionEvaluator {
 
   private getNearestDistance(
     position: { distanceTo(other: { x: number; y: number }): number },
-    opponents: Array<{ position: { x: number; y: number } }>
+    opponents: Array<PlayerMatchState>
   ): number {
     return opponents.reduce(
       (nearest, opponent) => Math.min(nearest, position.distanceTo(opponent.position)),
@@ -77,11 +78,11 @@ export class MoveEvaluator implements ActionEvaluator {
   }
 
   private getNearestTeammateDistance(
-    player: { position: { distanceTo(other: { x: number; y: number }): number } },
-    teammates: Array<{ position: { x: number; y: number } }>
+    player: PlayerMatchState,
+    teammates: Array<PlayerMatchState>
   ): number {
     return teammates.reduce((nearest, teammate) => {
-      if (teammate.position === player.position) return nearest;
+      if (teammate === player) return nearest;
       const distance = player.position.distanceTo(teammate.position);
       return Math.min(nearest, distance);
     }, Infinity);
