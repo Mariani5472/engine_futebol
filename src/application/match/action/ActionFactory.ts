@@ -12,14 +12,19 @@ import { TackleAction } from "./actions/TackleAction";
 import { RefereeSystem } from "../referee/RefereeSystem";
 import { ActionExecution, ActionExecutionPhase } from "./ActionExecution";
 import { getActionExecutionProfile } from "./ActionExecutionProfile";
+import { PipelineBuilder } from "./PipelineBuilder";
+import { PipelineExecution, PipelinePhase } from "./PipelineExecution";
+import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 
 /**
- * Creates and advances physical action executions.
+ * Creates and advances physical action executions via pipelines.
  *
- * Contract (Phase 1):
+ * Contract:
  * - Evaluators only produce Decision.
- * - Every discrete action is born as an ActionExecution.
- * - MatchState is mutated ONLY when an execution reaches EXECUTING.
+ * - Every discrete action is born inside a PipelineExecution
+ *   (even single-step pipelines).
+ * - MatchState is mutated ONLY when a step reaches EXECUTING
+ *   and wins arbitration.
  * - Nothing executes instantaneously.
  */
 export class ActionFactory {
@@ -30,21 +35,21 @@ export class ActionFactory {
   private readonly clearance = new ClearanceAction();
   private readonly holdBall = new HoldBallAction();
   private readonly tackle: TackleAction;
+  private readonly pipelineBuilder = new PipelineBuilder();
 
   constructor(referee: RefereeSystem) {
     this.tackle = new TackleAction(referee);
   }
 
   /**
-   * Start a new ActionExecution from a Decision.
-   * Returns the execution if created (player is now busy).
-   * Continuous / positional decisions (PRESS, MOVE, …) return undefined.
+   * Expand primary decision into a pipeline and start it.
+   * Returns the pipeline if created.
    */
   public tryStart(
     decision: Decision,
-    player: import("../../../core/movement/PlayerMatchState").PlayerMatchState,
+    player: PlayerMatchState,
     currentTime: number,
-  ): ActionExecution | undefined {
+  ): PipelineExecution | undefined {
     if (player.isActionBusy()) return undefined;
 
     if (isContinuousAction(decision.type)) {
@@ -54,39 +59,41 @@ export class ActionFactory {
     const profile = getActionExecutionProfile(decision.type);
     if (!profile) return undefined;
 
-    const execution = ActionExecution.start(decision, player, currentTime);
-    if (execution) {
-      player.activeAction = execution;
-    }
-    return execution;
+    const steps = this.pipelineBuilder.build(decision, player);
+    return PipelineExecution.start(steps, player, currentTime);
   }
 
   /**
-   * Advance an existing ActionExecution and, if it just reached EXECUTING,
-   * resolve the football outcome (mutate MatchState).
-   *
-   * Call this ONLY for actions that the ActionArbitrator has approved.
-   */
-  public resolveExecuting(
-    execution: ActionExecution,
-    context: ActionContext,
-  ): ActionResult {
-    const result = this.executeAction(execution.decision, context);
-
-    // Move into RECOVERING immediately after the physical outcome is applied.
-    execution.advance(context.matchSecond);
-
-    return result;
-  }
-
-  /**
-   * Advance a single player's active action without applying outcome.
-   * Used by the tick scheduler before arbitration.
+   * Advance a player's pipeline (or legacy standalone action).
+   * Returns the ActionExecution that just reached EXECUTING, if any.
    */
   public advanceOnly(
-    player: import("../../../core/movement/PlayerMatchState").PlayerMatchState,
+    player: PlayerMatchState,
     currentTime: number,
   ): ActionExecutionPhase | undefined {
+    // Pipeline path (preferred).
+    if (player.activePipeline) {
+      const pipeline = player.activePipeline;
+
+      if (pipeline.phase === PipelinePhase.INTERRUPTED) {
+        pipeline.finalizeIfDone(currentTime);
+        return player.activeAction?.phase;
+      }
+
+      const result = pipeline.advance(currentTime);
+
+      if (result.justReachedExecuting) {
+        return ActionExecutionPhase.EXECUTING;
+      }
+
+      if (pipeline.isFinished) {
+        return ActionExecutionPhase.COMPLETED;
+      }
+
+      return player.activeAction?.phase;
+    }
+
+    // Legacy single-action path (tests / edge cases).
     if (!player.activeAction) return undefined;
 
     const phase = player.activeAction.advance(currentTime);
@@ -99,8 +106,28 @@ export class ActionFactory {
   }
 
   /**
-   * @deprecated Prefer the scheduler flow: tryStart → advanceOnly → resolveExecuting.
-   * Kept for backward-compatible unit tests that still call execute() directly.
+   * Apply football outcome for an EXECUTING step that won arbitration,
+   * then mark the pipeline step as resolved (→ RECOVERING).
+   */
+  public resolveExecuting(
+    execution: ActionExecution,
+    context: ActionContext,
+  ): ActionResult {
+    const result = this.executeAction(execution.decision, context);
+
+    const pipeline = context.player.activePipeline;
+    if (pipeline && pipeline.currentAction === execution) {
+      pipeline.markStepResolved(context.matchSecond);
+    } else {
+      // Legacy path: advance EXECUTING → RECOVERING directly.
+      execution.advance(context.matchSecond);
+    }
+
+    return result;
+  }
+
+  /**
+   * @deprecated Prefer scheduler: tryStart → advanceOnly → resolveExecuting.
    */
   public execute(
     decision: Decision,
@@ -108,20 +135,11 @@ export class ActionFactory {
   ): ActionResult {
     const player = context.player;
 
-    if (player.activeAction) {
-      const phase = player.activeAction.advance(context.matchSecond);
+    if (player.activeAction || player.activePipeline) {
+      const phase = this.advanceOnly(player, context.matchSecond);
 
-      if (phase === ActionExecutionPhase.EXECUTING) {
-        const result = this.executeAction(
-          player.activeAction.decision,
-          context,
-        );
-        player.activeAction.advance(context.matchSecond);
-        return result;
-      }
-
-      if (phase === ActionExecutionPhase.COMPLETED) {
-        player.activeAction = undefined;
+      if (phase === ActionExecutionPhase.EXECUTING && player.activeAction) {
+        return this.resolveExecuting(player.activeAction, context);
       }
 
       return this.noopResult(
@@ -130,9 +148,8 @@ export class ActionFactory {
       );
     }
 
-    // Start a new lifecycle — never execute immediately.
-    const execution = this.tryStart(decision, player, context.matchSecond);
-    if (execution) {
+    const pipeline = this.tryStart(decision, player, context.matchSecond);
+    if (pipeline) {
       return this.noopResult(player.player.id, decision.type);
     }
 
