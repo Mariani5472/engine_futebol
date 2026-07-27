@@ -220,6 +220,13 @@ export class MatchEngine {
 
       if (phase === ActionExecutionPhase.EXECUTING && player.activeAction) {
         executingCandidates.push(player.activeAction);
+        if (
+          attackFunnel &&
+          (player.activeAction.type === DecisionType.PASS ||
+            player.activeAction.type === DecisionType.CROSS)
+        ) {
+          attackFunnel.onPassReachedExecuting();
+        }
       }
     }
 
@@ -230,43 +237,17 @@ export class MatchEngine {
     );
 
     for (const execution of winners) {
-      const player = players.find((p) => p.activeAction === execution);
-      if (!player) continue;
-
-      if (player.activePipeline && !player.activePipeline.isBusy()) continue;
-      if (execution.interruptionReason) continue;
-
-      const isHome = state.home.players.includes(player);
-      const teamState = isHome ? state.home : state.away;
-
-      const actionCtx: ActionContext = {
-        player,
-        decision: execution.decision,
-        match: state,
-        pitch: state.pitch,
-        random: rng,
+      this.resolveAndRecord(
+        execution,
+        players,
+        state,
+        rng,
         tick,
         deltaTime,
-        teamSide: isHome ? "HOME" : "AWAY",
-        attackingDirection: teamState.attackingDirection,
-        matchSecond: state.currentSecond,
-      };
-
-      const result = actionFactory.resolveExecuting(execution, actionCtx);
-      events.push(...result.events);
-
-      if (
-        attackFunnel &&
-        (execution.decision.type === DecisionType.PASS ||
-          execution.decision.type === DecisionType.CROSS) &&
-        result.meta?.passRealForwardGain !== undefined
-      ) {
-        attackFunnel.onPassResolved(
-          result.meta.passRealForwardGain,
-          result.meta.laneForwardProgress,
-          result.success,
-        );
-      }
+        actionFactory,
+        events,
+        attackFunnel,
+      );
     }
 
     for (const player of players) {
@@ -288,8 +269,44 @@ export class MatchEngine {
       }
 
       const started = actionFactory.tryStart(decision, player, state.currentSecond);
-      if (started) {
-        metrics.onActionStarted(player, decision.type, state);
+      if (!started) continue;
+
+      metrics.onActionStarted(player, decision.type, state);
+
+      if (
+        attackFunnel &&
+        (decision.type === DecisionType.PASS || decision.type === DecisionType.CROSS)
+      ) {
+        const timing = player.activeAction?.timing;
+        attackFunnel.onPassTryStart(
+          timing?.windupSeconds,
+          timing?.recoverySeconds,
+        );
+      }
+
+      // Zero-windup: action may already be EXECUTING — resolve same tick so
+      // tick=2s simulations actually complete passes instead of only deciding.
+      if (
+        player.activeAction &&
+        player.activeAction.phase === ActionExecutionPhase.EXECUTING
+      ) {
+        if (
+          attackFunnel &&
+          (decision.type === DecisionType.PASS || decision.type === DecisionType.CROSS)
+        ) {
+          attackFunnel.onPassReachedExecuting();
+        }
+        this.resolveAndRecord(
+          player.activeAction,
+          players,
+          state,
+          rng,
+          tick,
+          deltaTime,
+          actionFactory,
+          events,
+          attackFunnel,
+        );
       }
     }
 
@@ -302,6 +319,54 @@ export class MatchEngine {
 
     void period;
     return events;
+  }
+
+  private resolveAndRecord(
+    execution: ActionExecution,
+    players: PlayerMatchState[],
+    state: MatchState,
+    rng: Random,
+    tick: number,
+    deltaTime: number,
+    actionFactory: ActionFactory,
+    events: MatchEvent[],
+    attackFunnel?: AttackFunnelCollector,
+  ): void {
+    const player = players.find((p) => p.activeAction === execution);
+    if (!player) return;
+    if (player.activePipeline && !player.activePipeline.isBusy()) return;
+    if (execution.interruptionReason) return;
+
+    const isHome = state.home.players.includes(player);
+    const teamState = isHome ? state.home : state.away;
+
+    const actionCtx: ActionContext = {
+      player,
+      decision: execution.decision,
+      match: state,
+      pitch: state.pitch,
+      random: rng,
+      tick,
+      deltaTime,
+      teamSide: isHome ? "HOME" : "AWAY",
+      attackingDirection: teamState.attackingDirection,
+      matchSecond: state.currentSecond,
+    };
+
+    const result = actionFactory.resolveExecuting(execution, actionCtx);
+    events.push(...result.events);
+
+    if (
+      attackFunnel &&
+      (execution.decision.type === DecisionType.PASS ||
+        execution.decision.type === DecisionType.CROSS)
+    ) {
+      attackFunnel.onPassResolved(
+        result.meta?.passRealForwardGain ?? 0,
+        result.meta?.laneForwardProgress,
+        result.success,
+      );
+    }
   }
 
   private syncPossessionSide(state: MatchState): void {
