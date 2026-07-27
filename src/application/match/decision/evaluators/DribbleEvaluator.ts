@@ -5,12 +5,6 @@ import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 
-/**
- * Dribble is a situational option, not the default possession loop.
- *
- * Calibration showed ~99% of on-ball decisions were DRIBBLE because base
- * utility stayed ~50–65 every tick while PASS was low and HOLD was weak.
- */
 export class DribbleEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     if (!context.player.hasBall) return [];
@@ -20,7 +14,6 @@ export class DribbleEvaluator implements ActionEvaluator {
       this.createDecision(DecisionType.SKILL_MOVE, this.calculateSkillMoveUtility(context)),
     ];
 
-    // HOLD_BALL is owned by HoldBallEvaluator — avoid duplicate candidates.
     return options.filter((decision) => decision.utility > 0);
   }
 
@@ -40,13 +33,30 @@ export class DribbleEvaluator implements ActionEvaluator {
     const pressure = world.pressure;
     const nearest = world.nearestOpponentDistance;
 
-    // No space and already marked → dribble is a poor default.
     if (freeSpace < 0.18 && pressure > 0.55) {
       return UtilityScore.fromComponents({ SPACE: 0 });
     }
 
-    const pitchCentreX = context.match.pitch.length / 2;
+    const pitchLength = context.match.pitch.length;
+    const mid = pitchLength / 2;
     const playerX = context.player.position.x;
+    const inOpponentHalf =
+      world.attackingDirection === 1 ? playerX >= mid : playerX <= mid;
+    const nearFinalThird =
+      world.goalDistance <= 35 ||
+      (world.attackingDirection === 1
+        ? playerX >= pitchLength * 0.65
+        : playerX <= pitchLength * 0.35);
+
+    // Carry into the box only with space in the opponent half / final third.
+    const carryBonus =
+      inOpponentHalf && freeSpace > 0.35
+        ? 18 + (nearFinalThird ? 14 : 0)
+        : inOpponentHalf
+          ? 6
+          : 0;
+
+    const pitchCentreX = pitchLength / 2;
     const attackingX =
       world.attackingDirection === 1
         ? playerX - pitchCentreX
@@ -59,32 +69,33 @@ export class DribbleEvaluator implements ActionEvaluator {
       ? 8 + fieldAdvanceFactor * 10
       : 2 + fieldAdvanceFactor * 4;
 
-    // Space is the main gate — open pitch rewards dribble; congestion punishes it.
     const spaceGate = Math.max(0, freeSpace * 22 - pressure * 20);
 
-    // Escape only when an opponent is close but not already on top of the ball.
     let escapeBonus = 0;
     if (Number.isFinite(nearest) && nearest > 1.5 && nearest < 5) {
       escapeBonus = (dribbling + agility + pace) * 3;
     }
 
-    // Anti-spam: after a dribble beat, prefer pass/shot/hold unless space opened up.
     let repeatPenalty = 0;
     if (context.player.lastActionType === DecisionType.DRIBBLE) {
-      repeatPenalty = freeSpace > 0.55 ? 12 : 38;
+      // Allow chained carries in open final third; punish elsewhere.
+      repeatPenalty = nearFinalThird && freeSpace > 0.4 ? 6 : freeSpace > 0.55 ? 12 : 38;
     }
     if (context.player.lastActionType === DecisionType.SKILL_MOVE) {
       repeatPenalty += 10;
     }
+
+    // Own half: keep dribble modest so progressive pass remains preferred.
+    const ownHalfPenalty = !inOpponentHalf ? -14 : 0;
 
     const technique = dribbling * 12 + pace * 5 + flair * 4 + agility * 3;
 
     return UtilityScore.fromComponents({
       TECHNIQUE: technique,
       ROLE: roleBonus,
-      SPACE: spaceGate + escapeBonus,
+      SPACE: spaceGate + escapeBonus + carryBonus,
       PRESSURE: -pressure * 22,
-      RISK: -repeatPenalty,
+      RISK: -repeatPenalty + ownHalfPenalty,
     });
   }
 
@@ -99,7 +110,6 @@ export class DribbleEvaluator implements ActionEvaluator {
     const pressure = world.pressure;
     const nearestOpponentDistance = world.nearestOpponentDistance;
 
-    // Skill moves need a narrow pressure window — not open pitch spam.
     if (pressure < 0.25 || pressure > 0.85) {
       return UtilityScore.fromComponents({ SPACE: 0 });
     }
