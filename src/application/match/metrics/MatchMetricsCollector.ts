@@ -1,0 +1,393 @@
+import { MatchEvent, ShotResult } from "../../../domain";
+import { MatchState } from "../../../core/movement/MatchState";
+import { DecisionType } from "../decision/DecisionType";
+import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import { buildMatchMetrics, MatchMetrics } from "./MatchMetrics";
+import { TeamMatchMetrics } from "./TeamMatchMetrics";
+
+interface MutableTeamStats {
+  goals: number;
+  shots: number;
+  shotsOnTarget: number;
+  shotsOffTarget: number;
+  shotsBlocked: number;
+  shotsSaved: number;
+  xG: number;
+  yellowCards: number;
+  redCards: number;
+  fouls: number;
+  corners: number;
+  passes: number;
+  progressivePasses: number;
+  crosses: number;
+  tackles: number;
+  interceptions: number;
+  clearances: number;
+  highPressRecoveries: number;
+  attacks: number;
+  shotDistanceSum: number;
+  possessionSamples: number;
+  attackingThirdSamples: number;
+  /** Opponent passes observed while this team defends (for PPDA). */
+  opponentPassesWhileDefending: number;
+  defensiveActions: number;
+  /** Whether current possession sequence has entered final third. */
+  attackActive: boolean;
+}
+
+function createMutable(): MutableTeamStats {
+  return {
+    goals: 0,
+    shots: 0,
+    shotsOnTarget: 0,
+    shotsOffTarget: 0,
+    shotsBlocked: 0,
+    shotsSaved: 0,
+    xG: 0,
+    yellowCards: 0,
+    redCards: 0,
+    fouls: 0,
+    corners: 0,
+    passes: 0,
+    progressivePasses: 0,
+    crosses: 0,
+    tackles: 0,
+    interceptions: 0,
+    clearances: 0,
+    highPressRecoveries: 0,
+    attacks: 0,
+    shotDistanceSum: 0,
+    possessionSamples: 0,
+    attackingThirdSamples: 0,
+    opponentPassesWhileDefending: 0,
+    defensiveActions: 0,
+    attackActive: false,
+  };
+}
+
+/**
+ * Collects match statistics from events and periodic state samples (Phase 9).
+ *
+ * Integration points in MatchEngine:
+ *   - `onEvents(events, state)` after each tick's resolved actions
+ *   - `sampleState(state)` once per tick for possession / field tilt
+ *   - `onActionStarted(player, type, state)` when a pipeline/action begins
+ *   - `finalize()` → MatchMetrics at end of match
+ */
+export class MatchMetricsCollector {
+  private readonly home = createMutable();
+  private readonly away = createMutable();
+  private homeTeamId: string | null = null;
+  private awayTeamId: string | null = null;
+  private lastOwnerId: string | null = null;
+  private lastOwnerIsHome: boolean | null = null;
+
+  public bindTeams(homeTeamId: string, awayTeamId: string): void {
+    this.homeTeamId = homeTeamId;
+    this.awayTeamId = awayTeamId;
+  }
+
+  /** Process events emitted by resolved ActionExecutions. */
+  public onEvents(events: readonly MatchEvent[], state: MatchState): void {
+    if (!this.homeTeamId) {
+      this.bindTeams(state.home.team.id, state.away.team.id);
+    }
+
+    for (const event of events) {
+      switch (event.type) {
+        case "SHOT":
+          this.handleShot(event.teamId, event.result, state);
+          break;
+        case "GOAL":
+          this.handleGoal(event.teamId);
+          break;
+        case "CARD":
+          this.handleCard(event.teamId, event.cardType, event.reason);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  /**
+   * Called when a player begins an action/pipeline.
+   * Tracks passes, progressive passes, crosses, defensive actions.
+   */
+  public onActionStarted(
+    player: PlayerMatchState,
+    type: DecisionType,
+    state: MatchState,
+  ): void {
+    const isHome = state.home.players.includes(player);
+    const stats = isHome ? this.home : this.away;
+    const opp = isHome ? this.away : this.home;
+
+    switch (type) {
+      case DecisionType.PASS: {
+        stats.passes++;
+        // Opponent accumulates "passes faced" for PPDA.
+        opp.opponentPassesWhileDefending++;
+
+        if (this.isProgressivePass(player, state, isHome)) {
+          stats.progressivePasses++;
+        }
+        break;
+      }
+      case DecisionType.CROSS:
+        stats.crosses++;
+        stats.passes++;
+        opp.opponentPassesWhileDefending++;
+        break;
+      case DecisionType.TACKLE:
+        stats.tackles++;
+        stats.defensiveActions++;
+        break;
+      case DecisionType.INTERCEPT:
+        stats.interceptions++;
+        stats.defensiveActions++;
+        break;
+      case DecisionType.CLEAR:
+        stats.clearances++;
+        stats.defensiveActions++;
+        break;
+      case DecisionType.BLOCK:
+        stats.defensiveActions++;
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * Sample possession, field tilt, attacks and high-press recoveries.
+   * Call once per tick after possession has been updated.
+   */
+  public sampleState(state: MatchState): void {
+    if (!this.homeTeamId) {
+      this.bindTeams(state.home.team.id, state.away.team.id);
+    }
+
+    const owner = state.ball.owner;
+    if (!owner) {
+      this.lastOwnerId = null;
+      this.lastOwnerIsHome = null;
+      return;
+    }
+
+    const isHome = state.home.players.includes(owner);
+    const stats = isHome ? this.home : this.away;
+    const pitchLength = state.pitch.length;
+    const attackingDirection = isHome
+      ? state.home.attackingDirection
+      : state.away.attackingDirection;
+
+    stats.possessionSamples++;
+
+    // Field tilt / attacking third occupancy.
+    if (this.isInAttackingThird(owner.position.x, attackingDirection, pitchLength)) {
+      stats.attackingThirdSamples++;
+
+      if (!stats.attackActive) {
+        stats.attackActive = true;
+        stats.attacks++;
+      }
+    }
+
+    // High press recovery: possession flipped and new owner is in opponent's half.
+    if (
+      this.lastOwnerId !== null &&
+      this.lastOwnerIsHome !== null &&
+      this.lastOwnerIsHome !== isHome &&
+      owner.player.id !== this.lastOwnerId
+    ) {
+      if (this.isInAttackingThird(owner.position.x, attackingDirection, pitchLength)) {
+        stats.highPressRecoveries++;
+      }
+      // Previous team's attack sequence ends.
+      const prev = this.lastOwnerIsHome ? this.home : this.away;
+      prev.attackActive = false;
+    }
+
+    this.lastOwnerId = owner.player.id;
+    this.lastOwnerIsHome = isHome;
+  }
+
+  public finalize(): MatchMetrics {
+    return buildMatchMetrics(
+      this.toTeamMetrics(this.home),
+      this.toTeamMetrics(this.away),
+    );
+  }
+
+  // ── private helpers ──────────────────────────────────────────────
+
+  private handleShot(teamId: string, result: ShotResult, state: MatchState): void {
+    const stats = this.statsForTeam(teamId);
+    if (!stats) return;
+
+    stats.shots++;
+
+    switch (result) {
+      case "GOAL":
+        stats.shotsOnTarget++;
+        break;
+      case "SAVED":
+        stats.shotsOnTarget++;
+        stats.shotsSaved++;
+        break;
+      case "BLOCKED":
+        stats.shotsBlocked++;
+        break;
+      case "OFF_TARGET":
+        stats.shotsOffTarget++;
+        break;
+    }
+
+    const distance = this.estimateShotDistance(teamId, state);
+    stats.shotDistanceSum += distance;
+    stats.xG += this.estimateXG(distance, result);
+  }
+
+  private handleGoal(teamId: string): void {
+    const stats = this.statsForTeam(teamId);
+    if (!stats) return;
+    stats.goals++;
+    // Attack ends on goal.
+    stats.attackActive = false;
+  }
+
+  private handleCard(teamId: string, cardType: "YELLOW" | "RED", reason: string): void {
+    const stats = this.statsForTeam(teamId);
+    if (!stats) return;
+
+    if (cardType === "YELLOW") stats.yellowCards++;
+    else stats.redCards++;
+
+    // Most cards in the engine are fouls; count them as fouls for calibration.
+    if (reason.toLowerCase().includes("foul") || reason.length > 0) {
+      stats.fouls++;
+    }
+  }
+
+  private statsForTeam(teamId: string): MutableTeamStats | null {
+    if (teamId === this.homeTeamId) return this.home;
+    if (teamId === this.awayTeamId) return this.away;
+    return null;
+  }
+
+  private estimateShotDistance(teamId: string, state: MatchState): number {
+    const isHome = teamId === this.homeTeamId;
+    const team = isHome ? state.home : state.away;
+    const owner = state.ball.owner;
+    const shooter =
+      owner && (isHome ? state.home.players : state.away.players).includes(owner)
+        ? owner
+        : null;
+
+    const goalX =
+      team.attackingDirection === 1 ? state.pitch.length : 0;
+    const goalY = state.pitch.width / 2;
+    const pos = shooter?.position ?? state.ball.position;
+
+    return Math.hypot(pos.x - goalX, pos.y - goalY);
+  }
+
+  /**
+   * Distance-based xG prior, lightly adjusted by outcome so goals
+   * still contribute realistic expected values for calibration.
+   */
+  private estimateXG(distance: number, result: ShotResult): number {
+    let base: number;
+    if (distance <= 6) base = 0.35;
+    else if (distance <= 12) base = 0.18;
+    else if (distance <= 18) base = 0.09;
+    else if (distance <= 25) base = 0.04;
+    else if (distance <= 35) base = 0.02;
+    else base = 0.01;
+
+    if (result === "GOAL") return Math.max(base, 0.55);
+    if (result === "SAVED") return base * 1.1;
+    if (result === "BLOCKED") return base * 0.7;
+    return base * 0.5;
+  }
+
+  private isInAttackingThird(
+    x: number,
+    attackingDirection: 1 | -1,
+    pitchLength: number,
+  ): boolean {
+    const third = pitchLength / 3;
+    if (attackingDirection === 1) {
+      return x >= pitchLength - third;
+    }
+    return x <= third;
+  }
+
+  private isProgressivePass(
+    player: PlayerMatchState,
+    state: MatchState,
+    isHome: boolean,
+  ): boolean {
+    // Approximate: carrier is in own half and facing/acting toward attack,
+    // OR ball is already past halfway and action is a pass (forward progress).
+    const attackingDirection = isHome
+      ? state.home.attackingDirection
+      : state.away.attackingDirection;
+    const mid = state.pitch.length / 2;
+    const x = player.position.x;
+
+    if (attackingDirection === 1) {
+      // Progress if starting behind mid and still progressing, or already advanced.
+      return x < mid + 15;
+    }
+    return x > mid - 15;
+  }
+
+  private toTeamMetrics(s: MutableTeamStats): TeamMatchMetrics {
+    const totalPossession = this.home.possessionSamples + this.away.possessionSamples;
+    const possessionPercent =
+      totalPossession > 0
+        ? (s.possessionSamples / totalPossession) * 100
+        : 50;
+
+    const totalAttackSamples =
+      this.home.attackingThirdSamples + this.away.attackingThirdSamples;
+    const fieldTiltPercent =
+      totalAttackSamples > 0
+        ? (s.attackingThirdSamples / totalAttackSamples) * 100
+        : 50;
+
+    const ppda =
+      s.defensiveActions > 0
+        ? s.opponentPassesWhileDefending / s.defensiveActions
+        : Number.POSITIVE_INFINITY;
+
+    return {
+      goals: s.goals,
+      shots: s.shots,
+      shotsOnTarget: s.shotsOnTarget,
+      shotsOffTarget: s.shotsOffTarget,
+      shotsBlocked: s.shotsBlocked,
+      shotsSaved: s.shotsSaved,
+      xG: Math.round(s.xG * 100) / 100,
+      yellowCards: s.yellowCards,
+      redCards: s.redCards,
+      fouls: s.fouls,
+      corners: s.corners,
+      passes: s.passes,
+      progressivePasses: s.progressivePasses,
+      crosses: s.crosses,
+      tackles: s.tackles,
+      interceptions: s.interceptions,
+      clearances: s.clearances,
+      highPressRecoveries: s.highPressRecoveries,
+      attacks: s.attacks,
+      averageShotDistance:
+        s.shots > 0 ? Math.round((s.shotDistanceSum / s.shots) * 10) / 10 : 0,
+      possessionPercent: Math.round(possessionPercent * 10) / 10,
+      fieldTiltPercent: Math.round(fieldTiltPercent * 10) / 10,
+      ppda: Number.isFinite(ppda) ? Math.round(ppda * 10) / 10 : ppda,
+    };
+  }
+}
