@@ -15,12 +15,15 @@ import { DecisionType } from "../../decision/DecisionType";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 
 /** Team-wide shot cooldown — primary volume control with 1/possession. */
-const SHOT_COOLDOWN_SECONDS = 70;
+const SHOT_COOLDOWN_SECONDS = 125;
 
-const CORNER_FROM_MISS_RATE = 0.42;
+const CORNER_FROM_MISS_RATE = 0.58;
+const CORNER_FROM_PARRY_RATE = 0.30;
 const GK_SAVE_PROBABILITY_BONUS = 0.15;
 const GK_SAVE_PROBABILITY_FLOOR = 0.55;
 const GK_SAVE_PROBABILITY_CAP = 0.90;
+const ON_TARGET_PROBABILITY_SCALE = 1.18;
+const ON_TARGET_PROBABILITY_CAP = 0.75;
 
 export class ShotAction {
 
@@ -120,7 +123,7 @@ export class ShotAction {
         p.hasBall = false;
       }
 
-      const parryCorner = random.nextFloat(0, 1) < 0.22;
+      const parryCorner = random.nextFloat(0, 1) < CORNER_FROM_PARRY_RATE;
       if (parryCorner) {
         const endLineX = attackingDirection === 1 ? match.pitch.length : 0;
         const cornerY = random.nextFloat(0, 1) < 0.5 ? 0 : match.pitch.width;
@@ -281,7 +284,10 @@ export class ShotAction {
       * (1 - pressurePenalty)
       * fatiguePenalty;
 
-    return Math.max(0.14, Math.min(0.68, raw));
+    return Math.max(
+      0.14,
+      Math.min(ON_TARGET_PROBABILITY_CAP, raw * ON_TARGET_PROBABILITY_SCALE),
+    );
   }
 
   private calculateGkSaveProb(

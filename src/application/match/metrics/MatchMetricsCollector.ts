@@ -5,7 +5,7 @@ import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { buildMatchMetrics, MatchMetrics } from "./MatchMetrics";
 import { TeamMatchMetrics } from "./TeamMatchMetrics";
 
-const XG_CALIBRATION_SCALE = 0.53;
+const XG_CALIBRATION_SCALE = 0.80;
 
 interface MutableTeamStats {
   goals: number;
@@ -86,7 +86,7 @@ export class MatchMetricsCollector {
     for (const event of events) {
       switch (event.type) {
         case "SHOT":
-          this.handleShot(event.teamId, event.result, state);
+          this.handleShot(event.teamId, event.playerId, event.result, state);
           break;
         case "GOAL":
           this.handleGoal(event.teamId);
@@ -202,7 +202,12 @@ export class MatchMetricsCollector {
     );
   }
 
-  private handleShot(teamId: string, result: ShotResult, state: MatchState): void {
+  private handleShot(
+    teamId: string,
+    playerId: string,
+    result: ShotResult,
+    state: MatchState,
+  ): void {
     const stats = this.statsForTeam(teamId);
     if (!stats) return;
 
@@ -224,7 +229,7 @@ export class MatchMetricsCollector {
         break;
     }
 
-    const distance = this.estimateShotDistance(teamId, state);
+    const distance = this.estimateShotDistance(teamId, playerId, state);
     stats.shotDistanceSum += distance;
     stats.xG += this.estimateXG(distance);
   }
@@ -262,14 +267,14 @@ export class MatchMetricsCollector {
     return null;
   }
 
-  private estimateShotDistance(teamId: string, state: MatchState): number {
+  private estimateShotDistance(
+    teamId: string,
+    playerId: string,
+    state: MatchState,
+  ): number {
     const isHome = teamId === this.homeTeamId;
     const team = isHome ? state.home : state.away;
-    const owner = state.ball.owner;
-    const shooter =
-      owner && (isHome ? state.home.players : state.away.players).includes(owner)
-        ? owner
-        : null;
+    const shooter = team.players.find((p) => p.player.id === playerId);
 
     const goalX = team.attackingDirection === 1 ? state.pitch.length : 0;
     const goalY = state.pitch.width / 2;

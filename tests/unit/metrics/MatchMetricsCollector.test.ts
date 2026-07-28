@@ -136,7 +136,10 @@ describe("MatchMetricsCollector", () => {
     collector.bindTeams(match.home.team.id, match.away.team.id);
 
     match.home.players[0].position = new Vector2(90, 34);
-    match.ball.owner = match.home.players[0];
+    // Shot actions may already have moved/released the ball when metrics run.
+    // Distance must still come from the event's playerId.
+    match.ball.owner = null;
+    match.ball.position = new Vector2(105, 0);
 
     collector.onEvents(
       [
@@ -156,7 +159,6 @@ describe("MatchMetricsCollector", () => {
     );
 
     const metrics = collector.finalize();
-    expect(metrics.home.averageShotDistance).toBeGreaterThan(10);
-    expect(metrics.home.averageShotDistance).toBeLessThan(25);
+    expect(metrics.home.averageShotDistance).toBeCloseTo(15, 6);
   });
 });

@@ -12,13 +12,13 @@ export interface FoulOutcome {
   readonly events: CardEvent[];
 }
 
-const BASE_FOUL_CHANCE = 0.033;
+const BASE_FOUL_CHANCE = 0.045;
 const FOUL_DANGER_FLOOR = 0.34;
 const DIRECT_RED_DANGER = 0.97;
 const DIRECT_RED_CHANCE = 0.006;
-const BASE_YELLOW_CHANCE = 0.30;
+const BASE_YELLOW_CHANCE = 0.50;
 const MAX_YELLOW_CHANCE = 0.45;
-const REPEAT_BOOKING_FACTOR = 0.025;
+const REPEAT_BOOKING_FACTOR = 0.013;
 
 export class RefereeSystem {
   private readonly records: Map<string, FoulRecord> = new Map();
