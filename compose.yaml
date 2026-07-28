@@ -1,0 +1,30 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    container_name: match_engine_web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./web:/workspace/web
+      - ./engine:/workspace/engine
+      - workspace_node_modules:/workspace/node_modules
+    command: npm run dev --workspace web -- --host 0.0.0.0
+
+  engine:
+    build:
+      context: .
+      dockerfile: engine/Dockerfile
+    profiles: ["tools"]
+    working_dir: /workspace/engine
+    volumes:
+      - ./engine:/workspace/engine
+      - workspace_node_modules:/workspace/node_modules
+    command: npm test -- --runInBand
+
+volumes:
+  workspace_node_modules:

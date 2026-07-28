@@ -20,6 +20,12 @@
 export { MatchEngine, MatchResult } from "./application/match/engine/MatchEngine";
 export { MatchInitializer } from "./application/match/engine/MatchInitializer";
 export { SimulationConfig } from "./application/match/engine/SimulationConfig";
+export { BrowserAnimationScheduler, FixedTimestepLoop } from "./application/match/runtime";
+export type {
+  AnimationScheduler,
+  FixedTimestepLoopOptions,
+  RenderTiming,
+} from "./application/match/runtime";
 
 // Metrics (Phase 9)
 export type { MatchMetrics } from "./application/match/metrics/MatchMetrics";
