@@ -4,8 +4,7 @@ import { DecisionType } from "../decision/DecisionType";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { buildMatchMetrics, MatchMetrics } from "./MatchMetrics";
 import { TeamMatchMetrics } from "./TeamMatchMetrics";
-
-const XG_CALIBRATION_SCALE = 0.80;
+import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
 
 interface MutableTeamStats {
   goals: number;
@@ -292,7 +291,7 @@ export class MatchMetricsCollector {
     else if (distance <= 35) base = 0.02;
     else base = 0.01;
 
-    return base * XG_CALIBRATION_SCALE;
+    return base * ENGINE_CALIBRATION_PARAMETERS.metrics.xGScale;
   }
 
   private isInAttackingThird(

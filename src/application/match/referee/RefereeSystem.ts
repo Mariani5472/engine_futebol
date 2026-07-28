@@ -4,6 +4,7 @@ import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { TeamMatchState } from "../../../core/movement/TeamMatchState";
 import { Random } from "../../../core/random/Random";
 import { FoulRecord } from "./FoulRecord";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
 
 export interface FoulOutcome {
   readonly isFoul: boolean;
@@ -12,13 +13,7 @@ export interface FoulOutcome {
   readonly events: CardEvent[];
 }
 
-const BASE_FOUL_CHANCE = 0.045;
-const FOUL_DANGER_FLOOR = 0.34;
-const DIRECT_RED_DANGER = 0.97;
-const DIRECT_RED_CHANCE = 0.006;
-const BASE_YELLOW_CHANCE = 0.50;
-const MAX_YELLOW_CHANCE = 0.45;
-const REPEAT_BOOKING_FACTOR = 0.013;
+const DISCIPLINE_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.discipline;
 
 export class RefereeSystem {
   private readonly records: Map<string, FoulRecord> = new Map();
@@ -47,14 +42,14 @@ export class RefereeSystem {
       return { isFoul: false, isCard: false, events: [] };
     }
 
-    if (danger < FOUL_DANGER_FLOOR) {
+    if (danger < DISCIPLINE_CALIBRATION.foulDangerFloor) {
       return { isFoul: false, isCard: false, events: [] };
     }
 
     const successFactor = tackleSucceeded ? 0.28 : 1.0;
     const foulChance = Math.min(
       0.58,
-      BASE_FOUL_CHANCE
+      DISCIPLINE_CALIBRATION.baseFoulChance
         * successFactor
         * (0.55 + danger * 1.15)
         * (0.80 + strictness * 0.45),
@@ -66,7 +61,8 @@ export class RefereeSystem {
 
     const events: CardEvent[] = [];
 
-    if (danger >= DIRECT_RED_DANGER && this.random.nextFloat(0, 1) < DIRECT_RED_CHANCE) {
+    if (danger >= DISCIPLINE_CALIBRATION.directRedDanger
+      && this.random.nextFloat(0, 1) < DISCIPLINE_CALIBRATION.directRedChance) {
       events.push(
         ...this.issueCard(
           tackler,
@@ -86,9 +82,9 @@ export class RefereeSystem {
       (this.records.get(tackler.player.id)?.yellowCards ?? 0) > 0;
 
     const yellowChance = Math.min(
-      MAX_YELLOW_CHANCE,
-      BASE_YELLOW_CHANCE
-        * (alreadyBooked ? REPEAT_BOOKING_FACTOR : 1)
+      DISCIPLINE_CALIBRATION.maxYellowChance,
+      DISCIPLINE_CALIBRATION.baseYellowChance
+        * (alreadyBooked ? DISCIPLINE_CALIBRATION.repeatBookingFactor : 1)
         * (0.65 + danger * 0.75)
         * (0.85 + aggression * 0.35 + dirtiness * 0.25)
         * (0.85 + strictness * 0.25),

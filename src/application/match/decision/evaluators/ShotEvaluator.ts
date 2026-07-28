@@ -6,19 +6,14 @@ import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 import { FieldThird } from "../../../../domain";
 import { ActionReadiness } from "./ActionReadiness";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
 
 /**
  * Scale tuned so clear box chances beat DRIBBLE (~80) while not returning
- * to the 300–600 shots/game regime. Lock (35s) + 1/possession remain the
+ * to the 300–600 shots/game regime. Cooldown + 1/possession remain the
  * primary volume control.
  */
-const SHOT_UTILITY_SCALE = 0.75;
-
-/** Strong boost inside the box so finishing wins the selector. */
-const BOX_FLAT_BOOST = 42;
-
-/** One finishing attempt per continuous possession spell. */
-const MAX_SHOTS_PER_POSSESSION = 1;
+const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
 
 export class ShotEvaluator implements ActionEvaluator {
 
@@ -28,13 +23,14 @@ export class ShotEvaluator implements ActionEvaluator {
 
     const team = this.ownTeam(context);
     if (team?.isShotLocked(context.match.currentSecond)) return [];
-    if ((team?.shotsThisPossession ?? 0) >= MAX_SHOTS_PER_POSSESSION) return [];
+    if ((team?.shotsThisPossession ?? 0) >= SHOT_CALIBRATION.maxPerPossession) return [];
 
     // Preserve clear close-range chances while rejecting speculative attempts.
     const distance = context.world.goalDistance;
     const window = context.world.shotWindow;
-    if (distance > 22) return [];
-    if (distance > 14 && window < 0.70) return [];
+    if (distance > SHOT_CALIBRATION.maxDistanceMeters) return [];
+    if (distance > SHOT_CALIBRATION.closeRangeMeters
+      && window < SHOT_CALIBRATION.minimumWindowOutsideCloseRange) return [];
 
     const score = this.calculateUtility(context);
     if (score.total <= 0) return [];
@@ -99,7 +95,7 @@ export class ShotEvaluator implements ActionEvaluator {
 
     // Box priority: must clear DRIBBLE (~80) on clear chances at ~9m.
     const proximityBoost =
-      distance <= 18 ? BOX_FLAT_BOOST * (1 - distance / 36) : 0;
+      distance <= 18 ? SHOT_CALIBRATION.boxFlatBoost * (1 - distance / 36) : 0;
 
     const repeatPlayerPenalty =
       player.lastActionType === DecisionType.SHOT ? -20 : 0;
@@ -113,7 +109,7 @@ export class ShotEvaluator implements ActionEvaluator {
       TACTICAL: tactical + proximityBoost + repeatPlayerPenalty,
     });
 
-    const scaledTotal = raw.total * SHOT_UTILITY_SCALE;
+    const scaledTotal = raw.total * SHOT_CALIBRATION.utilityScale;
     const scaleAdj = scaledTotal - raw.total;
 
     return UtilityScore.fromComponents({

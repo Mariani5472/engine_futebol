@@ -38,8 +38,9 @@ import { MatchMetrics } from "../metrics/MatchMetrics";
 import { AttackFunnelCollector } from "../diagnostics/AttackFunnelCollector";
 import { MatchInitializer } from "./MatchInitializer";
 import { SimulationConfig } from "./SimulationConfig";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
 
-const DEFAULT_DELTA_TIME = 0.5;
+const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
 const FATIGUE_RATE = 0.008;
 const POSSESSION_DECISION_INTERVAL_SECONDS = 1;

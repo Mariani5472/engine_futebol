@@ -6,14 +6,14 @@ import { MatchConfig, Tactic } from "../../../domain";
  * `SimulationConfig` adds the operational tactics for each side.
  *
  * Optional fields are for testing / special scenarios:
- * - `tickDeltaSeconds`: simulation time step per tick (default 0.5s).
+ * - `tickDeltaSeconds`: simulation time step per tick (official default 0.05s).
  *   Use larger values (e.g. 10) in tests to reduce iteration count.
  * - `maxDurationSeconds`: override match length (default 5400s = 90 min).
  */
 export interface SimulationConfig extends MatchConfig {
   readonly homeTactic: Tactic;
   readonly awayTactic: Tactic;
-  /** Seconds per simulation tick. Default: 0.5. */
+  /** Seconds per simulation tick. Official default: 0.05 (20 Hz). */
   readonly tickDeltaSeconds?: number;
   /** Total simulated seconds. Default: 5400 (90 min). */
   readonly maxDurationSeconds?: number;

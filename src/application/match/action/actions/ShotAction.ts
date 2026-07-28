@@ -13,17 +13,10 @@ import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
 
 /** Team-wide shot cooldown — primary volume control with 1/possession. */
-const SHOT_COOLDOWN_SECONDS = 125;
-
-const CORNER_FROM_MISS_RATE = 0.58;
-const CORNER_FROM_PARRY_RATE = 0.30;
-const GK_SAVE_PROBABILITY_BONUS = 0.15;
-const GK_SAVE_PROBABILITY_FLOOR = 0.55;
-const GK_SAVE_PROBABILITY_CAP = 0.90;
-const ON_TARGET_PROBABILITY_SCALE = 1.18;
-const ON_TARGET_PROBABILITY_CAP = 0.75;
+const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
 
 export class ShotAction {
 
@@ -43,7 +36,7 @@ export class ShotAction {
 
     const isHome = teamSide === "HOME";
     const attacking = isHome ? match.home : match.away;
-    attacking.noteShotTaken(matchSecond, SHOT_COOLDOWN_SECONDS);
+    attacking.noteShotTaken(matchSecond, SHOT_CALIBRATION.cooldownSeconds);
 
     const onTargetProb = this.calculateOnTargetProb(context, player, goalCenter);
     const isOnTarget = random.nextFloat(0, 1) < onTargetProb;
@@ -83,7 +76,7 @@ export class ShotAction {
       const nearEnd = distToEnd < 8 || ballX <= 0.5 || ballX >= match.pitch.length - 0.5;
       const wideOfGoal = Math.abs(ballY - goalCenter.y) > goal.width * 0.35;
 
-      if (nearEnd && (wideOfGoal || distToEnd < 3) && random.nextFloat(0, 1) < CORNER_FROM_MISS_RATE) {
+      if (nearEnd && (wideOfGoal || distToEnd < 3) && random.nextFloat(0, 1) < SHOT_CALIBRATION.cornerFromMissRate) {
         const cornerY = ballY < goalCenter.y ? 0 : match.pitch.width;
         ballX = endLineX;
         ballY = cornerY;
@@ -123,7 +116,7 @@ export class ShotAction {
         p.hasBall = false;
       }
 
-      const parryCorner = random.nextFloat(0, 1) < CORNER_FROM_PARRY_RATE;
+      const parryCorner = random.nextFloat(0, 1) < SHOT_CALIBRATION.cornerFromParryRate;
       if (parryCorner) {
         const endLineX = attackingDirection === 1 ? match.pitch.length : 0;
         const cornerY = random.nextFloat(0, 1) < 0.5 ? 0 : match.pitch.width;
@@ -286,7 +279,7 @@ export class ShotAction {
 
     return Math.max(
       0.14,
-      Math.min(ON_TARGET_PROBABILITY_CAP, raw * ON_TARGET_PROBABILITY_SCALE),
+      Math.min(SHOT_CALIBRATION.onTargetProbabilityCap, raw * SHOT_CALIBRATION.onTargetProbabilityScale),
     );
   }
 
@@ -318,8 +311,8 @@ export class ShotAction {
 
     // ~65% saves of on-target → with ~25 shots and ~35% OT ≈ 2.5 goals.
     return Math.max(
-      GK_SAVE_PROBABILITY_FLOOR,
-      Math.min(GK_SAVE_PROBABILITY_CAP, raw + GK_SAVE_PROBABILITY_BONUS),
+      SHOT_CALIBRATION.goalkeeperSaveFloor,
+      Math.min(SHOT_CALIBRATION.goalkeeperSaveCap, raw + SHOT_CALIBRATION.goalkeeperSaveBonus),
     );
   }
 }

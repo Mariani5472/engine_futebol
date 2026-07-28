@@ -8,13 +8,14 @@ import {
   CalibrationReport,
   formatCalibrationReport,
 } from "./CalibrationReport";
+import { ENGINE_CALIBRATION_PARAMETERS } from "./CalibrationParameters";
 
 export interface CalibrationRunOptions {
   /** Number of matches to simulate. Default 50 for CI-friendly runs. */
   readonly matchCount?: number;
   /** First RNG seed; subsequent matches use seedStart + i. */
   readonly seedStart?: number;
-  /** Tick size in seconds (larger = faster, coarser). Default 2. */
+  /** Tick size in seconds. Defaults to the official 0.05s timestep. */
   readonly tickDeltaSeconds?: number;
   /** Match length override in seconds. Default 5400 (90 min). */
   readonly maxDurationSeconds?: number;
@@ -59,7 +60,8 @@ export class CalibrationRunner {
   public run(options: CalibrationRunOptions): CalibrationBatchResult {
     const matchCount = options.matchCount ?? 50;
     const seedStart = options.seedStart ?? 1;
-    const tickDeltaSeconds = options.tickDeltaSeconds ?? 2;
+    const tickDeltaSeconds = options.tickDeltaSeconds
+      ?? ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
     const maxDurationSeconds = options.maxDurationSeconds ?? 90 * 60;
 
     const samples: MatchSample[] = [];

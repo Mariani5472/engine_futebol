@@ -8,14 +8,17 @@
  *   node -r ts-node/register scripts/calibrate.ts
  */
 
-import { CalibrationRunner } from "../src/application/match/calibration";
-import { suggestAdjustments } from "../src/application/match/calibration";
+import {
+  CalibrationRunner,
+  ENGINE_CALIBRATION_PARAMETERS,
+  suggestAdjustments,
+} from "../src/application/match/calibration";
 import { buildSimulationConfig } from "../tests/helpers/builders";
 
 function parseArgs(argv: string[]): { matches: number; seed: number; tick: number } {
   let matches = 50;
   let seed = 1;
-  let tick = 2;
+  let tick = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--matches" && argv[i + 1]) matches = Number(argv[++i]);
