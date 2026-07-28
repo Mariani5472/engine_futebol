@@ -42,6 +42,8 @@ import { SimulationConfig } from "./SimulationConfig";
 const DEFAULT_DELTA_TIME = 0.5;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
 const FATIGUE_RATE = 0.008;
+const POSSESSION_DECISION_INTERVAL_SECONDS = 1;
+const OFF_BALL_DECISION_INTERVAL_SECONDS = 2;
 
 export interface MatchResult {
   readonly homeTeamId: string;
@@ -149,7 +151,10 @@ export class MatchEngine {
       attackFunnel?.sampleState(state);
 
       this.accumulateFatigue(state, deltaTime);
-      state.currentSecond += deltaTime;
+      state.currentSecond = Math.min(
+        matchDuration,
+        state.currentSecond + deltaTime,
+      );
       tick++;
     }
 
@@ -220,9 +225,14 @@ export class MatchEngine {
     for (const player of players) {
       if (!player.activeAction && !player.activePipeline) continue;
 
+      const previousPhase = player.activeAction?.phase;
       const phase = actionFactory.advanceOnly(player, state.currentSecond);
 
-      if (phase === ActionExecutionPhase.EXECUTING && player.activeAction) {
+      if (
+        phase === ActionExecutionPhase.EXECUTING &&
+        previousPhase !== ActionExecutionPhase.EXECUTING &&
+        player.activeAction
+      ) {
         executingCandidates.push(player.activeAction);
         if (
           attackFunnel &&
@@ -256,6 +266,13 @@ export class MatchEngine {
 
     for (const player of players) {
       if (player.isActionBusy()) continue;
+      if (state.currentSecond + 1e-9 < player.nextDecisionAt) continue;
+
+      player.nextDecisionAt =
+        state.currentSecond +
+        (player.hasBall
+          ? POSSESSION_DECISION_INTERVAL_SECONDS
+          : OFF_BALL_DECISION_INTERVAL_SECONDS);
 
       const awareness = awarenessMap.get(player.player.id);
       if (!awareness) continue;

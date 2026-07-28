@@ -97,15 +97,21 @@ describe("WorldAwarenessSystem", () => {
     const match = buildMinimalMatchState();
     const carrier = match.home.players[0];
     carrier.position = new Vector2(60, 34);
+    const teammate = buildPlayerMatchState({
+      position: new Vector2(65, 30),
+      hasBall: false,
+      role: "MIDFIELDER",
+    });
+    match.home.players.push(teammate);
 
     const awareness = PlayerAwareness.create(carrier.player.id);
-    const mem = PlayerMemory.create("mem-tm-1", new Vector2(65, 30), 0);
+    const mem = PlayerMemory.create(teammate.player.id, new Vector2(65, 30), 0);
     mem.certainty = 0.8;
-    awareness.teammates.set("mem-tm-1", mem);
+    awareness.teammates.set(teammate.player.id, mem);
 
     const world = system.build(match, carrier, awareness);
 
-    const memLane = world.passingLanes.find((l) => l.targetId === "mem-tm-1");
+    const memLane = world.passingLanes.find((l) => l.targetId === teammate.player.id);
     expect(memLane).toBeDefined();
     expect(memLane!.certainty).toBe(0.8);
   });

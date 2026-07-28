@@ -5,6 +5,8 @@ import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { buildMatchMetrics, MatchMetrics } from "./MatchMetrics";
 import { TeamMatchMetrics } from "./TeamMatchMetrics";
 
+const XG_CALIBRATION_SCALE = 0.53;
+
 interface MutableTeamStats {
   goals: number;
   shots: number;
@@ -224,7 +226,7 @@ export class MatchMetricsCollector {
 
     const distance = this.estimateShotDistance(teamId, state);
     stats.shotDistanceSum += distance;
-    stats.xG += this.estimateXG(distance, result);
+    stats.xG += this.estimateXG(distance);
   }
 
   private handleGoal(teamId: string): void {
@@ -276,7 +278,7 @@ export class MatchMetricsCollector {
     return Math.hypot(pos.x - goalX, pos.y - goalY);
   }
 
-  private estimateXG(distance: number, result: ShotResult): number {
+  private estimateXG(distance: number): number {
     let base: number;
     if (distance <= 6) base = 0.35;
     else if (distance <= 12) base = 0.18;
@@ -285,10 +287,7 @@ export class MatchMetricsCollector {
     else if (distance <= 35) base = 0.02;
     else base = 0.01;
 
-    if (result === "GOAL") return Math.max(base, 0.55);
-    if (result === "SAVED") return base * 1.1;
-    if (result === "BLOCKED") return base * 0.7;
-    return base * 0.5;
+    return base * XG_CALIBRATION_SCALE;
   }
 
   private isInAttackingThird(

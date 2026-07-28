@@ -9,6 +9,10 @@ export class PlayerMatchState {
   public activeAction?: ActionExecution;
   /** Multi-step play sequence that owns activeAction while running. */
   public activePipeline?: PipelineExecution;
+  /** Absolute match time when this player may make another decision. */
+  public nextDecisionAt = 0;
+  /** Absolute match time when this player may attempt another tackle/foul. */
+  public tackleLockUntil = 0;
 
   constructor(
     public readonly player: Player,

@@ -1,38 +1,45 @@
-// import { MatchEngine } from "../../src/application/match/engine/MatchEngine";
-// import { buildSimulationConfig } from "../helpers/builders";
-// import { SimulationConfig } from "../../src/application/match/engine/SimulationConfig";
+import { MatchEngine } from "../../src/application/match/engine/MatchEngine";
+import { SimulationConfig } from "../../src/application/match/engine/SimulationConfig";
+import { buildSimulationConfig } from "../helpers/builders";
 
-// function fastConfig(seed: number): SimulationConfig {
-//   return { ...buildSimulationConfig(seed), tickDeltaSeconds: 1 };
-// }
+function fastConfig(seed: number): SimulationConfig {
+  return {
+    ...buildSimulationConfig(seed),
+    seed,
+    tickDeltaSeconds: 2,
+    maxDurationSeconds: 5 * 60,
+  };
+}
 
-// describe("Match Engine — Determinism across seeds", () => {
-//   const engine = new MatchEngine();
+describe("Match Engine — determinism across seeds", () => {
+  it("produces bit-identical summaries for the same seed", () => {
+    const engine = new MatchEngine();
+    const first = engine.simulate(fastConfig(1));
+    const second = engine.simulate(fastConfig(1));
 
-//   const seeds = [1];
+    expect({
+      homeScore: first.homeScore,
+      awayScore: first.awayScore,
+      homeShots: first.homeShots,
+      awayShots: first.awayShots,
+      events: first.events,
+      metrics: first.metrics,
+    }).toEqual({
+      homeScore: second.homeScore,
+      awayScore: second.awayScore,
+      homeShots: second.homeShots,
+      awayShots: second.awayShots,
+      events: second.events,
+      metrics: second.metrics,
+    });
+  });
 
-//   for (const seed of seeds) {
-//     it(`seed ${seed}: two runs are bit-identical`, () => {
-//       const r1 = engine.simulate(fastConfig(seed));
-//       const r2 = engine.simulate(fastConfig(seed));
+  it("allows different seeds to produce different event streams", () => {
+    const engine = new MatchEngine();
+    const streams = [1, 2, 3].map((seed) =>
+      JSON.stringify(engine.simulate(fastConfig(seed)).events),
+    );
 
-//       expect(r1.homeScore).toBe(r2.homeScore);
-//       expect(r1.awayScore).toBe(r2.awayScore);
-//       expect(r1.homeShots).toBe(r2.homeShots);
-//       expect(r1.awayShots).toBe(r2.awayShots);
-//       expect(r1.events.length).toBe(r2.events.length);
-//     });
-//   }
-
-//   it("different seeds produce at least some variation in scores across 10 runs", () => {
-//     const scores = Array.from({ length: 10 }, (_, i) => {
-//       const r = engine.simulate(fastConfig(i + 1));
-//       console.log(`${r.homeScore}-${r.awayScore}`)
-//       return `${r.homeScore}-${r.awayScore}`;
-//     });
-//     const unique = new Set(scores);
-//     // With 10 different seeds we expect at least two distinct scorelines.
-//     expect(unique.size).toBeGreaterThanOrEqual(2);
-//   });
-
-// });
+    expect(new Set(streams).size).toBeGreaterThan(1);
+  });
+});

@@ -6,18 +6,21 @@ import { BallState } from "./BallMatchState";
 import { Random } from "../random/Random";
 
 /** Primary contest radius around a free ball. */
-const CLAIM_RADIUS = 14;
+const CLAIM_RADIUS = 7;
 
 /**
  * If nobody is inside CLAIM_RADIUS, still hand the ball to the nearest player
  * within this secondary radius so FREE balls after shots/failed passes do not
  * sit unowned for hundreds of ticks (ownership collapse ~0.5%).
  */
-const FALLBACK_CLAIM_RADIUS = 40;
+const FALLBACK_CLAIM_RADIUS = 16;
 
-const SLOW_BALL_SPEED = 4;
+const SLOW_BALL_SPEED = 3;
+const EMERGENCY_RECLAIM_AFTER_SECONDS = 6;
 
 export class PossessionSystem {
+
+  private freeBallSinceSecond: number | null = null;
 
   constructor(
     private readonly random: Random,
@@ -28,6 +31,7 @@ export class PossessionSystem {
     const ball = state.ball;
 
     if (ball.state === BallState.CONTROLLED && ball.owner) {
+      this.freeBallSinceSecond = null;
       this.syncOwnerFlags(state, ball.owner);
       ball.position = ball.owner.position;
       ball.velocity = ball.owner.velocity;
@@ -47,6 +51,10 @@ export class PossessionSystem {
       ball.height = 0;
     }
 
+    if (ball.state === BallState.FREE && this.freeBallSinceSecond === null) {
+      this.freeBallSinceSecond = state.currentSecond;
+    }
+
     // Only contest FREE (or slow) balls.
     if (ball.state === BallState.IN_FLIGHT && ball.velocity.magnitude() > SLOW_BALL_SPEED) {
       return;
@@ -60,7 +68,11 @@ export class PossessionSystem {
     }
 
     if (candidates.length === 0 && ball.state === BallState.FREE) {
-      // Absolute fallback — nearest player on the pitch claims.
+      // Emergency fallback only after the ball has remained unclaimed.
+      const freeForSeconds =
+        state.currentSecond - (this.freeBallSinceSecond ?? state.currentSecond);
+      if (freeForSeconds < EMERGENCY_RECLAIM_AFTER_SECONDS) return;
+
       const nearest = this.nearestPlayer(state);
       if (nearest) {
         this.givePossession(state, nearest);
@@ -81,6 +93,7 @@ export class PossessionSystem {
   }
 
   private givePossession(state: MatchState, player: PlayerMatchState): void {
+    this.freeBallSinceSecond = null;
     this.syncOwnerFlags(state, player);
 
     state.ball.owner = player;

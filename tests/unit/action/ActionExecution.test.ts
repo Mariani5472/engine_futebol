@@ -125,7 +125,7 @@ describe("ActionExecution — lifecycle", () => {
 
     execution!.advance(execution!.executeAt);
 
-    expect(execution!.advance(execution!.executeAt)).toBe(
+    expect(execution!.markResolved(execution!.executeAt)).toBe(
       ActionExecutionPhase.RECOVERING,
     );
   });
@@ -139,7 +139,7 @@ describe("ActionExecution — lifecycle", () => {
     );
 
     execution!.advance(execution!.executeAt);
-    execution!.advance(execution!.executeAt);
+    execution!.markResolved(execution!.executeAt);
 
     expect(execution!.phase).toBe(ActionExecutionPhase.RECOVERING);
     expect(execution!.isBusy()).toBe(true);
@@ -156,7 +156,7 @@ describe("ActionExecution — lifecycle", () => {
     );
 
     execution!.advance(execution!.executeAt);
-    execution!.advance(execution!.executeAt);
+    execution!.markResolved(execution!.executeAt);
 
     expect(execution!.advance(execution!.recoveryUntil)).toBe(
       ActionExecutionPhase.COMPLETED,
@@ -222,7 +222,7 @@ describe("ActionExecution — attribute-dependent timing", () => {
     const timeAfterHighRecovery = highExecution!.recoveryUntil;
 
     highExecution!.advance(highExecution!.executeAt);
-    highExecution!.advance(highExecution!.executeAt);
+    highExecution!.markResolved(highExecution!.executeAt);
     highExecution!.advance(highExecution!.recoveryUntil);
 
     expect(highExecution!.phase).toBe(ActionExecutionPhase.COMPLETED);

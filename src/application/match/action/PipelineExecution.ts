@@ -150,8 +150,7 @@ export class PipelineExecution {
     if (this.currentAction.phase === ActionExecutionPhase.EXECUTING) {
       // Force into RECOVERING by setting phase via a timed advance path:
       // temporarily ensure recovery can finish.
-      (this.currentAction as { phase: ActionExecutionPhase }).phase =
-        ActionExecutionPhase.RECOVERING;
+      this.currentAction.markResolved(currentTime);
     }
 
     if (this.currentAction.phase === ActionExecutionPhase.RECOVERING) {

@@ -6,6 +6,7 @@ import { BlockEvaluator } from "../../../src/application/match/decision/evaluato
 import { ControlEvaluator } from "../../../src/application/match/decision/evaluators/ControlEvaluator";
 import { DribbleEvaluator } from "../../../src/application/match/decision/evaluators/DribbleEvaluator";
 import { InterceptEvaluator } from "../../../src/application/match/decision/evaluators/InterceptEvaluator";
+import { HoldBallEvaluator } from "../../../src/application/match/decision/evaluators/HoldBallEvaluator";
 import { PressEvaluator } from "../../../src/application/match/decision/evaluators/PressEvaluator";
 import { TackleEvaluator } from "../../../src/application/match/decision/evaluators/TackleEvaluator";
 import { WorldAwarenessSystem } from "../../../src/application/match/awareness/WorldAwarenessSystem";
@@ -144,11 +145,16 @@ describe("Evaluator behavior relationships", () => {
   it("makes hold-ball more attractive than dribbling under intense pressure", () => {
     const attacker = match.home.players[0];
     const defender = match.away.players[0];
-    const evaluator = new DribbleEvaluator();
+    const dribbleEvaluator = new DribbleEvaluator();
+    const holdEvaluator = new HoldBallEvaluator();
 
     defender.position = new Vector2(81, 34);
 
-    const decisions = evaluator.evaluate(contextFor(attacker));
+    const context = contextFor(attacker);
+    const decisions = [
+      ...dribbleEvaluator.evaluate(context),
+      ...holdEvaluator.evaluate(context),
+    ];
     const dribble = decisionScore(decisions, DecisionType.DRIBBLE);
     const holdBall = decisionScore(decisions, DecisionType.HOLD_BALL);
 

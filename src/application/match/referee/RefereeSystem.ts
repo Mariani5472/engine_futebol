@@ -12,11 +12,13 @@ export interface FoulOutcome {
   readonly events: CardEvent[];
 }
 
-const BASE_FOUL_CHANCE = 0.32;
-const FOUL_DANGER_FLOOR = 0.28;
+const BASE_FOUL_CHANCE = 0.033;
+const FOUL_DANGER_FLOOR = 0.34;
 const DIRECT_RED_DANGER = 0.97;
 const DIRECT_RED_CHANCE = 0.006;
-const BASE_YELLOW_CHANCE = 0.10;
+const BASE_YELLOW_CHANCE = 0.30;
+const MAX_YELLOW_CHANCE = 0.45;
+const REPEAT_BOOKING_FACTOR = 0.025;
 
 export class RefereeSystem {
   private readonly records: Map<string, FoulRecord> = new Map();
@@ -80,10 +82,13 @@ export class RefereeSystem {
 
     const aggression = (tackler.player.attributes.mental.aggression ?? 10) / 20;
     const dirtiness = (tackler.player.attributes.hidden.dirtiness ?? 5) / 20;
+    const alreadyBooked =
+      (this.records.get(tackler.player.id)?.yellowCards ?? 0) > 0;
 
     const yellowChance = Math.min(
-      0.26,
+      MAX_YELLOW_CHANCE,
       BASE_YELLOW_CHANCE
+        * (alreadyBooked ? REPEAT_BOOKING_FACTOR : 1)
         * (0.65 + danger * 0.75)
         * (0.85 + aggression * 0.35 + dirtiness * 0.25)
         * (0.85 + strictness * 0.25),

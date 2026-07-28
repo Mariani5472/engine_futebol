@@ -114,7 +114,7 @@ describe("MovementSystem + ActionExecution physical state", () => {
 
     player.activeAction = execution;
     execution!.advance(execution!.executeAt);
-    execution!.advance(execution!.executeAt);
+    execution!.markResolved(execution!.executeAt);
 
     expect(execution!.phase).toBe(ActionExecutionPhase.RECOVERING);
 
@@ -139,7 +139,7 @@ describe("MovementSystem + ActionExecution physical state", () => {
     player.activeAction = execution;
 
     execution!.advance(execution!.executeAt);
-    execution!.advance(execution!.executeAt);
+    execution!.markResolved(execution!.executeAt);
 
     expect(execution!.phase).toBe(ActionExecutionPhase.RECOVERING);
     expect(player.bodyState).toBe("FALLING");

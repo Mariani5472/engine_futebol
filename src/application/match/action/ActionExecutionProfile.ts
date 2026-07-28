@@ -66,7 +66,7 @@ const profile = (
 export const ACTION_EXECUTION_PROFILES: Readonly<
   Partial<Record<DecisionType, ActionExecutionProfile>>
 > = {
-  [DecisionType.PASS]: profile(0.0, 0.04, 0.02, 0.01, "BALANCED", true, {
+  [DecisionType.PASS]: profile(0.08, 0.12, 0.02, 0.01, "BALANCED", true, {
     windup: { passing: 0.60, technique: 0.25, firstTouch: 0.15 },
     recovery: { agility: 0.45, balance: 0.35, stamina: 0.20 },
     balanceCost: { technique: 0.45, balance: 0.35, agility: 0.20 },
@@ -87,7 +87,7 @@ export const ACTION_EXECUTION_PROFILES: Readonly<
     stabilityCost: { balance: 0.45, agility: 0.30, strength: 0.25 },
   }),
 
-  [DecisionType.DRIBBLE]: profile(0.0, 0.04, 0.02, 0.01, "BALANCED", true, {
+  [DecisionType.DRIBBLE]: profile(0.06, 0.10, 0.02, 0.01, "BALANCED", true, {
     windup: { dribbling: 0.45, agility: 0.35, technique: 0.20 },
     recovery: { agility: 0.45, balance: 0.35, stamina: 0.20 },
     balanceCost: { dribbling: 0.40, agility: 0.35, balance: 0.25 },
@@ -101,27 +101,27 @@ export const ACTION_EXECUTION_PROFILES: Readonly<
     stabilityCost: { agility: 0.40, balance: 0.40, technique: 0.20 },
   }),
 
-  [DecisionType.FAKE]: profile(0.0, 0.04, 0.02, 0.01, "BALANCED", true, {
+  [DecisionType.FAKE]: profile(0.05, 0.08, 0.02, 0.01, "BALANCED", true, {
     windup: { dribbling: 0.40, technique: 0.30, agility: 0.30 },
     recovery: { agility: 0.50, balance: 0.30, stamina: 0.20 },
     balanceCost: { dribbling: 0.40, agility: 0.35, balance: 0.25 },
     stabilityCost: { agility: 0.45, balance: 0.35, technique: 0.20 },
   }),
 
-  [DecisionType.HOLD_BALL]: profile(0.0, 0.02, 0.01, 0.00, "BALANCED", true, {
+  [DecisionType.HOLD_BALL]: profile(0.05, 0.08, 0.01, 0.00, "BALANCED", true, {
     windup: { technique: 0.40, balance: 0.35, strength: 0.25 },
     recovery: { balance: 0.50, agility: 0.25, stamina: 0.25 },
     balanceCost: { strength: 0.40, balance: 0.40, technique: 0.20 },
   }),
 
-  [DecisionType.CONTROL]: profile(0.0, 0.04, 0.02, 0.01, "BALANCED", true, {
+  [DecisionType.CONTROL]: profile(0.06, 0.10, 0.02, 0.01, "BALANCED", true, {
     windup: { firstTouch: 0.60, technique: 0.25, agility: 0.15 },
     recovery: { agility: 0.45, balance: 0.35, stamina: 0.20 },
     balanceCost: { firstTouch: 0.40, balance: 0.35, agility: 0.25 },
     stabilityCost: { firstTouch: 0.40, balance: 0.40, agility: 0.20 },
   }),
 
-  [DecisionType.RECEIVE]: profile(0.0, 0.03, 0.01, 0.01, "BALANCED", true, {
+  [DecisionType.RECEIVE]: profile(0.06, 0.08, 0.01, 0.01, "BALANCED", true, {
     windup: { firstTouch: 0.55, technique: 0.25, agility: 0.20 },
     recovery: { agility: 0.45, balance: 0.35, stamina: 0.20 },
     balanceCost: { firstTouch: 0.40, balance: 0.35, agility: 0.25 },

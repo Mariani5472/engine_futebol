@@ -120,7 +120,7 @@ export class ActionFactory {
       pipeline.markStepResolved(context.matchSecond);
     } else {
       // Legacy path: advance EXECUTING → RECOVERING directly.
-      execution.advance(context.matchSecond);
+      execution.markResolved(context.matchSecond);
     }
 
     return result;

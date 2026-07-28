@@ -9,13 +9,13 @@ import { ActionReadiness } from "./ActionReadiness";
 
 /**
  * Scale tuned so clear box chances beat DRIBBLE (~80) while not returning
- * to the 300–600 shots/game regime. Lock (20s) + 1/possession remain the
+ * to the 300–600 shots/game regime. Lock (35s) + 1/possession remain the
  * primary volume control.
  */
-const SHOT_UTILITY_SCALE = 0.95;
+const SHOT_UTILITY_SCALE = 0.75;
 
 /** Strong boost inside the box so finishing wins the selector. */
-const BOX_FLAT_BOOST = 48;
+const BOX_FLAT_BOOST = 42;
 
 /** One finishing attempt per continuous possession spell. */
 const MAX_SHOTS_PER_POSSESSION = 1;
@@ -30,10 +30,11 @@ export class ShotEvaluator implements ActionEvaluator {
     if (team?.isShotLocked(context.match.currentSecond)) return [];
     if ((team?.shotsThisPossession ?? 0) >= MAX_SHOTS_PER_POSSESSION) return [];
 
-    // Outside the box need a reasonable window; inside 14m always eligible.
-    if (context.world.goalDistance > 20 && context.world.shotWindow < 0.40) {
-      return [];
-    }
+    // Preserve clear close-range chances while rejecting speculative attempts.
+    const distance = context.world.goalDistance;
+    const window = context.world.shotWindow;
+    if (distance > 22) return [];
+    if (distance > 14 && window < 0.70) return [];
 
     const score = this.calculateUtility(context);
     if (score.total <= 0) return [];

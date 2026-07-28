@@ -9,8 +9,8 @@ import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
  * in the same tick and compete for the same resource (ball, space, duel).
  *
  * Rules (in order):
- * 1. Higher ActionPriority wins.
- * 2. If equal priority, earlier executeAt (started earlier / faster windup) wins.
+ * 1. Earlier executeAt (started earlier / faster windup) wins.
+ * 2. If simultaneous, higher ActionPriority wins.
  * 3. If still tied, the action whose player is closer to the ball wins.
  * 4. Losers are interrupted — the entire PipelineExecution is cancelled.
  */
@@ -28,8 +28,11 @@ export class ActionArbitrator {
   ): ActionExecution[] {
     if (candidates.length <= 1) return candidates;
 
-    const ballContenders = candidates.filter((e) => isBallContest(e.type));
-    const others = candidates.filter((e) => !isBallContest(e.type));
+    const ballContenders = candidates.filter((execution) =>
+      this.isRelevantBallContest(execution, match),
+    );
+    const contenderSet = new Set(ballContenders);
+    const others = candidates.filter((execution) => !contenderSet.has(execution));
 
     const winners: ActionExecution[] = [...others];
 
@@ -40,12 +43,12 @@ export class ActionArbitrator {
 
     const ballPos = match.ball.position;
     const ranked = [...ballContenders].sort((a, b) => {
+      const timeDiff = a.executeAt - b.executeAt;
+      if (Math.abs(timeDiff) > 1e-9) return timeDiff;
+
       const prioDiff =
         getActionPriority(b.type) - getActionPriority(a.type);
       if (prioDiff !== 0) return prioDiff;
-
-      const timeDiff = a.executeAt - b.executeAt;
-      if (Math.abs(timeDiff) > 1e-9) return timeDiff;
 
       const playerA = findPlayer(match, a);
       const playerB = findPlayer(match, b);
@@ -73,6 +76,22 @@ export class ActionArbitrator {
     }
 
     return winners;
+  }
+
+  private isRelevantBallContest(
+    execution: ActionExecution,
+    match: MatchState,
+  ): boolean {
+    if (!isBallContest(execution.type)) return false;
+
+    const player = findPlayer(match, execution);
+    if (!player) return false;
+    if (match.ball.owner === player) return true;
+
+    // Off-ball actions only conflict with the carrier when they are close
+    // enough to affect the same physical play. Distant actions resolve in
+    // parallel instead of joining a pitch-wide contest for one winner.
+    return player.position.distanceTo(match.ball.position) <= 6;
   }
 }
 

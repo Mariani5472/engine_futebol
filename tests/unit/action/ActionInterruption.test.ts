@@ -93,6 +93,7 @@ describe("Action interruption — concurrent action and physical state", () => {
     };
 
     const referee = {
+      isPlayerSentOff: jest.fn().mockReturnValue(false),
       evaluateTackle: jest.fn().mockReturnValue({
         isFoul: false,
         events: [],
@@ -152,6 +153,7 @@ describe("Action interruption — concurrent action and physical state", () => {
     };
 
     const referee = {
+      isPlayerSentOff: jest.fn().mockReturnValue(false),
       evaluateTackle: jest.fn().mockReturnValue({
         isFoul: false,
         events: [],

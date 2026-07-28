@@ -50,6 +50,10 @@ export function buildCalibrationReport(
 
   const hit = comparisons.filter((c) => c.withinTolerance).length;
   const convergenceScore = comparisons.length > 0 ? hit / comparisons.length : 0;
+  const primaryKeys = new Set(["goals", "shots", "xG"]);
+  const primaryConverged = comparisons
+    .filter((c) => primaryKeys.has(c.key))
+    .every((c) => c.withinTolerance);
 
   return {
     matchCount,
@@ -58,7 +62,7 @@ export function buildCalibrationReport(
     comparisons,
     convergenceScore: round(convergenceScore, 3),
     // Require primary scoring metrics in band; others contribute to score.
-    converged: convergenceScore >= 0.7,
+    converged: convergenceScore >= 0.7 && primaryConverged,
   };
 }
 

@@ -15,9 +15,12 @@ import { DecisionType } from "../../decision/DecisionType";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 
 /** Team-wide shot cooldown — primary volume control with 1/possession. */
-const SHOT_COOLDOWN_SECONDS = 20;
+const SHOT_COOLDOWN_SECONDS = 70;
 
 const CORNER_FROM_MISS_RATE = 0.42;
+const GK_SAVE_PROBABILITY_BONUS = 0.15;
+const GK_SAVE_PROBABILITY_FLOOR = 0.55;
+const GK_SAVE_PROBABILITY_CAP = 0.90;
 
 export class ShotAction {
 
@@ -308,6 +311,9 @@ export class ShotAction {
       + distanceSavabilityBonus;
 
     // ~65% saves of on-target → with ~25 shots and ~35% OT ≈ 2.5 goals.
-    return Math.max(0.40, Math.min(0.85, raw));
+    return Math.max(
+      GK_SAVE_PROBABILITY_FLOOR,
+      Math.min(GK_SAVE_PROBABILITY_CAP, raw + GK_SAVE_PROBABILITY_BONUS),
+    );
   }
 }

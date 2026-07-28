@@ -8,6 +8,8 @@ import { RefereeSystem } from "../../referee/RefereeSystem";
 import { ActionEvent } from "../ActionResult";
 
 export class TackleAction {
+  private static readonly TACKLE_COOLDOWN_SECONDS = 4;
+
   constructor(private readonly referee: RefereeSystem) {}
 
   public execute(context: ActionContext): ActionResult {
@@ -45,6 +47,16 @@ export class TackleAction {
         success: false,
         events: [],
       };
+    }
+
+    if (
+      context.decision.type === DecisionType.TACKLE ||
+      context.decision.type === DecisionType.TACTICAL_FOUL
+    ) {
+      player.tackleLockUntil = Math.max(
+        player.tackleLockUntil,
+        matchSecond + TackleAction.TACKLE_COOLDOWN_SECONDS,
+      );
     }
 
     const { successProb, dangerScore } = this.calculateTackle(player, ballOwner, random);

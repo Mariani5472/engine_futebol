@@ -3,6 +3,7 @@ import { Decision } from "../Decision";
 import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
+import { ActionReadiness } from "./ActionReadiness";
 
 /**
  * TACTICAL_FOUL is a deliberate foul to stop a dangerous transition.
@@ -11,6 +12,7 @@ export class TacticalFoulEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
     const { player, match } = context;
     if (player.hasBall) return [];
+    if (ActionReadiness.currentTime(context) < player.tackleLockUntil) return [];
 
     const ballOwner = match.ball.owner;
     if (!ballOwner) return [];

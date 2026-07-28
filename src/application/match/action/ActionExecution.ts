@@ -136,6 +136,14 @@ export class ActionExecution {
       && this.phase !== ActionExecutionPhase.COMPLETED;
   }
 
+  /** Mark the concrete outcome as applied and enter the recovery phase. */
+  public markResolved(currentTime: number): ActionExecutionPhase {
+    if (this.phase !== ActionExecutionPhase.EXECUTING) return this.phase;
+
+    this.phase = ActionExecutionPhase.RECOVERING;
+    return this.advance(currentTime);
+  }
+
   private begin(currentTime: number): void {
     this.phase = ActionExecutionPhase.PREPARING;
 

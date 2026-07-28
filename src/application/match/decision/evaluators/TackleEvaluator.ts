@@ -8,6 +8,10 @@ import { ActionReadiness } from "./ActionReadiness";
 
 export class TackleEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
+    if (ActionReadiness.currentTime(context) < context.player.tackleLockUntil) {
+      return [];
+    }
+
     const ballOwner = context.match.ball.owner;
     if (!ballOwner || context.player.hasBall) return [];
 
