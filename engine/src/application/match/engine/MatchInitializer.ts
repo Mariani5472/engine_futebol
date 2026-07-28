@@ -125,7 +125,13 @@ export class MatchInitializer {
           false, // hasBall
           role,
           position,
-          new Vector2(attackingDirection, 0)
+          new Vector2(attackingDirection, 0),
+          0,
+          0,
+          "STANDING",
+          0,
+          100,
+          100,
         )
       );
     }

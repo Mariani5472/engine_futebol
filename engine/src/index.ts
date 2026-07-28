@@ -17,20 +17,31 @@
  */
 
 // Engine
-export { MatchEngine, MatchResult } from "./application/match/engine/MatchEngine";
+export { MatchEngine } from "./application/match/engine/MatchEngine";
+export type { MatchResult } from "./application/match/engine/MatchEngine";
+export { MatchSession } from "./application/match/engine/MatchSession";
+export type {
+  MatchSnapshot,
+  PlayerSnapshot,
+  BallSnapshot,
+} from "./application/match/engine/MatchSession";
 export { MatchInitializer } from "./application/match/engine/MatchInitializer";
-export { SimulationConfig } from "./application/match/engine/SimulationConfig";
+export type { SimulationConfig } from "./application/match/engine/SimulationConfig";
 export { BrowserAnimationScheduler, FixedTimestepLoop } from "./application/match/runtime";
 export type {
   AnimationScheduler,
   FixedTimestepLoopOptions,
   RenderTiming,
 } from "./application/match/runtime";
+export { RoleBehaviourRegistry } from "./application/match/tactical/roles/RoleBehaviourRegistry";
+export type { RoleBehaviour, RoleBehaviourResolver, RoleTargetContext } from "./application/match/tactical/roles/RoleBehaviour";
 
 // Metrics (Phase 9)
 export type { MatchMetrics } from "./application/match/metrics/MatchMetrics";
 export type { TeamMatchMetrics } from "./application/match/metrics/TeamMatchMetrics";
 export { MatchMetricsCollector } from "./application/match/metrics/MatchMetricsCollector";
+export { TacticalDiagnosticsCollector } from "./application/match/diagnostics/TacticalDiagnosticsCollector";
+export type { MatchTacticalDiagnostics, TeamTacticalDiagnostics, AverageRolePosition } from "./application/match/diagnostics/TacticalDiagnosticsCollector";
 
 // Calibration (Phase 10)
 export {
@@ -51,17 +62,28 @@ export type {
 
 // Domain
 export {
-  Player, PlayerProps, PlayerAttributes, MentalAttributes,
-  PhysicalAttributes, TechnicalAttributes, GoalkeepingAttributes, HiddenAttributes,
-  PlayerRole, PlayerPosition, PreferredFoot, PlayerPersonality, PlayerRelationship
+  Player,
+} from "./domain/player";
+export type {
+  PlayerProps, PlayerAttributes, MentalAttributes, PhysicalAttributes,
+  TechnicalAttributes, GoalkeepingAttributes, HiddenAttributes, PlayerRole,
+  PlayerPosition, PreferredFoot, PlayerPersonality, PlayerRelationship,
 } from "./domain/player";
 
 export { Team } from "./domain/team";
-export { Tactic, TacticProps, TacticalShape, TacticalShapeAssignment, TeamTacticalInstructions } from "./domain/tactics";
+export { Tactic } from "./domain/tactics";
+export type {
+  TacticProps, TacticalShape, TacticalShapeAssignment, TeamTacticalInstructions,
+  InPossessionInstructions, OutOfPossessionInstructions, TransitionInstructions,
+  OppositionInstructions, OppositionPlayerInstruction, TacticalTempo, TacticalWidth,
+  PassingStyle, AttackFocus, DefensiveLineHeight, PressLineHeight, PressingIntensity,
+  DefensiveBlock, PressingDirection, GoalkeeperDistribution, TacticalZone,
+} from "./domain/tactics";
 export { Pitch } from "./domain/pitch";
 export { Referee } from "./domain/referee";
-export { Match, MatchConfig, MatchScore } from "./domain/match";
-export {
+export { Match } from "./domain/match";
+export type { MatchConfig, MatchScore } from "./domain/match";
+export type {
   MatchEvent, GoalEvent, ShotEvent, CardEvent,
   PeriodStartedEvent, PeriodEndedEvent, MatchPeriod, ShotResult, CardType
 } from "./domain/match-events";
@@ -78,4 +100,4 @@ export { Vector2 } from "./core/geometry/Vector2";
 
 // Random
 export { SeededRandom } from "./core/random/SeededRandom";
-export { Random } from "./core/random/Random";
+export type { Random } from "./core/random/Random";

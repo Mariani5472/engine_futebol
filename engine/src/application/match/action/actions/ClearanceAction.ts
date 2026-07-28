@@ -3,6 +3,7 @@ import { BallState } from "../../../../core/movement/BallMatchState";
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
+import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 
 const CLEARANCE_DISTANCE = 28;
 
@@ -13,6 +14,7 @@ export class ClearanceAction {
     const { player, match, random, attackingDirection } = context;
 
     player.hasBall = false;
+    const origin = player.position;
     match.ball.owner = null;
 
     const lateral = random.nextFloat(-12, 12);
@@ -31,6 +33,10 @@ export class ClearanceAction {
     match.ball.velocity = Vector2.zero();
     match.ball.height = 0;
     match.ball.state = BallState.FREE;
+    BallMotionPlanner.start(match.ball, {
+      kind: "CLEARANCE", origin, target: land, speed: 24, peakHeight: 6,
+      curve: 0, hasExplicitEffect: false,
+    });
 
     return {
       actorId: player.player.id,

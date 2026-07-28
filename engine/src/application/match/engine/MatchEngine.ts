@@ -31,6 +31,7 @@ import { ActionArbitrator } from "../action/ActionArbitrator";
 import { recoverIdleActionState } from "../action/IdleActionRecovery";
 import { BallPhysicsSystem } from "../physics/BallPhysicsSystem";
 import { TacticalEngine } from "../tactical/TacticalEngine";
+import { CollectivePhaseSystem } from "../tactical/CollectivePhaseSystem";
 import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
 import { RefereeSystem } from "../referee/RefereeSystem";
 import { MatchMetricsCollector } from "../metrics/MatchMetricsCollector";
@@ -39,6 +40,7 @@ import { AttackFunnelCollector } from "../diagnostics/AttackFunnelCollector";
 import { MatchInitializer } from "./MatchInitializer";
 import { SimulationConfig } from "./SimulationConfig";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
+import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 
 const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
@@ -59,6 +61,15 @@ export interface MatchResult {
   readonly metrics: MatchMetrics;
 }
 
+export interface IncrementalMatchFrame {
+  readonly sequence: number;
+  readonly period: MatchPeriod;
+  readonly state: MatchState;
+  readonly events: readonly MatchEvent[];
+  readonly finalResult?: MatchResult;
+  readonly tacticalDiagnostics: MatchTacticalDiagnostics;
+}
+
 export class MatchEngine {
   private readonly initializer = new MatchInitializer();
   private readonly arbitrator = new ActionArbitrator();
@@ -69,6 +80,17 @@ export class MatchEngine {
     config: SimulationConfig,
     attackFunnel?: AttackFunnelCollector,
   ): MatchResult {
+    const iterator = this.runIncrementally(config, attackFunnel);
+    while (true) {
+      const step = iterator.next();
+      if (step.done) return step.value;
+    }
+  }
+
+  public *runIncrementally(
+    config: SimulationConfig,
+    attackFunnel?: AttackFunnelCollector,
+  ): Generator<IncrementalMatchFrame, MatchResult, void> {
     const rng = new SeededRandom(config.seed);
     const deltaTime = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
     const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
@@ -104,6 +126,7 @@ export class MatchEngine {
     const actionFactory = new ActionFactory(refereeSystem);
     const ballPhysics = new BallPhysicsSystem();
     const tacticalEngine = new TacticalEngine();
+    const collectivePhaseSystem = new CollectivePhaseSystem();
     const teamBehaviour = new TeamBehaviourSystem();
     const movementSystem = new MovementSystem();
     const possessionSystem = new PossessionSystem(rng, new ReachCalculator());
@@ -122,11 +145,16 @@ export class MatchEngine {
     allEvents.push(this.makePeriodStarted("FIRST_HALF", 0));
 
     while (state.currentSecond < matchDuration) {
+      const frameEvents: MatchEvent[] = [];
       if (!halfTimeHandled && state.currentSecond >= halfTime) {
-        allEvents.push(this.makePeriodEnded("FIRST_HALF", state.currentSecond));
+        const firstHalfEnded = this.makePeriodEnded("FIRST_HALF", state.currentSecond);
+        allEvents.push(firstHalfEnded);
+        frameEvents.push(firstHalfEnded);
         period = "SECOND_HALF";
         halfTimeHandled = true;
-        allEvents.push(this.makePeriodStarted("SECOND_HALF", state.currentSecond));
+        const secondHalfStarted = this.makePeriodStarted("SECOND_HALF", state.currentSecond);
+        allEvents.push(secondHalfStarted);
+        frameEvents.push(secondHalfStarted);
         this.swapAttackingDirections(state);
       }
 
@@ -135,12 +163,13 @@ export class MatchEngine {
         perceptionSystem, cognitiveSystem, worldAwarenessSystem,
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
-        teamBehaviour, movementSystem, possessionSystem,
+        collectivePhaseSystem, teamBehaviour, movementSystem, possessionSystem,
         tick, period, metrics, attackFunnel
       );
 
       for (const event of tickEvents) {
         allEvents.push(event);
+        frameEvents.push(event);
         if (event.type === "SHOT") {
           if (event.teamId === state.home.team.id) homeShots++;
           else awayShots++;
@@ -148,15 +177,43 @@ export class MatchEngine {
       }
 
       metrics.onEvents(tickEvents, state);
-      metrics.sampleState(state);
+      metrics.sampleState(state, deltaTime);
       attackFunnel?.sampleState(state);
 
       this.accumulateFatigue(state, deltaTime);
       state.currentSecond = Math.min(
         matchDuration,
-        state.currentSecond + deltaTime,
+        (tick + 1) * deltaTime,
       );
       tick++;
+
+      if (state.currentSecond >= matchDuration) {
+        const matchEnded = this.makePeriodEnded("SECOND_HALF", state.currentSecond);
+        allEvents.push(matchEnded);
+        frameEvents.push(matchEnded);
+        const finalResult: MatchResult = {
+          homeTeamId: state.home.team.id,
+          awayTeamId: state.away.team.id,
+          homeScore: state.home.score,
+          awayScore: state.away.score,
+          events: allEvents,
+          homeShots,
+          awayShots,
+          matchDurationSeconds: state.currentSecond,
+          seed: config.seed,
+          metrics: metrics.finalize(),
+        };
+        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot() };
+        return finalResult;
+      }
+
+      yield {
+        sequence: tick,
+        period,
+        state,
+        events: frameEvents,
+        tacticalDiagnostics: metrics.tacticalSnapshot(),
+      };
     }
 
     allEvents.push(this.makePeriodEnded("SECOND_HALF", state.currentSecond));
@@ -190,6 +247,7 @@ export class MatchEngine {
     actionFactory: ActionFactory,
     ballPhysics: BallPhysicsSystem,
     tacticalEngine: TacticalEngine,
+    collectivePhaseSystem: CollectivePhaseSystem,
     teamBehaviour: TeamBehaviourSystem,
     movementSystem: MovementSystem,
     possessionSystem: PossessionSystem,
@@ -336,6 +394,7 @@ export class MatchEngine {
     movementSystem.update(state, deltaTime);
     possessionSystem.update(state);
     this.syncPossessionSide(state);
+    collectivePhaseSystem.update(state, events);
 
     void period;
     return events;

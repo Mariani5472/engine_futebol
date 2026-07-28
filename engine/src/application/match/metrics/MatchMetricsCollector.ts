@@ -5,6 +5,8 @@ import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { buildMatchMetrics, MatchMetrics } from "./MatchMetrics";
 import { TeamMatchMetrics } from "./TeamMatchMetrics";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
+import { TacticalDiagnosticsCollector } from "../diagnostics/TacticalDiagnosticsCollector";
+import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 
 interface MutableTeamStats {
   goals: number;
@@ -65,6 +67,7 @@ function createMutable(): MutableTeamStats {
 }
 
 export class MatchMetricsCollector {
+  private readonly tactical = new TacticalDiagnosticsCollector();
   private readonly home = createMutable();
   private readonly away = createMutable();
   private homeTeamId: string | null = null;
@@ -110,6 +113,7 @@ export class MatchMetricsCollector {
     type: DecisionType,
     state: MatchState,
   ): void {
+    this.tactical.onActionStarted(player, type, state);
     const isHome = state.home.players.includes(player);
     const stats = isHome ? this.home : this.away;
     const opp = isHome ? this.away : this.home;
@@ -148,7 +152,8 @@ export class MatchMetricsCollector {
     }
   }
 
-  public sampleState(state: MatchState): void {
+  public sampleState(state: MatchState, deltaTime = .05): void {
+    this.tactical.sample(state, deltaTime);
     if (!this.homeTeamId) {
       this.bindTeams(state.home.team.id, state.away.team.id);
     }
@@ -198,7 +203,12 @@ export class MatchMetricsCollector {
     return buildMatchMetrics(
       this.toTeamMetrics(this.home),
       this.toTeamMetrics(this.away),
+      this.tactical.snapshot(),
     );
+  }
+
+  public tacticalSnapshot(): MatchTacticalDiagnostics {
+    return this.tactical.snapshot();
   }
 
   private handleShot(

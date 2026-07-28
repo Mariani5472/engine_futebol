@@ -1,4 +1,5 @@
 import { TeamMatchMetrics } from "./TeamMatchMetrics";
+import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 
 /** Full match metrics snapshot produced at end of simulation (Phase 9). */
 export interface MatchMetrics {
@@ -17,11 +18,13 @@ export interface MatchMetrics {
   readonly totalxG: number;
   /** Average shot distance across both teams (metres). */
   readonly averageShotDistance: number;
+  readonly tactical: MatchTacticalDiagnostics;
 }
 
 export function buildMatchMetrics(
   home: TeamMatchMetrics,
   away: TeamMatchMetrics,
+  tactical: MatchTacticalDiagnostics,
 ): MatchMetrics {
   const totalShots = home.shots + away.shots;
   const shotDistanceSum =
@@ -39,5 +42,6 @@ export function buildMatchMetrics(
     totalRedCards: home.redCards + away.redCards,
     totalxG: home.xG + away.xG,
     averageShotDistance: totalShots > 0 ? shotDistanceSum / totalShots : 0,
+    tactical,
   };
 }

@@ -3,6 +3,7 @@ import { BallState } from "../../../../core/movement/BallMatchState";
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
+import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 
 export class HeaderAction {
 
@@ -19,6 +20,7 @@ export class HeaderAction {
       };
     }
 
+    const origin = match.ball.visualPosition;
     const attrs = player.player.attributes;
     const heading = attrs.technical.heading / 20;
     const jumpingReach = attrs.physical.jumpingReach / 20;
@@ -39,6 +41,11 @@ export class HeaderAction {
     if (player.hasBall) {
       player.hasBall = false;
     }
+    const target = origin.add(direction.multiply(success ? 18 : 9));
+    BallMotionPlanner.start(match.ball, {
+      kind: "DEFLECTION", origin, target, speed: power, peakHeight: .8,
+      curve: 0, hasExplicitEffect: false,
+    });
 
     return {
       actorId: player.player.id,

@@ -3,6 +3,8 @@ import { MatchState } from "../../../core/movement/MatchState";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { TeamMatchState } from "../../../core/movement/TeamMatchState";
 import { TacticalShapeAssignment } from "../../../domain";
+import { RoleBehaviourRegistry } from "./roles/RoleBehaviourRegistry";
+import { TacticalInstructionTargetModifier } from "./instructions/TacticalInstructionTargetModifier";
 
 const ATTACKING_HALF_THRESHOLD = 0.5;
 
@@ -12,6 +14,10 @@ const BALL_LINE_PUSH = 12;
 const MAX_ANCHOR_PUSH = 22;
 
 export class TacticalEngine {
+  public constructor(
+    private readonly roleBehaviours = new RoleBehaviourRegistry(),
+    private readonly instructionTargets = new TacticalInstructionTargetModifier(),
+  ) {}
 
   public update(state: MatchState): void {
     this.updateTeam(state, state.home);
@@ -35,6 +41,7 @@ export class TacticalEngine {
       if (!assignment) continue;
 
       const anchor = this.resolveAnchor(state, team, assignment, player);
+      player.tacticalAnchorPosition = anchor;
       const compactFactor = this.compactnessFactor(state, team, player);
       const target = this.applyFamiliarity(anchor, player.position, familiarity, compactFactor);
 
@@ -47,7 +54,7 @@ export class TacticalEngine {
     team: TeamMatchState
   ): readonly TacticalShapeAssignment[] {
 
-    const isAttacking = state.attackingTeam === team;
+    const isAttacking = this.isPossessionPhase(team.collectivePhase);
     const shape = isAttacking
       ? team.tactic.attackingShape
       : team.tactic.defensiveShape;
@@ -62,12 +69,25 @@ export class TacticalEngine {
     player: PlayerMatchState,
   ): Vector2 {
 
-    const isAttacking = state.attackingTeam === team;
-    let base = isAttacking ? assignment.attackingAnchor : assignment.defensiveAnchor;
+    const isAttacking = this.isPossessionPhase(team.collectivePhase);
+    const assignmentAnchor = isAttacking ? assignment.attackingAnchor : assignment.defensiveAnchor;
+    let base = new Vector2(assignmentAnchor.x, assignmentAnchor.y);
 
     if (isAttacking) {
       base = this.pushAttackingAnchor(state, team, assignment, base, player);
     }
+
+    base = this.applyCollectivePhase(state, team, assignment, base);
+    const behaviour = this.roleBehaviours.forRole(player.currentRole);
+    const roleContext = { match: state, team, player, assignment, baseTarget: base };
+    if (team.collectivePhase === "ATTACKING_TRANSITION" || team.collectivePhase === "DEFENSIVE_TRANSITION" || team.collectivePhase === "COUNTER_ATTACK") {
+      base = behaviour.resolveTransitionTarget(roleContext);
+    } else if (isAttacking) {
+      base = behaviour.resolveInPossessionTarget(roleContext);
+    } else {
+      base = behaviour.resolveOutOfPossessionTarget(roleContext);
+    }
+    base = this.instructionTargets.apply(state, team, player, base);
 
     if (team.attackingDirection === 1) {
       return new Vector2(
@@ -148,7 +168,7 @@ export class TacticalEngine {
     _player: PlayerMatchState
   ): number {
 
-    const isAttacking = state.attackingTeam === team;
+    const isAttacking = this.isPossessionPhase(team.collectivePhase);
     if (isAttacking) return 0.05;
 
     const instructions = team.tactic.teamInstructions.instructions;
@@ -186,5 +206,67 @@ export class TacticalEngine {
       : 1 - normalizedX;
 
     return attackingX >= ATTACKING_HALF_THRESHOLD;
+  }
+
+  private isPossessionPhase(phase: TeamMatchState["collectivePhase"]): boolean {
+    return phase === "BUILD_UP" || phase === "PROGRESSION" || phase === "FINAL_THIRD"
+      || phase === "ATTACKING_TRANSITION" || phase === "COUNTER_ATTACK" || phase === "SET_PIECE";
+  }
+
+  /** Converts a recognizable formation anchor into a phase/ball-relative target. */
+  private applyCollectivePhase(
+    state: MatchState,
+    team: TeamMatchState,
+    assignment: TacticalShapeAssignment,
+    base: Vector2,
+  ): Vector2 {
+    const role = String(assignment.role);
+    const isGoalkeeper = role === "GOALKEEPER";
+    const isDefender = role.includes("BACK") || role.includes("DEFENDER");
+    const isWide = role.includes("WINGER") || role.includes("WIDE") || role.includes("FULL_BACK") || role.includes("WING_BACK");
+    const ballProgress = team.attackingDirection === 1
+      ? state.ball.position.x
+      : state.pitch.length - state.ball.position.x;
+
+    const phaseHeight: Record<TeamMatchState["collectivePhase"], number> = {
+      DEFENSIVE_BLOCK: 0,
+      DEFENSIVE_TRANSITION: 3,
+      BUILD_UP: 6,
+      PROGRESSION: 14,
+      FINAL_THIRD: 22,
+      ATTACKING_TRANSITION: 10,
+      COUNTER_ATTACK: 18,
+      SET_PIECE: 8,
+    };
+    const widthFactor: Record<TeamMatchState["collectivePhase"], number> = {
+      DEFENSIVE_BLOCK: .86,
+      DEFENSIVE_TRANSITION: .9,
+      BUILD_UP: .96,
+      PROGRESSION: 1.04,
+      FINAL_THIRD: 1.1,
+      ATTACKING_TRANSITION: 1.02,
+      COUNTER_ATTACK: 1.12,
+      SET_PIECE: 1,
+    };
+
+    let x = base.x;
+    if (!isGoalkeeper) {
+      x += phaseHeight[team.collectivePhase];
+      // Sustained attacks carry the defensive line near halfway.
+      if (isDefender && (team.collectivePhase === "PROGRESSION" || team.collectivePhase === "FINAL_THIRD")) {
+        x = Math.max(x, Math.min(49, ballProgress - 22));
+      }
+      if (!isDefender && team.collectivePhase === "COUNTER_ATTACK") {
+        x = Math.max(x, Math.min(88, ballProgress + 14));
+      }
+    }
+
+    const centreY = state.pitch.width / 2;
+    const width = widthFactor[team.collectivePhase] * (isWide ? 1.08 : 1);
+    const y = centreY + (base.y - centreY) * width;
+    return new Vector2(
+      Math.max(1, Math.min(state.pitch.length - 1, x)),
+      Math.max(2, Math.min(state.pitch.width - 2, y)),
+    );
   }
 }

@@ -33,12 +33,34 @@ export class TeamBehaviourSystem {
     const isDefending = state.defendingTeam === team;
 
     if (isDefending) {
-      this.coordinatePressing(state, team, opponents);
       this.assignMarking(state, team, opponents);
+      if (team.collectivePhase === "DEFENSIVE_TRANSITION") {
+        if (team.tactic.transition.counterPress && !team.tactic.transition.regroup) {
+          this.coordinateCounterPress(state, team, opponents);
+        }
+      } else {
+        this.coordinatePressing(state, team, opponents);
+      }
     } else {
       this.supportAttack(state, team);
     }
 
+  }
+
+  /** First two nearby players counter-press; the remaining block recomposes. */
+  private coordinateCounterPress(
+    state: MatchState,
+    team: TeamMatchState,
+    opponents: TeamMatchState,
+  ): void {
+    const owner = state.ball.owner;
+    if (!owner || !opponents.players.includes(owner)) return;
+    team.players
+      .filter(player => player.currentRole !== "GOALKEEPER" && !player.hasBall)
+      .sort((a, b) => a.position.distanceTo(owner.position) - b.position.distanceTo(owner.position))
+      .slice(0, 2)
+      .filter(player => player.position.distanceTo(owner.position) <= 18)
+      .forEach(player => player.setTarget(owner.position));
   }
 
   /**
@@ -59,7 +81,9 @@ export class TeamBehaviourSystem {
     if (!isOpponentBall) return;
 
     const instructions = team.tactic.teamInstructions.instructions;
-    const shouldPress = instructions.includes("HIGH_PRESS") ||
+    const targeted = team.tactic.opposition.players.find(item => item.opponentPlayerId === ballCarrier.player.id)?.press ?? false;
+    const preventShort = team.tactic.outOfPossession.preventShortDistribution && ballCarrier.currentRole.includes("GOALKEEPER");
+    const shouldPress = instructions.includes("HIGH_PRESS") || targeted || preventShort ||
       this.isBallInOwnHalf(state, team);
 
     if (!shouldPress) return;
@@ -72,8 +96,14 @@ export class TeamBehaviourSystem {
     if (!presser) return;
 
     const dist = presser.position.distanceTo(ballCarrier.position);
-    if (dist <= PRESS_DISTANCE) {
-      presser.setTarget(ballCarrier.position);
+    const intensity = team.tactic.outOfPossession.intensity;
+    const pressDistance = PRESS_DISTANCE * (intensity === "HIGH" ? 1.45 : intensity === "LOW" ? .72 : 1);
+    if (dist <= pressDistance) {
+      const centreY = state.pitch.width / 2;
+      const side = ballCarrier.position.y < centreY ? -1 : 1;
+      const direction = team.tactic.outOfPossession.showDirection;
+      const yOffset = direction === "INSIDE" ? side * 2 : direction === "OUTSIDE" ? side * -2 : 0;
+      presser.setTarget(new Vector2(ballCarrier.position.x, ballCarrier.position.y + yOffset));
     }
 
   }
@@ -89,17 +119,17 @@ export class TeamBehaviourSystem {
   ): void {
 
     const defenders = team.players.filter(
-      p => p.currentRole === "CENTRE_BACK" ||
-        p.currentRole === "FULL_BACK" ||
+      p => p.currentRole.includes("CENTRE_BACK") ||
+        p.currentRole.includes("FULL_BACK") ||
         p.currentRole === "WING_BACK" ||
         p.currentRole === "DEFENSIVE_MIDFIELDER"
     );
 
     const threats = opponents.players.filter(
-      p => p.currentRole === "STRIKER" ||
+      p => p.currentRole === "STRIKER" || p.currentRole === "FALSE_NINE" ||
         p.currentRole === "ATTACKING_MIDFIELDER" ||
-        p.currentRole === "WINGER"
-    );
+        p.currentRole === "WINGER" || p.currentRole === "INSIDE_FORWARD"
+    ).sort((a, b) => this.markingPriority(team, b) - this.markingPriority(team, a));
 
     const used = new Set<PlayerMatchState>();
 
@@ -107,7 +137,11 @@ export class TeamBehaviourSystem {
       const available = defenders.filter(d => !used.has(d));
       if (available.length === 0) break;
 
-      const marker = this.findClosest(available, threat.position);
+      const instruction = team.tactic.opposition.players.find(item => item.opponentPlayerId === threat.player.id);
+      const instructedMarker = instruction?.markWithPlayerId
+        ? available.find(player => player.player.id === instruction.markWithPlayerId)
+        : undefined;
+      const marker = instructedMarker ?? this.findClosest(available, threat.position);
       if (!marker) continue;
 
       used.add(marker);
@@ -115,6 +149,14 @@ export class TeamBehaviourSystem {
       // Stand MARK_DISTANCE metres from the threat, between threat and our goal.
       const markPos = this.computeMarkPosition(marker, threat, team);
       marker.setTarget(markPos);
+
+      if (instruction?.doubleMark) {
+        const second = this.findClosest(defenders.filter(defender => !used.has(defender)), threat.position);
+        if (second) {
+          used.add(second);
+          second.setTarget(this.computeMarkPosition(second, threat, team));
+        }
+      }
     }
 
   }
@@ -156,6 +198,12 @@ export class TeamBehaviourSystem {
       } else if (narrowPlay) {
         // Tighten toward center.
         adjustedY = adjustedY * 0.7 + centerY * 0.3;
+      }
+
+      const role = String(player.currentRole);
+      const runner = role.includes("WINGER") || role.includes("STRIKER") || role.includes("BOX_TO_BOX");
+      if (runner && (team.collectivePhase === "ATTACKING_TRANSITION" || team.collectivePhase === "COUNTER_ATTACK")) {
+        adjustedX += team.attackingDirection * 8;
       }
 
       // Clamp to pitch bounds.
@@ -201,11 +249,19 @@ export class TeamBehaviourSystem {
 
     // Position slightly behind and to the side of the threat.
     // Simple version: stand MARK_DISTANCE behind the threat in the direction of our goal.
+    const tight = _team.tactic.outOfPossession.tightMarking ||
+      _team.tactic.opposition.players.some(item => item.opponentPlayerId === threat.player.id && item.tightMark);
+    const distance = tight ? MARK_DISTANCE * .55 : MARK_DISTANCE;
     return new Vector2(
-      threat.position.x - MARK_DISTANCE * _team.attackingDirection,
+      threat.position.x - distance * _team.attackingDirection,
       threat.position.y
     );
 
+  }
+
+  private markingPriority(team: TeamMatchState, player: PlayerMatchState): number {
+    const instruction = team.tactic.opposition.players.find(item => item.opponentPlayerId === player.player.id);
+    return instruction ? (instruction.doubleMark ? 3 : instruction.tightMark ? 2 : 1) : 0;
   }
 
 }

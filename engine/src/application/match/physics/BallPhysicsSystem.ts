@@ -12,6 +12,7 @@ export class BallPhysicsSystem {
 
   public update(state: MatchState, deltaTime: number): void {
     const ball = state.ball;
+    this.updateVisualMotion(ball, deltaTime);
 
     // Orphan controlled state — never leave the ball stuck without an owner.
     if (ball.state === BallState.CONTROLLED && !ball.owner) {
@@ -39,6 +40,35 @@ export class BallPhysicsSystem {
     this.applyMovement(ball, deltaTime);
     this.clampToPitch(ball, state);
     this.checkRestState(ball);
+  }
+
+  private updateVisualMotion(ball: BallMatchState, deltaTime: number): void {
+    const motion = ball.motion;
+    if (!motion) {
+      ball.visualPosition = ball.position;
+      ball.visualHeight = ball.height;
+      ball.visualVelocity = ball.velocity;
+      return;
+    }
+    const previousVisualPosition = ball.visualPosition;
+    motion.elapsed = Math.min(motion.duration, motion.elapsed + deltaTime);
+    const time = motion.duration <= 0 ? 1 : motion.elapsed / motion.duration;
+    const progress = motion.kind === "GROUND_PASS" ? 1 - Math.pow(1 - time, 1.35) : time;
+    const direct = motion.target.subtract(motion.origin);
+    let position = motion.origin.add(direct.multiply(progress));
+    if (motion.hasExplicitEffect && motion.curve !== 0) {
+      const perpendicular = new Vector2(-direct.y, direct.x).normalize();
+      position = position.add(perpendicular.multiply(4 * motion.curve * progress * (1 - progress)));
+    }
+    ball.visualPosition = position;
+    ball.visualVelocity = position.subtract(previousVisualPosition).divide(Math.max(.001, deltaTime));
+    ball.visualHeight = motion.peakHeight * 4 * time * (1 - time);
+    if (time >= 1) {
+      ball.visualPosition = motion.target;
+      ball.visualHeight = 0;
+      ball.visualVelocity = Vector2.zero();
+      ball.motion = null;
+    }
   }
 
   private applyGravity(ball: BallMatchState, deltaTime: number): void {

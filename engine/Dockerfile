@@ -4,6 +4,7 @@ WORKDIR /workspace
 
 COPY package.json ./
 COPY engine/package.json ./engine/package.json
+COPY api/package.json ./api/package.json
 COPY web/package.json ./web/package.json
 
 RUN npm install

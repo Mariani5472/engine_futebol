@@ -4,6 +4,7 @@ import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
+import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 
 const MAX_PASS_SPEED = 28;
 const MIN_PASS_SPEED = 8;
@@ -25,6 +26,7 @@ export class PassAction {
     }
 
     const team = match.home.players.includes(player) ? match.home : match.away;
+    const origin = player.position;
     const dir = team.attackingDirection;
     const realForwardGain = (target.position.x - player.position.x) * dir;
 
@@ -35,6 +37,7 @@ export class PassAction {
 
     if (success) {
       this.deliverToReceiver(match, player, target);
+      this.startMotion(context, origin, target.position, target);
       team.noteProgressivePass(matchSecond, realForwardGain);
       return {
         actorId: player.player.id,
@@ -49,7 +52,7 @@ export class PassAction {
       } as ActionResult;
     }
 
-    this.releaseFailedPass(context, player, target, random);
+    this.releaseFailedPass(context, player, target, random, origin);
 
     return {
       actorId: player.player.id,
@@ -88,6 +91,7 @@ export class PassAction {
     passer: PlayerMatchState,
     target: PlayerMatchState,
     random: ActionContext["random"],
+    origin: Vector2,
   ): void {
     const match = context.match;
     const distance = passer.position.distanceTo(target.position);
@@ -115,6 +119,39 @@ export class PassAction {
     match.ball.position = finalPos;
     match.ball.velocity = direction.multiply(power * 0.25);
     (match.ball as { height: number }).height = 0;
+    BallMotionPlanner.start(match.ball, {
+      kind: context.decision.type === DecisionType.CROSS ? "CROSS" : "GROUND_PASS",
+      origin,
+      target: finalPos,
+      speed: power,
+      peakHeight: context.decision.type === DecisionType.CROSS ? 3.5 : 0,
+      curve: context.decision.type === DecisionType.CROSS ? this.crossCurve(context, origin) : 0,
+      hasExplicitEffect: context.decision.type === DecisionType.CROSS,
+    });
+  }
+
+  private startMotion(context: ActionContext, origin: Vector2, destination: Vector2, _target: PlayerMatchState): void {
+    const distance = origin.distanceTo(destination);
+    const power = this.calculatePower(distance);
+    const isCross = context.decision.type === DecisionType.CROSS;
+    const directGoalkeeperKick = context.decision.type === DecisionType.GK_DISTRIBUTE &&
+      (context.match.home.players.includes(context.player) ? context.match.home : context.match.away)
+        .tactic.transition.goalkeeperDistribution === "DIRECT";
+    BallMotionPlanner.start(context.match.ball, {
+      kind: isCross ? "CROSS" : directGoalkeeperKick ? "AERIAL_PASS" : "GROUND_PASS",
+      origin,
+      target: destination,
+      speed: power,
+      peakHeight: isCross ? 4.5 : directGoalkeeperKick ? 5.5 : 0,
+      curve: isCross ? this.crossCurve(context, origin) : 0,
+      hasExplicitEffect: isCross,
+    });
+  }
+
+  private crossCurve(context: ActionContext, origin: Vector2): number {
+    const technique = context.player.player.attributes.technical.technique / 20;
+    const side = origin.y < context.match.pitch.width / 2 ? 1 : -1;
+    return side * (1 + technique * 1.5);
   }
 
   private calculateSuccessProb(

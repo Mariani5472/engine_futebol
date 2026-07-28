@@ -75,4 +75,22 @@ describe("FixedTimestepLoop", () => {
     expect(loop.isRunning()).toBe(false);
     expect(renders).toBe(0);
   });
+
+  it("does not schedule an orphan frame when render stops the loop", () => {
+    const scheduler = new ManualScheduler();
+    let renders = 0;
+    let loop!: FixedTimestepLoop;
+    loop = new FixedTimestepLoop({
+      scheduler,
+      update: () => undefined,
+      render: () => { renders++; loop.stop(); },
+    });
+
+    loop.start();
+    scheduler.advance(16);
+    scheduler.advance(16);
+
+    expect(renders).toBe(1);
+    expect(loop.isRunning()).toBe(false);
+  });
 });

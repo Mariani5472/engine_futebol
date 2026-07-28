@@ -1,7 +1,10 @@
-import { Tactic, Team } from "../../domain";
+import { Tactic, Team, TacticalPhase } from "../../domain";
 import { PlayerMatchState } from "./PlayerMatchState";
 
 export class TeamMatchState {
+
+  public collectivePhase: TacticalPhase = "DEFENSIVE_BLOCK";
+  public collectivePhaseSince = 0;
 
   /** Match second until which non-progressive passes are demoted. */
   public progressiveHoldUntil = 0;

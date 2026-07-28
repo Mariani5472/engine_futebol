@@ -51,6 +51,10 @@ describe("PassAction completion", () => {
       expect(match.ball.owner).toBe(receiver);
       expect(match.ball.state).toBe(BallState.CONTROLLED);
       expect(match.ball.position.distanceTo(receiver.position)).toBeLessThan(0.01);
+      expect(match.ball.motion?.kind).toBe("GROUND_PASS");
+      expect(match.ball.motion?.origin.distanceTo(passer.position)).toBeLessThan(0.01);
+      expect(match.ball.motion?.target.distanceTo(receiver.position)).toBeLessThan(0.01);
+      expect(match.ball.motion?.hasExplicitEffect).toBe(false);
       delivered = true;
       break;
     }

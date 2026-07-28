@@ -30,7 +30,7 @@ export class GKDistributeEvaluator implements ActionEvaluator {
     const vision = player.player.attributes.mental.vision / 20;
     const composure = player.player.attributes.mental.composure / 20;
     const decisions = player.player.attributes.mental.decisions / 20;
-    const kicking = player.player.attributes.technical.kicking / 20;
+    const kicking = player.player.attributes.goalkeeping.kicking / 20;
 
     const openTeammateBonus = this.countOpenTeammates(player, teammates) * 2.2;
     const calmBonus = Math.max(0, 10 - player.fatigue / 10);

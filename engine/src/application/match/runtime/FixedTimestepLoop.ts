@@ -96,6 +96,9 @@ export class FixedTimestepLoop {
       simulationTimeSeconds: this.simulationTimeSeconds,
     });
 
-    this.frameHandle = this.options.scheduler.requestFrame(this.onFrame);
+    // render() may synchronously unmount React and stop this loop.
+    if (this.running) {
+      this.frameHandle = this.options.scheduler.requestFrame(this.onFrame);
+    }
   };
 }

@@ -12,6 +12,20 @@ O frontend fica disponivel em <http://localhost:5173>. As pastas `web` e
 `engine` sao montadas dentro do container, portanto alteracoes no codigo sao
 recarregadas sem reconstruir a imagem.
 
+A API fica em <http://localhost:3000> e expoe:
+
+- `GET /health`
+- `POST /matches`
+- `GET /matches/:id`
+- `POST /matches/:id/pause`
+- `POST /matches/:id/resume`
+- `POST /matches/:id/speed` com `{ "speed": 1 | 2 | 4 | 8 }`
+- `WS /matches/:id/stream`
+
+O servidor sempre usa updates fixos de 0.05s. Velocidades maiores executam
+mais updates por janela real de 50ms, mas o WebSocket continua limitado a
+aproximadamente 20 snapshots por segundo.
+
 Para parar:
 
 ```bash
@@ -37,9 +51,8 @@ Para abrir um shell:
 docker compose run --rm engine /bin/sh
 ```
 
-## API e banco
+## Persistencia
 
-Ainda nao existem servicos `api` ou `postgres`. A primeira versao executa a
-engine diretamente no browser. Esses servicos podem ser adicionados sem mudar
-os containers atuais quando houver persistencia, autenticacao ou simulacao no
-servidor.
+As sessoes da API ainda ficam em memoria. Reiniciar o container encerra as
+partidas existentes. PostgreSQL sera adicionado quando os modelos persistentes
+de campeonato, equipes e partidas forem definidos.

@@ -119,8 +119,10 @@ export class PassEvaluator implements ActionEvaluator {
           : 0;
 
     const raw = technique + space + pressureRelief + progressiveFloor;
-    const scaled = Math.max(0, raw * roleQuality * bodyExecutionQuality);
-    const scale = raw !== 0 ? scaled / raw : 0;
+    const phaseRisk = this.phaseRiskAdjustment(teamPhase(context), lane);
+    const adjustedRaw = raw + phaseRisk;
+    const scaled = Math.max(0, adjustedRaw * roleQuality * bodyExecutionQuality);
+    const scale = adjustedRaw !== 0 ? scaled / adjustedRaw : 0;
 
     return UtilityScore.fromComponents({
       SPACE: space * scale,
@@ -128,7 +130,23 @@ export class PassEvaluator implements ActionEvaluator {
       PRESSURE: pressureRelief * scale,
       ROLE: roleQuality * 12 * bodyExecutionQuality * 0.35,
       BODY: bodyQuality * 8 * roleQuality * 0.3,
-      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4,
+      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4 + phaseRisk * scale,
     });
   }
+
+  private phaseRiskAdjustment(
+    phase: "DEFENSIVE_BLOCK" | "DEFENSIVE_TRANSITION" | "BUILD_UP" | "PROGRESSION" | "FINAL_THIRD" | "ATTACKING_TRANSITION" | "COUNTER_ATTACK" | "SET_PIECE",
+    lane: PassingLane,
+  ): number {
+    if (phase === "COUNTER_ATTACK" || phase === "ATTACKING_TRANSITION") {
+      return Math.max(-4, Math.min(16, lane.forwardProgress * .45)) + (lane.clear ? 3 : -4);
+    }
+    if (phase === "FINAL_THIRD") return Math.max(-3, Math.min(10, lane.forwardProgress * .3));
+    if (phase === "BUILD_UP") return lane.clear ? 3 : -8;
+    return 0;
+  }
+}
+
+function teamPhase(context: DecisionContext) {
+  return (context.match.home.players.includes(context.player) ? context.match.home : context.match.away).collectivePhase;
 }

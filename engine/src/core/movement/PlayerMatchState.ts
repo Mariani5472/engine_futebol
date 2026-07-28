@@ -5,6 +5,7 @@ import { Player, PlayerRole } from "../../domain";
 import { Vector2 } from "../geometry/Vector2";
 
 export class PlayerMatchState {
+  public tacticalAnchorPosition: Vector2;
 
   public activeAction?: ActionExecution;
   /** Multi-step play sequence that owns activeAction while running. */
@@ -31,7 +32,9 @@ export class PlayerMatchState {
     public balance: number,
     public stability: number,
     public lastActionType?: DecisionType,
-  ) {}
+  ) {
+    this.tacticalAnchorPosition = targetPosition;
+  }
 
   public setTarget(position: Vector2): void {
     this.targetPosition = position;

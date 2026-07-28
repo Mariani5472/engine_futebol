@@ -9,6 +9,7 @@ import { createPossessionEvaluators } from "../decision/possession/PossessionEva
 import { PossessionDecisionSystem } from "../decision/possession/PossessionDecisionSystem";
 import { ActionFactory } from "../action/ActionFactory";
 import { ActionExecutionPhase } from "../action/ActionExecution";
+import type { ActionExecution } from "../action/ActionExecution";
 import { RefereeSystem } from "../referee/RefereeSystem";
 import { SeededRandom } from "../../../core/random/SeededRandom";
 import { ActionContext } from "../action/ActionContext";
@@ -118,14 +119,15 @@ export class ShotFunnelDiagnostics {
       for (let i = 0; i < maxAdvance; i++) {
         t += deltaTime;
         const phase = this.actionFactory.advanceOnly(player, t);
-        if (phase === ActionExecutionPhase.EXECUTING && player.activeAction) {
+        const activeAction = player.activeAction as ActionExecution | undefined;
+        if (phase === ActionExecutionPhase.EXECUTING && activeAction) {
           // If pipeline has CONTROL then SHOT, first EXECUTING may be CONTROL.
-          const actionType = player.activeAction.type;
+          const actionType = activeAction.type;
           const isHome = match.home.players.includes(player);
           const team = isHome ? match.home : match.away;
           const actionCtx: ActionContext = {
             player,
-            decision: player.activeAction.decision,
+            decision: activeAction.decision,
             match,
             pitch: match.pitch,
             random: new SeededRandom(99),
@@ -135,7 +137,7 @@ export class ShotFunnelDiagnostics {
             attackingDirection: team.attackingDirection,
             matchSecond: t,
           };
-          const result = this.actionFactory.resolveExecuting(player.activeAction, actionCtx);
+          const result = this.actionFactory.resolveExecuting(activeAction, actionCtx);
 
           if (actionType === DecisionType.SHOT) {
             reachedExecuting = true;
@@ -168,7 +170,7 @@ export class ShotFunnelDiagnostics {
         proposed: !!shotDecision,
         utility: shotDecision?.utility ?? 0,
         components: shotDecision?.components
-          ? { ...shotDecision.components }
+          ? Object.fromEntries(Object.entries(shotDecision.components).filter((entry): entry is [string, number] => typeof entry[1] === "number"))
           : {},
       },
       candidates,

@@ -14,6 +14,7 @@ import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
+import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 
 /** Team-wide shot cooldown — primary volume control with 1/possession. */
 const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
@@ -30,6 +31,7 @@ export class ShotAction {
       : pitch.geometry.leftGoal;
 
     const goalCenter = new Vector2(goal.center.x, goal.center.y);
+    const origin = player.position;
 
     const aimOffset = random.nextFloat(-goal.width / 2.5, goal.width / 2.5);
     const aimPoint = new Vector2(goalCenter.x, goalCenter.y + aimOffset);
@@ -95,6 +97,7 @@ export class ShotAction {
       match.ball.velocity = Vector2.zero();
       match.ball.height = 0;
       match.ball.state = BallState.FREE;
+      this.startShotMotion(context, origin, new Vector2(ballX, ballY), aimPoint);
 
       return {
         actorId: player.player.id,
@@ -125,6 +128,7 @@ export class ShotAction {
         match.ball.state = BallState.FREE;
         match.ball.velocity = Vector2.zero();
         match.ball.height = 0;
+        this.startShotMotion(context, origin, new Vector2(endLineX, cornerY), aimPoint);
 
         const shot: ShotEvent = {
           id: shotId,
@@ -166,6 +170,7 @@ export class ShotAction {
         match.ball.velocity = Vector2.zero();
         match.ball.owner = null;
       }
+      this.startShotMotion(context, origin, gk?.position ?? goalCenter, aimPoint);
 
       attacking.resetPossessionShotCount();
 
@@ -210,6 +215,7 @@ export class ShotAction {
     match.ball.position = centre;
     match.ball.velocity = Vector2.zero();
     match.ball.height = 0;
+    this.startShotMotion(context, origin, goalCenter, aimPoint);
 
     const shotEvent: ShotEvent = {
       id: shotId,
@@ -239,6 +245,22 @@ export class ShotAction {
       success: true,
       events: [shotEvent, goalEvent]
     };
+  }
+
+  private startShotMotion(context: ActionContext, origin: Vector2, target: Vector2, aimPoint: Vector2): void {
+    const technique = context.player.player.attributes.technical.technique / 20;
+    const flair = context.player.player.attributes.mental.flair / 20;
+    const hasExplicitEffect = technique >= .8 && flair >= .75;
+    const side = aimPoint.y < context.match.pitch.width / 2 ? -1 : 1;
+    BallMotionPlanner.start(context.match.ball, {
+      kind: "SHOT",
+      origin,
+      target,
+      speed: 30 + technique * 8,
+      peakHeight: 1.2 + technique * 1.4,
+      curve: hasExplicitEffect ? side * (1 + technique) : 0,
+      hasExplicitEffect,
+    });
   }
 
   private calculateOnTargetProb(

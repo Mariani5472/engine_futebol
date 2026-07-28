@@ -5,6 +5,7 @@ import { Decision } from "../Decision";
 import { DecisionContext } from "../DecisionContext";
 import { DecisionType } from "../DecisionType";
 import { ActionReadiness } from "./ActionReadiness";
+import { Vector2 } from "../../../../core/geometry/Vector2";
 
 export class ReceiveEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
@@ -119,7 +120,7 @@ export class ReceiveEvaluator implements ActionEvaluator {
     player: PlayerMatchState,
     ballPosition: { x: number; y: number }
   ): number {
-    const desiredDirection = ballPosition.subtract(player.position);
+    const desiredDirection = new Vector2(ballPosition.x, ballPosition.y).subtract(player.position);
     return ActionReadiness.orientationQuality(player.facingDirection, desiredDirection);
   }
 

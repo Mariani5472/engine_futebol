@@ -12,6 +12,8 @@ import { RiskCalculator } from "../risk/RiskCalculator";
 import { RiskContext } from "../risk/RiskContext";
 import { FieldThirdResolver } from "../../../../core/pitch/FieldThirdResolver";
 import { ActionReadiness } from "../evaluators/ActionReadiness";
+import { applyRoleDecisionModifier } from "../RoleDecisionModifier";
+import { applyTacticalInstructionDecisionModifier } from "../TacticalInstructionDecisionModifier";
 
 export class PossessionDecisionSystem {
   private readonly fieldThirdResolver: FieldThirdResolver;
@@ -52,13 +54,13 @@ export class PossessionDecisionSystem {
       });
 
       return {
-        decision: new Decision(
+        decision: applyTacticalInstructionDecisionModifier(applyRoleDecisionModifier(new Decision(
           decision.type,
           decision.utility + bias.utilityModifier,
           decision.targetId,
           decision.reasons,
           decision.components,
-        ),
+        ), context), context),
         riskToleranceModifier: bias.riskToleranceModifier,
       };
     });

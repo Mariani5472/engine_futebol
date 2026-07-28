@@ -11,6 +11,8 @@ import { PersonalityModifier } from "./personality/PersonalityModifier";
 import { DefaultRiskCalculator } from "./risk/DefaultRiskCalculator";
 import { RiskCalculator } from "./risk/RiskCalculator";
 import { RiskContext } from "./risk/RiskContext";
+import { applyRoleDecisionModifier } from "./RoleDecisionModifier";
+import { applyTacticalInstructionDecisionModifier } from "./TacticalInstructionDecisionModifier";
 
 export class DecisionSystem {
   private readonly fieldThirdResolver: FieldThirdResolver;
@@ -47,13 +49,13 @@ export class DecisionSystem {
       });
 
       return {
-        decision: new Decision(
+        decision: applyTacticalInstructionDecisionModifier(applyRoleDecisionModifier(new Decision(
           decision.type,
           decision.utility + bias.utilityModifier,
           decision.targetId,
           decision.reasons,
           decision.components,
-        ),
+        ), context), context),
         riskToleranceModifier: bias.riskToleranceModifier
       };
     });

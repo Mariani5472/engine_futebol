@@ -20,30 +20,41 @@ export class PositionInfluenceCalculator {
     switch (role) {
       // Finishing is KEY (FM26 ST guide)
       case "STRIKER":
+      case "FALSE_NINE":
         return 1.0;
 
       // Wide attacking roles — Finishing in PREFERRED list (FM26 AML/AMR guide)
       case "WIDE_MIDFIELDER":
       case "ATTACKING_MIDFIELDER":
       case "WINGER":
+      case "INSIDE_FORWARD":
         return 0.82;
 
       // Central midfielders — Finishing not listed in MC guide
       case "CENTRAL_MIDFIELDER":
       case "DEFENSIVE_MIDFIELDER":
+      case "BOX_TO_BOX_MIDFIELDER":
         return 0.52;
 
       // Fullbacks & wing-backs — no shooting attribute mentioned
       case "FULL_BACK":
+      case "INVERTED_FULL_BACK":
       case "WING_BACK":
         return 0.38;
 
       // Centre-backs — Finishing marked UNNECESSARY in DC defensive role
       case "CENTRE_BACK":
+      case "BALL_PLAYING_CENTRE_BACK":
+      case "WIDE_CENTRE_BACK":
+      case "ADVANCED_CENTRE_BACK":
+      case "OVERLAPPING_CENTRE_BACK":
         return 0.28;
 
       // GK — completely unsuited for outfield shooting
       case "GOALKEEPER":
+      case "BALL_PLAYING_GOALKEEPER":
+      case "DIRECT_GOALKEEPER":
+      case "SWEEPER_KEEPER":
         return 0.08;
     }
   }
@@ -55,24 +66,35 @@ export class PositionInfluenceCalculator {
     switch (role) {
       case "CENTRAL_MIDFIELDER":
       case "ATTACKING_MIDFIELDER":
+      case "BOX_TO_BOX_MIDFIELDER":
         return 1.0;
 
       case "DEFENSIVE_MIDFIELDER":
         return 0.90;
 
       case "STRIKER":
+      case "FALSE_NINE":
         return 0.75;
 
       case "WIDE_MIDFIELDER":
       case "WINGER":
+      case "INSIDE_FORWARD":
       case "WING_BACK":
         return 0.80;
 
       case "FULL_BACK":
+      case "INVERTED_FULL_BACK":
       case "CENTRE_BACK":
+      case "BALL_PLAYING_CENTRE_BACK":
+      case "WIDE_CENTRE_BACK":
+      case "ADVANCED_CENTRE_BACK":
+      case "OVERLAPPING_CENTRE_BACK":
         return 0.75;
 
       case "GOALKEEPER":
+      case "BALL_PLAYING_GOALKEEPER":
+      case "DIRECT_GOALKEEPER":
+      case "SWEEPER_KEEPER":
         return 0.60;
     }
   }
@@ -83,7 +105,12 @@ export class PositionInfluenceCalculator {
   public static defendingQuality(role: PlayerRole): number {
     switch (role) {
       case "CENTRE_BACK":
+      case "BALL_PLAYING_CENTRE_BACK":
+      case "WIDE_CENTRE_BACK":
+      case "ADVANCED_CENTRE_BACK":
+      case "OVERLAPPING_CENTRE_BACK":
       case "FULL_BACK":
+      case "INVERTED_FULL_BACK":
         return 1.0;
 
       case "WING_BACK":
@@ -91,19 +118,25 @@ export class PositionInfluenceCalculator {
         return 0.88;
 
       case "CENTRAL_MIDFIELDER":
+      case "BOX_TO_BOX_MIDFIELDER":
         return 0.70;
 
       case "WIDE_MIDFIELDER":
       case "WINGER":
+      case "INSIDE_FORWARD":
         return 0.55;
 
       case "ATTACKING_MIDFIELDER":
         return 0.45;
 
       case "STRIKER":
+      case "FALSE_NINE":
         return 0.35;
 
       case "GOALKEEPER":
+      case "BALL_PLAYING_GOALKEEPER":
+      case "DIRECT_GOALKEEPER":
+      case "SWEEPER_KEEPER":
         return 0.20;
     }
   }
@@ -117,6 +150,8 @@ export class PositionInfluenceCalculator {
       role === "ATTACKING_MIDFIELDER" ||
       role === "WIDE_MIDFIELDER" ||
       role === "WINGER"
+      || role === "INSIDE_FORWARD"
+      || role === "FALSE_NINE"
     );
   }
 
@@ -128,6 +163,14 @@ export class PositionInfluenceCalculator {
       role === "GOALKEEPER" ||
       role === "CENTRE_BACK" ||
       role === "FULL_BACK"
+      || role === "INVERTED_FULL_BACK"
+      || role === "BALL_PLAYING_CENTRE_BACK"
+      || role === "WIDE_CENTRE_BACK"
+      || role === "ADVANCED_CENTRE_BACK"
+      || role === "OVERLAPPING_CENTRE_BACK"
+      || role === "BALL_PLAYING_GOALKEEPER"
+      || role === "DIRECT_GOALKEEPER"
+      || role === "SWEEPER_KEEPER"
     );
   }
 }
