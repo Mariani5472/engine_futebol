@@ -5,15 +5,15 @@ import type { MatchEvent } from "../../../domain";
 
 const TRANSITION_SECONDS = 4;
 const SET_PIECE_SECONDS = 3;
+const LOOSE_BALL_PHASE_HOLD_SECONDS = 2;
 
 /** Owns the phase state machine for both teams. */
 export class CollectivePhaseSystem {
   private previousPossessionTeamId: string | null = null;
+  private looseBallSince: number | null = null;
 
   public update(state: MatchState, events: readonly MatchEvent[] = []): void {
-    const ownerTeam = state.ball.owner
-      ? (state.home.players.includes(state.ball.owner) ? state.home : state.away)
-      : null;
+    const ownerTeam = this.resolveEffectivePossessionTeam(state);
     const ownerId = ownerTeam?.team.id ?? null;
     const possessionChanged = ownerId !== this.previousPossessionTeamId;
 
@@ -38,6 +38,35 @@ export class CollectivePhaseSystem {
     this.resolveStablePhase(state, state.home, ownerTeam === state.home);
     this.resolveStablePhase(state, state.away, ownerTeam === state.away);
     this.previousPossessionTeamId = ownerId;
+  }
+
+  /**
+   * A pass temporarily has no owner, but it is still part of the attacking
+   * team's possession. Treating every flight as neutral made both formations
+   * snap back into a defensive block between the kick and the first touch.
+   */
+  private resolveEffectivePossessionTeam(state: MatchState): TeamMatchState | null {
+    if (state.ball.owner) {
+      this.looseBallSince = null;
+      return state.home.players.includes(state.ball.owner) ? state.home : state.away;
+    }
+
+    const passerId = state.ball.pendingPass?.passerId;
+    const intendedReceiverId = state.ball.intendedReceiverId;
+    const playerId = passerId ?? intendedReceiverId;
+    if (playerId) {
+      this.looseBallSince = null;
+      return state.home.players.some(player => player.player.id === playerId) ? state.home : state.away;
+    }
+
+    this.looseBallSince ??= state.currentSecond;
+    if (
+      this.previousPossessionTeamId &&
+      state.currentSecond - this.looseBallSince <= LOOSE_BALL_PHASE_HOLD_SECONDS
+    ) {
+      return state.home.team.id === this.previousPossessionTeamId ? state.home : state.away;
+    }
+    return null;
   }
 
   private resolveStablePhase(state: MatchState, team: TeamMatchState, hasPossession: boolean): void {

@@ -46,6 +46,18 @@ describe("authoritative pass flow", () => {
     expect(match.ball.drainPossessionAcquisitions()).toHaveLength(0);
   });
 
+  it("leads a moving receiver instead of aiming at the stale position", () => {
+    const { match, receiver, ctx } = buildContext();
+    receiver.velocity = new Vector2(4, 1);
+    const oldPosition = receiver.position;
+
+    new PassAction().execute(ctx);
+
+    expect(match.ball.motion!.target.x).toBeGreaterThan(oldPosition.x);
+    expect(match.ball.motion!.target.y).toBeGreaterThan(oldPosition.y);
+    expect(match.ball.motion!.target.distanceTo(oldPosition)).toBeLessThanOrEqual(5.5);
+  });
+
   it("keeps logical and visual ball positions identical throughout flight", () => {
     const { match, ctx } = buildContext();
     new PassAction().execute(ctx);

@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "calibrate": "npx --yes tsx scripts/calibrate.ts",
     "check:authoritative-ball": "npx --yes tsx scripts/check-authoritative-ball.ts",
+    "diagnose:offense": "npx --yes tsx scripts/diagnose-offensive-funnel.ts",
     "calibrate:quick": "npx --yes tsx scripts/calibrate.ts --matches 10 --tick 5"
   },
   "devDependencies": {

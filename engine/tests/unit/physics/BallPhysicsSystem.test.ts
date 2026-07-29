@@ -106,5 +106,37 @@ describe("BallPhysicsSystem", () => {
 
       expect(state.ball.position.x).toBeLessThanOrEqual(state.pitch.length);
     });
+
+    it("turns an end-line exit into a controlled goal kick", () => {
+      const state = buildMinimalMatchState();
+      state.ball.release();
+      state.ball.state = BallState.FREE;
+      state.ball.position = new Vector2(104.9, 34);
+      state.ball.velocity = new Vector2(10, 0);
+      state.ball.noteTouch(state.home.players[0].player.id);
+
+      const events = physics.update(state, .05);
+
+      expect(events[0]?.type).toBe("GOAL_KICK");
+      expect(state.ball.owner && state.away.players.includes(state.ball.owner)).toBe(true);
+      expect(state.ball.state).toBe(BallState.CONTROLLED);
+      expect(state.ball.position.x).toBe(99);
+      expect(state.ball.velocity.magnitude()).toBe(0);
+    });
+
+    it("turns a touch-line exit into an opposing throw-in", () => {
+      const state = buildMinimalMatchState();
+      state.ball.release();
+      state.ball.state = BallState.FREE;
+      state.ball.position = new Vector2(50, .1);
+      state.ball.velocity = new Vector2(0, -8);
+      state.ball.noteTouch(state.home.players[0].player.id);
+
+      const events = physics.update(state, .05);
+
+      expect(events[0]?.type).toBe("THROW_IN");
+      expect(state.ball.owner && state.away.players.includes(state.ball.owner)).toBe(true);
+      expect(state.ball.position.y).toBe(1);
+    });
   });
 });

@@ -4,7 +4,7 @@ import { Pitch } from "./components/Pitch";
 import type { PitchLayers } from "./components/Pitch";
 import { DemoMatchFeed } from "./simulation/DemoMatchFeed";
 import type { MatchFeedEvent, MatchSnapshot } from "./simulation/types";
-import { controlMatch, getOrCreateMatch, setMatchSpeed, subscribeToMatch } from "./api/matchClient";
+import { controlMatch, getOrCreateMatch, recoverMatch, setMatchSpeed, subscribeToMatch } from "./api/matchClient";
 
 export function App() {
   const initialSeed = Number(new URLSearchParams(window.location.search).get("seed") ?? 1) || 1;
@@ -25,24 +25,37 @@ export function App() {
     let active = true;
     let socket: WebSocket | null = null;
     let animationFrame = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    getOrCreateMatch(initialSeed).then(({ id }) => {
-      if (!active) return;
-      setMatchId(id);
-      socket = subscribeToMatch(id, {
-        onSnapshot: (snapshot) => {
-          previous.current = current.current;
-          current.current = snapshot;
-          lastSnapshotAt.current = performance.now();
-          setRunning(snapshot.status !== "PAUSED");
-          const visible = [...(snapshot.events??[]),...(snapshot.diagnostics??[])].filter(event=>["SHOT","GOAL","FOUL","CORNER","POSSESSION_CHANGED","BALL_TELEPORT"].includes(event.type));
-          if(visible.length)setFeed(previousFeed=>deduplicateFeed([...visible,...previousFeed]).slice(0,40));
-        },
-        onSpeedChanged: setSpeed,
-      });
-      socket.addEventListener("open", () => setConnected(true));
-      socket.addEventListener("close", () => setConnected(false));
-    }).catch(() => setConnected(false));
+    const connect = async (existingId?: string) => {
+      try {
+        const { id } = existingId
+          ? await recoverMatch(existingId, initialSeed)
+          : await getOrCreateMatch(initialSeed);
+        if (!active) return;
+        setMatchId(id);
+        socket = subscribeToMatch(id, {
+          onSnapshot: (snapshot) => {
+            previous.current = current.current;
+            current.current = snapshot;
+            lastSnapshotAt.current = performance.now();
+            setRunning(snapshot.status !== "PAUSED");
+            const visible = [...(snapshot.events??[]),...(snapshot.diagnostics??[])].filter(event=>["SHOT","GOAL","FOUL","CORNER","THROW_IN","GOAL_KICK","POSSESSION_CHANGED","BALL_TELEPORT"].includes(event.type));
+            if(visible.length)setFeed(previousFeed=>deduplicateFeed([...visible,...previousFeed]).slice(0,40));
+          },
+          onSpeedChanged: setSpeed,
+        });
+        socket.addEventListener("open", () => setConnected(true));
+        socket.addEventListener("close", () => {
+          setConnected(false);
+          if (active) reconnectTimer = setTimeout(() => void connect(id), 750);
+        });
+      } catch {
+        setConnected(false);
+        if (active) reconnectTimer = setTimeout(() => void connect(existingId), 1000);
+      }
+    };
+    void connect();
 
     const render = (timestamp: number) => {
       const alpha = Math.max(0, Math.min(1, (timestamp-lastSnapshotAt.current)/50));
@@ -51,7 +64,7 @@ export function App() {
     };
     animationFrame = requestAnimationFrame(render);
 
-    return () => { active = false; socket?.close(); cancelAnimationFrame(animationFrame); };
+    return () => { active = false; if(reconnectTimer)clearTimeout(reconnectTimer); socket?.close(); cancelAnimationFrame(animationFrame); };
   }, []);
 
   const toggle = async () => {
@@ -71,6 +84,7 @@ export function App() {
   const tenths = Math.floor((frame.current.time%1)*10);
   const phaseLabels: Record<MatchSnapshot["phase"], string> = { READY:"Preparando saída", KICKOFF_PASS:"Passe inicial", RECEIVED:"Bola recebida", OPEN_PLAY:"Bola rolando", FIRST_HALF:"Primeiro tempo", SECOND_HALF:"Segundo tempo", FINISHED:"Encerrada" };
   const diagnostics=frame.current.tacticalDiagnostics?.home;
+  const funnel=frame.current.offensiveFunnel;
 
   return <main className="min-h-screen px-4 py-5 md:px-8 md:py-7">
     <header className="mx-auto mb-5 flex max-w-7xl items-center justify-between">
@@ -117,6 +131,12 @@ export function App() {
           <div className="metric"><span>Circulação da bola</span><b>{diagnostics.ballCirculationSpeed} m/s</b></div>
           <div className="metric"><span>Funções mapeadas</span><b>{Object.keys(diagnostics.averagePositionByRole).length}</b></div>
         </>}
+        {funnel&&<><div className="divider"/><p className="label">Funil ofensivo</p>
+          <div className="funnel-head"><span>Etapa</span><b>AUR</b><b>RAC</b></div>
+          {([['Posses','possessions'],['Progressões','progressions'],['Último terço','finalThirdEntries'],['Entradas na área','penaltyAreaEntries'],['Recepções na área','receptionsInArea'],['Finalizações','shots'],['No alvo','shotsOnTarget'],['Gols','goals'],['Estéreis','sterilePossessions']] as const).map(([label,key])=><div className="funnel-row" key={key}><span>{label}</span><b>{funnel.home[key]}</b><b>{funnel.away[key]}</b></div>)}
+          <details className="funnel-details"><summary>Motivos de término/atrito</summary>{Object.keys(funnel.home.reasons).map(reason=><div className="funnel-row" key={reason}><span>{reasonLabel(reason)}</span><b>{funnel.home.reasons[reason]}</b><b>{funnel.away.reasons[reason]}</b></div>)}</details>
+          <details className="funnel-details"><summary>Contextos de gol</summary>{Object.keys(funnel.home.goalContexts).map(context=><div className="funnel-row" key={context}><span>{contextLabel(context)}</span><b>{funnel.home.goalContexts[context]}</b><b>{funnel.away.goalContexts[context]}</b></div>)}</details>
+        </>}
         <div className="divider"/><p className="label">Eventos e posse</p>
         <div className="event-feed">{feed.length?feed.map((event,index)=><div className={`feed-event feed-${event.type.toLowerCase()}`} key={eventKey(event,index)}><b>{formatEventTime(event)}</b><span>{describeEvent(event)}</span></div>):<p className="hint">Aguardando eventos da partida.</p>}</div>
         <p className="hint">A API produz snapshots a 20 Hz. O navegador somente interpola e desenha.</p>
@@ -134,6 +154,10 @@ function describeEvent(event:MatchFeedEvent){
   if(event.type==="GOAL")return `GOL — ${event.teamId??""}`;
   if(event.type==="FOUL")return `Falta — ${event.playerId??""}`;
   if(event.type==="CORNER")return `Escanteio — ${event.teamId??""}`;
+  if(event.type==="THROW_IN")return `Lateral — ${event.teamId??""}`;
+  if(event.type==="GOAL_KICK")return `Tiro de meta — ${event.teamId??""}`;
   if(event.type==="BALL_TELEPORT")return `TELEPORTE ${event.distance?.toFixed(1)}m (${event.reason})`;
   return `Posse: ${event.playerId??""} · ${event.reason} · distância ${event.distanceToBall?.toFixed(1)}m · bola ${event.ballSpeed?.toFixed(1)}m/s · ação ${event.previousAction??"—"}`;
 }
+function reasonLabel(reason:string){return ({PASS_BLOCKED:'Passe bloqueado',PASS_NO_OPTION:'Passe sem opção',OFFSIDE:'Impedimento',SHOT_DECLINED:'Chute recusado',SHOT_BLOCKED:'Chute bloqueado',SHOT_SAVED:'Chute defendido',SHOT_OFF_TARGET:'Chute para fora',POSSESSION_RECYCLED:'Posse reciclada',BALL_LOST:'Bola perdida'} as Record<string,string>)[reason]??reason}
+function contextLabel(context:string){return ({THROUGH_BALL:'Passe em profundidade',CROSS:'Cruzamento',REBOUND:'Rebote',TRANSITION:'Transição',POSITIONAL:'Ataque posicional'} as Record<string,string>)[context]??context}

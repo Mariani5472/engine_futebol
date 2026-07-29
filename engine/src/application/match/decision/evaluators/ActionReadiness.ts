@@ -22,6 +22,7 @@ export class ActionReadiness {
     context: DecisionContext,
     minimumStability = 0
   ): boolean {
+    if (this.currentTime(context) < context.player.possessionControlUntil) return false;
     const stability = context.player.stability ?? 100;
     if (stability < minimumStability) return false;
 

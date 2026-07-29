@@ -14,6 +14,7 @@ export class TackleEvaluator implements ActionEvaluator {
 
     const ballOwner = context.match.ball.owner;
     if (!ballOwner || context.player.hasBall) return [];
+    if (ActionReadiness.currentTime(context) < ballOwner.possessionProtectedUntil) return [];
 
     const isHome = context.match.home.players.includes(context.player);
     const ownerIsOpponent = isHome

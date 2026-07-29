@@ -48,6 +48,9 @@ export class TackleAction {
         events: [],
       };
     }
+    if (matchSecond < ballOwner.possessionProtectedUntil) {
+      return { actorId: player.player.id, type: DecisionType.TACKLE, success: false, events: [] };
+    }
 
     if (
       context.decision.type === DecisionType.TACKLE ||

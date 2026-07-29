@@ -6,8 +6,8 @@ function fastConfig(seed: number): SimulationConfig {
   return {
     ...buildSimulationConfig(seed),
     seed,
-    tickDeltaSeconds: 2,
-    maxDurationSeconds: 5 * 60,
+    tickDeltaSeconds: .05,
+    maxDurationSeconds: 90,
   };
 }
 

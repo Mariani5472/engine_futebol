@@ -8,6 +8,7 @@ import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 
 const MAX_PASS_SPEED = 28;
 const MIN_PASS_SPEED = 8;
+const MAX_RECEIVER_LEAD = 5;
 
 export class PassAction {
 
@@ -30,11 +31,16 @@ export class PassAction {
     const realForwardGain = (target.position.x - player.position.x) * dir;
 
     const accuracy = this.calculateSuccessProb(context, player, target);
-    const distance = origin.distanceTo(target.position);
+    const receptionPoint = this.predictReceptionPoint(context, origin, target);
+    const distance = origin.distanceTo(receptionPoint);
     const errorRadius = Math.pow(1 - accuracy, 2) * Math.min(6, distance * .15);
     const errorAngle = random.nextFloat(-Math.PI, Math.PI);
     const errorDistance = random.nextFloat(0, errorRadius);
-    const destination = target.position.add(Vector2.fromAngle(errorAngle).multiply(errorDistance));
+    const destination = this.clampToPitch(
+      receptionPoint.add(Vector2.fromAngle(errorAngle).multiply(errorDistance)),
+      context,
+    );
+    match.ball.noteTouch(player.player.id);
     for (const teammate of [...match.home.players, ...match.away.players]) teammate.hasBall = false;
     this.startMotion(context, origin, destination, target);
     match.ball.pendingPass = {
@@ -73,6 +79,28 @@ export class PassAction {
       hasExplicitEffect: isCross,
       intendedReceiverId: target.player.id,
     });
+  }
+
+  /** Aim at a bounded meeting point instead of the receiver's stale position. */
+  private predictReceptionPoint(
+    context: ActionContext,
+    origin: Vector2,
+    target: PlayerMatchState,
+  ): Vector2 {
+    const initialDistance = origin.distanceTo(target.position);
+    const flightSeconds = Math.max(.16, Math.min(2.2, initialDistance / this.calculatePower(initialDistance)));
+    const velocityLead = target.velocity.multiply(Math.min(1.25, flightSeconds));
+    const lead = velocityLead.magnitude() > MAX_RECEIVER_LEAD
+      ? velocityLead.normalize().multiply(MAX_RECEIVER_LEAD)
+      : velocityLead;
+    return this.clampToPitch(target.position.add(lead), context);
+  }
+
+  private clampToPitch(position: Vector2, context: ActionContext): Vector2 {
+    return new Vector2(
+      Math.max(1, Math.min(context.match.pitch.length - 1, position.x)),
+      Math.max(1, Math.min(context.match.pitch.width - 1, position.y)),
+    );
   }
 
   private crossCurve(context: ActionContext, origin: Vector2): number {

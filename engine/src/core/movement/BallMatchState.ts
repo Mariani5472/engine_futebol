@@ -63,6 +63,7 @@ export class BallMatchState {
   public lastPhysicsDisplacement = 0;
   public controlOffset: Vector2 = Vector2.zero();
   public pendingPass: PendingPass | null = null;
+  public lastTouchedPlayerId: string | null;
   private possessionAcquisitions: PossessionAcquisitionRecord[] = [];
   private passResolutions: PassResolutionRecord[] = [];
 
@@ -76,6 +77,7 @@ export class BallMatchState {
     this.visualPosition = position;
     this.visualHeight = height;
     this.previousPosition = position;
+    this.lastTouchedPlayerId = owner?.player.id ?? null;
   }
 
   public startMotion(motion: Omit<BallMotion, "elapsed">): void {
@@ -103,10 +105,13 @@ export class BallMatchState {
       });
     }
     this.owner = player;
+    this.lastTouchedPlayerId = player.player.id;
     this.controlOffset = this.position.subtract(player.position);
     this.intendedReceiverId = null;
     this.motion = null;
   }
+
+  public noteTouch(playerId: string): void { this.lastTouchedPlayerId = playerId; }
 
   public release(): void {
     if (this.owner) this.owner.hasBall = false;

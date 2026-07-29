@@ -42,6 +42,25 @@ describe("collective tactical phases", () => {
     expect(state.away.collectivePhase).toBe("ATTACKING_TRANSITION");
   });
 
+  it("keeps the attacking phase while its pass is in flight", () => {
+    const state = initialize();
+    const phases = new CollectivePhaseSystem();
+    phases.update(state);
+    state.currentSecond = 5;
+    state.ball.pendingPass = {
+      passerId: state.home.players[5].player.id,
+      intendedReceiverId: state.home.players[8].player.id,
+      startedAtSecond: 5,
+      realForwardGain: 12,
+    };
+    state.ball.owner = null;
+    state.home.players.forEach(player => player.hasBall = false);
+    phases.update(state);
+
+    expect(state.home.collectivePhase).not.toBe("DEFENSIVE_BLOCK");
+    expect(state.away.collectivePhase).not.toBe("BUILD_UP");
+  });
+
   it("holds the awarded team in set-piece phase after a corner", () => {
     const state = initialize();
     const phases = new CollectivePhaseSystem();

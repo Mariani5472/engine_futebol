@@ -59,6 +59,16 @@ export interface FoulEvent extends BaseMatchEvent {
   readonly playerId: PlayerId;
 }
 
+export interface ThrowInEvent extends BaseMatchEvent {
+  readonly type: "THROW_IN";
+  readonly teamId: TeamId;
+}
+
+export interface GoalKickEvent extends BaseMatchEvent {
+  readonly type: "GOAL_KICK";
+  readonly teamId: TeamId;
+}
+
 export type MatchEvent =
   | PeriodStartedEvent
   | PeriodEndedEvent
@@ -66,4 +76,6 @@ export type MatchEvent =
   | CardEvent
   | GoalEvent
   | CornerEvent
-  | FoulEvent;
+  | FoulEvent
+  | ThrowInEvent
+  | GoalKickEvent;

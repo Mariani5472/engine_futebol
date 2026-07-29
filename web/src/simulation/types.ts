@@ -18,6 +18,10 @@ export interface PlayerSnapshot extends Point {
   readonly hasBall?: boolean;
   readonly targetPosition?: Point;
   readonly tacticalAnchorPosition?: Point;
+  readonly runCorridorOrigin?: Point;
+  readonly acceptedTargetChanges?: number;
+  readonly tacticalResponsibility?: string|null;
+  readonly occupiedChannel?: string|null;
   readonly role?: string;
 }
 export interface TeamTacticalDiagnostics {
@@ -32,6 +36,12 @@ export interface TeamTacticalDiagnostics {
   readonly ballCirculationSpeed:number;
 }
 export interface SectorCentroids { readonly defence:Point|null; readonly midfield:Point|null; readonly attack:Point|null }
+export interface TeamOffensiveFunnel {
+  readonly possessions:number; readonly progressions:number; readonly finalThirdEntries:number;
+  readonly penaltyAreaEntries:number; readonly receptionsInArea:number; readonly shots:number;
+  readonly shotsOnTarget:number; readonly goals:number; readonly sterilePossessions:number;
+  readonly reasons:Readonly<Record<string,number>>; readonly goalContexts:Readonly<Record<string,number>>;
+}
 export interface MatchSnapshot {
   readonly seed?:number;
   readonly type?: "snapshot";
@@ -48,6 +58,7 @@ export interface MatchSnapshot {
   readonly events?:readonly MatchFeedEvent[];
   readonly diagnostics?:readonly MatchFeedEvent[];
   readonly tacticalDiagnostics?: { readonly home:TeamTacticalDiagnostics; readonly away:TeamTacticalDiagnostics };
+  readonly offensiveFunnel?: { readonly home:TeamOffensiveFunnel; readonly away:TeamOffensiveFunnel };
   readonly tacticalDebug?: { readonly carrierId:string|null; readonly passOptionIds:readonly string[]; readonly homeSectors:SectorCentroids; readonly awaySectors:SectorCentroids };
 }
 

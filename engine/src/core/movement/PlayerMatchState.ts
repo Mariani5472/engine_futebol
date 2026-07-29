@@ -16,6 +16,18 @@ export class PlayerMatchState {
   public tackleLockUntil = 0;
   /** Prevents the same player retrying a failed first touch every simulation tick. */
   public controlAttemptLockUntil = 0;
+  /** Hard first-touch window: no new on-ball action may start before this. */
+  public possessionControlUntil = 0;
+  /** Brief shielding window after a physical reception. */
+  public possessionProtectedUntil = 0;
+  /** Start of the currently accepted running corridor. */
+  public runCorridorOrigin: Vector2;
+  /** Counts material target changes; useful for locomotion diagnostics. */
+  public acceptedTargetChanges = 0;
+  /** Temporary collective duty assigned by the coordination layer. */
+  public tacticalResponsibility: string | null = null;
+  public responsibilityUntil = 0;
+  public occupiedChannel: "LEFT" | "CENTRE" | "RIGHT" | null = null;
 
   constructor(
     public readonly player: Player,
@@ -36,10 +48,16 @@ export class PlayerMatchState {
     public lastActionType?: DecisionType,
   ) {
     this.tacticalAnchorPosition = targetPosition;
+    this.runCorridorOrigin = position;
   }
 
   public setTarget(position: Vector2): void {
+    // Tactical systems update every tick. Ignore sub-metre jitter so the
+    // locomotion layer follows a stable intention rather than chasing noise.
+    if (this.targetPosition.distanceTo(position) < 1) return;
+    this.runCorridorOrigin = this.position;
     this.targetPosition = position;
+    this.acceptedTargetChanges++;
   }
 
   public isActionBusy(): boolean {

@@ -48,6 +48,7 @@ export class ShotAction {
     const playerId = player.player.id as PlayerId;
 
     player.hasBall = false;
+    match.ball.noteTouch(player.player.id);
     match.ball.owner = null;
 
     if (!isOnTarget) {

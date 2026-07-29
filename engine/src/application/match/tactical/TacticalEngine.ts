@@ -22,18 +22,6 @@ export class TacticalEngine {
   public update(state: MatchState): void {
     this.updateTeam(state, state.home);
     this.updateTeam(state, state.away);
-    this.assignLooseBallChasers(state);
-  }
-
-  /** Players must physically reach a loose ball; this never grants ownership. */
-  private assignLooseBallChasers(state: MatchState): void {
-    if (state.ball.owner || state.ball.motion) return;
-    for (const team of [state.home, state.away]) {
-      const chaser = team.players
-        .filter(player => !player.hasBall)
-        .sort((a, b) => a.position.distanceTo(state.ball.position) - b.position.distanceTo(state.ball.position))[0];
-      chaser?.setTarget(state.ball.position);
-    }
   }
 
   private updateTeam(
@@ -89,7 +77,8 @@ export class TacticalEngine {
     const assignmentAnchor = isAttacking ? assignment.attackingAnchor : assignment.defensiveAnchor;
     let base = new Vector2(assignmentAnchor.x, assignmentAnchor.y);
 
-    if (isAttacking) {
+    const assignmentRole = String(assignment.role);
+    if (isAttacking && !assignmentRole.includes("GOALKEEPER")) {
       base = this.pushAttackingAnchor(state, team, assignment, base, player);
     }
 
@@ -105,17 +94,16 @@ export class TacticalEngine {
     }
     base = this.instructionTargets.apply(state, team, player, base);
 
-    if (team.attackingDirection === 1) {
-      return new Vector2(
+    const pitchTarget = team.attackingDirection === 1
+      ? new Vector2(
         Math.max(0, Math.min(state.pitch.length, base.x)),
         Math.max(0, Math.min(state.pitch.width, base.y)),
+      )
+      : new Vector2(
+        Math.max(0, Math.min(state.pitch.length, state.pitch.length - base.x)),
+        Math.max(0, Math.min(state.pitch.width, base.y)),
       );
-    }
-
-    return new Vector2(
-      Math.max(0, Math.min(state.pitch.length, state.pitch.length - base.x)),
-      Math.max(0, Math.min(state.pitch.width, base.y)),
-    );
+    return this.constrainRoleTarget(state, team, player, pitchTarget);
   }
 
   /**
@@ -246,13 +234,13 @@ export class TacticalEngine {
 
     const phaseHeight: Record<TeamMatchState["collectivePhase"], number> = {
       DEFENSIVE_BLOCK: 0,
-      DEFENSIVE_TRANSITION: 3,
-      BUILD_UP: 6,
-      PROGRESSION: 14,
-      FINAL_THIRD: 22,
-      ATTACKING_TRANSITION: 10,
-      COUNTER_ATTACK: 18,
-      SET_PIECE: 8,
+      DEFENSIVE_TRANSITION: 2,
+      BUILD_UP: 3,
+      PROGRESSION: 6,
+      FINAL_THIRD: 8,
+      ATTACKING_TRANSITION: 5,
+      COUNTER_ATTACK: 10,
+      SET_PIECE: 4,
     };
     const widthFactor: Record<TeamMatchState["collectivePhase"], number> = {
       DEFENSIVE_BLOCK: .86,
@@ -284,5 +272,45 @@ export class TacticalEngine {
       Math.max(1, Math.min(state.pitch.length - 1, x)),
       Math.max(2, Math.min(state.pitch.width - 2, y)),
     );
+  }
+
+  /**
+   * Hard spatial envelopes are laws of the pitch, not tactical suggestions.
+   * They stop a phase modifier from placing an entire sector on an end line.
+   */
+  private constrainRoleTarget(
+    state: MatchState,
+    team: TeamMatchState,
+    player: PlayerMatchState,
+    target: Vector2,
+  ): Vector2 {
+    const role = String(player.currentRole);
+    const progress = team.attackingDirection === 1 ? target.x : state.pitch.length - target.x;
+    let minimum = 2;
+    let maximum = state.pitch.length - 2;
+
+    if (role === "GOALKEEPER" || role === "DIRECT_GOALKEEPER") {
+      minimum = 2.5;
+      maximum = 10;
+    } else if (role.includes("GOALKEEPER")) {
+      minimum = 3;
+      maximum = 24;
+    } else if (role.includes("BACK") || role.includes("DEFENDER")) {
+      minimum = 10;
+      maximum = 62;
+    } else if (role.includes("MIDFIELD")) {
+      minimum = 18;
+      maximum = 88;
+    } else if (role.includes("STRIKER") || role.includes("FORWARD") || role.includes("WINGER")) {
+      minimum = 28;
+      maximum = state.pitch.length - 9;
+    }
+
+    const boundedProgress = Math.max(minimum, Math.min(maximum, progress));
+    const x = team.attackingDirection === 1 ? boundedProgress : state.pitch.length - boundedProgress;
+    const goalkeeperY = role.includes("GOALKEEPER")
+      ? Math.max(state.pitch.width / 2 - 10, Math.min(state.pitch.width / 2 + 10, target.y))
+      : target.y;
+    return new Vector2(x, Math.max(2, Math.min(state.pitch.width - 2, goalkeeperY)));
   }
 }

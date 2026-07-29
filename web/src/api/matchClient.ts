@@ -1,14 +1,22 @@
 import type { MatchSnapshot } from "../simulation/types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:3000`;
-let matchPromise: Promise<{ id: string }> | null = null;
 
 export function getOrCreateMatch(seed = 1): Promise<{ id: string }> {
-  matchPromise ??= fetch(`${API_URL}/matches`, { method: "POST", headers:{"content-type":"application/json"}, body:JSON.stringify({seed}) }).then(async (response) => {
+  return fetch(`${API_URL}/matches`, { method: "POST", headers:{"content-type":"application/json"}, body:JSON.stringify({seed}) }).then(async (response) => {
     if (!response.ok) throw new Error(`Could not create match: ${response.status}`);
     return response.json() as Promise<{ id: string }>;
   });
-  return matchPromise;
+}
+
+export async function recoverMatch(id: string, seed: number): Promise<{ id: string }> {
+  try {
+    const response = await fetch(`${API_URL}/matches/${id}`);
+    if (response.ok) return { id };
+  } catch {
+    // A fresh match with the same seed is created below after API restarts.
+  }
+  return getOrCreateMatch(seed);
 }
 
 export function subscribeToMatch(
@@ -57,6 +65,8 @@ export function subscribeToMatch(
           y: player.tacticalAnchorPosition.y / wire.pitch.width * 100,
         },
         role: player.role,
+        tacticalResponsibility: player.tacticalResponsibility,
+        occupiedChannel: player.occupiedChannel,
       })),
       ball: {
         x: wire.ball.position.x / wire.pitch.length * 100,

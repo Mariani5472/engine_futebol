@@ -89,4 +89,14 @@ describe("ActionReadiness interaction signals", () => {
 
     expect(pressure).toBeGreaterThanOrEqual(0.75);
   });
+
+  it("does not let an interruptible RECEIVE bypass first-touch stabilization", () => {
+    const owner = createPlayer("owner", new Vector2(0, 0));
+    owner.possessionControlUntil = 1;
+    owner.lastActionType = DecisionType.RECEIVE;
+    const context = { player: owner, currentTick: 10, deltaTime: .05 } as never;
+    expect(ActionReadiness.canStartAction(context)).toBe(false);
+    const settled = { player: owner, currentTick: 25, deltaTime: .05 } as never;
+    expect(ActionReadiness.canStartAction(settled)).toBe(true);
+  });
 });

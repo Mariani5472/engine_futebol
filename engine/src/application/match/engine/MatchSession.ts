@@ -4,6 +4,7 @@ import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParamet
 import { MatchEngine, type IncrementalMatchFrame, type MatchResult, type MatchDiagnosticEvent } from "./MatchEngine";
 import type { SimulationConfig } from "./SimulationConfig";
 import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
+import type { MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollector";
 
 export interface SnapshotVector {
   readonly x: number;
@@ -22,6 +23,10 @@ export interface PlayerSnapshot {
   readonly bodyState: string;
   readonly targetPosition: SnapshotVector;
   readonly tacticalAnchorPosition: SnapshotVector;
+  readonly runCorridorOrigin: SnapshotVector;
+  readonly acceptedTargetChanges: number;
+  readonly tacticalResponsibility: string | null;
+  readonly occupiedChannel: string | null;
 }
 
 export interface BallSnapshot {
@@ -47,6 +52,7 @@ export interface MatchSnapshot {
   readonly ball: BallSnapshot;
   readonly events: readonly MatchEvent[];
   readonly tacticalDiagnostics: MatchTacticalDiagnostics;
+  readonly offensiveFunnel: MatchOffensiveFunnel;
   readonly tacticalDebug: {
     readonly carrierId: string | null;
     readonly passOptionIds: readonly string[];
@@ -134,6 +140,10 @@ export class MatchSession {
       bodyState: player.bodyState,
       targetPosition: { x: player.targetPosition.x, y: player.targetPosition.y },
       tacticalAnchorPosition: { x: player.tacticalAnchorPosition.x, y: player.tacticalAnchorPosition.y },
+      runCorridorOrigin: { x: player.runCorridorOrigin.x, y: player.runCorridorOrigin.y },
+      acceptedTargetChanges: player.acceptedTargetChanges,
+      tacticalResponsibility: player.tacticalResponsibility,
+      occupiedChannel: player.occupiedChannel,
     });
     return {
       seed: this.config.seed,
@@ -161,6 +171,7 @@ export class MatchSession {
       },
       events: frame.events,
       tacticalDiagnostics: frame.tacticalDiagnostics,
+      offensiveFunnel: frame.offensiveFunnel,
       tacticalDebug: {
         carrierId: state.ball.owner?.player.id ?? null,
         passOptionIds: state.ball.owner

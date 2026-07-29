@@ -62,9 +62,13 @@ export class PossessionSystem {
   private givePossession(state: MatchState, player: PlayerMatchState, reason: PossessionAcquisitionReason): void {
     this.syncOwnerFlags(state, player);
 
+    const incomingSpeed = state.ball.velocity.subtract(player.velocity).magnitude();
+    const controlSeconds = Math.min(1.1, .38 + incomingSpeed * .022 + state.ball.height * .12);
     state.ball.resolvePendingPass(player.player.id, state.currentSecond);
     state.ball.acquirePossession(player, reason, state.currentSecond);
-    player.actionLockUntil = Math.max(player.actionLockUntil, state.currentSecond + .3);
+    player.possessionControlUntil = state.currentSecond + controlSeconds;
+    player.possessionProtectedUntil = state.currentSecond + Math.min(.65, controlSeconds * .7);
+    player.actionLockUntil = Math.max(player.actionLockUntil, player.possessionControlUntil);
     state.ball.state = BallState.CONTROLLED;
     state.ball.velocity = state.ball.velocity.multiply(.2);
     state.ball.height = 0;
@@ -107,10 +111,15 @@ export class PossessionSystem {
 
   private controlsBall(player: PlayerMatchState, state: MatchState, intended: boolean): boolean {
     const a = player.player.attributes;
-    const speedPenalty = Math.min(.45, state.ball.velocity.magnitude() * .012);
-    const heightPenalty = state.ball.height * .12;
+    const relativeSpeed = state.ball.velocity.subtract(player.velocity).magnitude();
+    const speedPenalty = Math.min(.86, Math.max(0, relativeSpeed - 4) / 22 * .86);
+    const heightPenalty = state.ball.height * .16;
+    const incoming = state.ball.velocity.magnitude() > .01 ? state.ball.velocity.multiply(-1).normalize() : player.facingDirection;
+    const orientation = (player.facingDirection.normalize().dot(incoming) + 1) / 2;
+    const orientationPenalty = (1 - orientation) * (intended ? .14 : .28);
     const quality = a.technical.firstTouch / 20 * .32 + a.mental.composure / 20 * .18 + a.mental.anticipation / 20 * .12;
-    const probability = Math.max(.12, Math.min(.96, .28 + quality + (intended ? .12 : 0) - speedPenalty - heightPenalty));
+    const floor = state.ball.state === BallState.IN_FLIGHT ? .015 : .1;
+    const probability = Math.max(floor, Math.min(.96, .28 + quality + (intended ? .12 : 0) - speedPenalty - heightPenalty - orientationPenalty));
     return this.random.nextFloat(0, 1) < probability;
   }
 

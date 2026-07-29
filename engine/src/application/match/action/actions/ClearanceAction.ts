@@ -15,6 +15,7 @@ export class ClearanceAction {
 
     player.hasBall = false;
     const origin = player.position;
+    match.ball.noteTouch(player.player.id);
     match.ball.owner = null;
 
     const lateral = random.nextFloat(-12, 12);

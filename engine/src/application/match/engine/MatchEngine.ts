@@ -32,6 +32,7 @@ import { recoverIdleActionState } from "../action/IdleActionRecovery";
 import { BallPhysicsSystem } from "../physics/BallPhysicsSystem";
 import { TacticalEngine } from "../tactical/TacticalEngine";
 import { CollectivePhaseSystem } from "../tactical/CollectivePhaseSystem";
+import { CollectiveCoordinationSystem } from "../tactical/CollectiveCoordinationSystem";
 import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
 import { RefereeSystem } from "../referee/RefereeSystem";
 import { MatchMetricsCollector } from "../metrics/MatchMetricsCollector";
@@ -43,6 +44,7 @@ import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParamet
 import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 import { BallTeleportDetector, type BallTeleportViolation } from "../diagnostics/BallTeleportDetector";
 import type { PassResolutionRecord, PossessionAcquisitionRecord } from "../../../core/movement/BallMatchState";
+import { OffensiveFunnelCollector, type MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollector";
 
 const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
@@ -62,6 +64,7 @@ export interface MatchResult {
   readonly seed: number;
   readonly metrics: MatchMetrics;
   readonly diagnostics: readonly MatchDiagnosticEvent[];
+  readonly offensiveFunnel: MatchOffensiveFunnel;
 }
 
 export type MatchDiagnosticEvent = PossessionAcquisitionRecord | PassResolutionRecord | BallTeleportViolation;
@@ -74,6 +77,7 @@ export interface IncrementalMatchFrame {
   readonly finalResult?: MatchResult;
   readonly tacticalDiagnostics: MatchTacticalDiagnostics;
   readonly diagnostics: readonly MatchDiagnosticEvent[];
+  readonly offensiveFunnel: MatchOffensiveFunnel;
 }
 
 export class MatchEngine {
@@ -133,11 +137,13 @@ export class MatchEngine {
     const ballPhysics = new BallPhysicsSystem();
     const tacticalEngine = new TacticalEngine();
     const collectivePhaseSystem = new CollectivePhaseSystem();
+    const collectiveCoordination = new CollectiveCoordinationSystem();
     const teamBehaviour = new TeamBehaviourSystem();
     const movementSystem = new MovementSystem();
     const possessionSystem = new PossessionSystem(rng, new ReachCalculator());
     const metrics = new MatchMetricsCollector();
     const teleportDetector = new BallTeleportDetector();
+    const offensiveFunnel = new OffensiveFunnelCollector();
 
     const { state, awarenessMap } = this.initializer.initialize(config);
     metrics.bindTeams(state.home.team.id, state.away.team.id);
@@ -173,8 +179,8 @@ export class MatchEngine {
         perceptionSystem, cognitiveSystem, worldAwarenessSystem,
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
-        collectivePhaseSystem, teamBehaviour, movementSystem, possessionSystem,
-        tick, period, metrics, attackFunnel
+        collectivePhaseSystem, collectiveCoordination, teamBehaviour, movementSystem, possessionSystem,
+        tick, period, metrics, offensiveFunnel, attackFunnel
       );
 
       for (const event of tickEvents) {
@@ -187,6 +193,7 @@ export class MatchEngine {
       }
 
       metrics.onEvents(tickEvents, state);
+      offensiveFunnel.onEvents(tickEvents, state);
       metrics.sampleState(state, deltaTime);
       attackFunnel?.sampleState(state);
 
@@ -197,12 +204,17 @@ export class MatchEngine {
       );
       const acquisitions = state.ball.drainPossessionAcquisitions();
       const passResolutions = state.ball.drainPassResolutions();
+      for (const resolution of passResolutions) offensiveFunnel.onPassResolution(resolution, state);
+      offensiveFunnel.onAcquisitions(acquisitions, state);
+      offensiveFunnel.sample(state);
       const teleports = teleportDetector.inspectTick({
         seed: config.seed, matchSecond: state.currentSecond, deltaTime,
         before: beforeBallPosition, after: state.ball.position,
         beforeSpeed: beforeBallSpeed, afterSpeed: state.ball.velocity.magnitude(),
         physicsDisplacement: state.ball.lastPhysicsDisplacement,
-        acquisitions, isRestart: tickEvents.some(event => event.type === "GOAL"),
+        acquisitions,
+        isRestart: tickEvents.some(event => event.type === "GOAL" || event.type === "THROW_IN" || event.type === "GOAL_KICK")
+          || acquisitions.some(acquisition => acquisition.reason === "RESTART"),
       });
       const tickDiagnostics: MatchDiagnosticEvent[] = [...acquisitions, ...passResolutions, ...teleports];
       allDiagnostics.push(...tickDiagnostics);
@@ -224,8 +236,9 @@ export class MatchEngine {
           seed: config.seed,
           metrics: metrics.finalize(),
           diagnostics: allDiagnostics,
+          offensiveFunnel: offensiveFunnel.snapshot(),
         };
-        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics };
+        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics, offensiveFunnel: offensiveFunnel.snapshot() };
         return finalResult;
       }
 
@@ -236,6 +249,7 @@ export class MatchEngine {
         events: frameEvents,
         tacticalDiagnostics: metrics.tacticalSnapshot(),
         diagnostics: tickDiagnostics,
+        offensiveFunnel: offensiveFunnel.snapshot(),
       };
     }
 
@@ -255,6 +269,7 @@ export class MatchEngine {
       seed: config.seed,
       metrics: finalMetrics,
       diagnostics: allDiagnostics,
+      offensiveFunnel: offensiveFunnel.snapshot(),
     };
   }
 
@@ -272,12 +287,14 @@ export class MatchEngine {
     ballPhysics: BallPhysicsSystem,
     tacticalEngine: TacticalEngine,
     collectivePhaseSystem: CollectivePhaseSystem,
+    collectiveCoordination: CollectiveCoordinationSystem,
     teamBehaviour: TeamBehaviourSystem,
     movementSystem: MovementSystem,
     possessionSystem: PossessionSystem,
     tick: number,
     period: MatchPeriod,
     metrics: MatchMetricsCollector,
+    offensiveFunnel: OffensiveFunnelCollector,
     attackFunnel?: AttackFunnelCollector,
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
@@ -371,6 +388,7 @@ export class MatchEngine {
       if (player.hasBall && attackFunnel) {
         attackFunnel.onPossessionDecision(decision.type, player, world, decision);
       }
+      if (player.hasBall) offensiveFunnel.onDecision(player, decision, world, state);
 
       const started = actionFactory.tryStart(decision, player, state.currentSecond);
       if (!started) continue;
@@ -414,10 +432,11 @@ export class MatchEngine {
 
     tacticalEngine.update(state);
     teamBehaviour.update(state);
+    collectiveCoordination.update(state);
     movementSystem.update(state, deltaTime);
     // The authoritative ball follows the player's position from this same tick,
     // avoiding a one-frame correction on the next update.
-    ballPhysics.update(state, deltaTime);
+    events.push(...ballPhysics.update(state, deltaTime));
     possessionSystem.update(state);
     this.syncPossessionSide(state);
     collectivePhaseSystem.update(state, events);
@@ -477,7 +496,8 @@ export class MatchEngine {
   private syncPossessionSide(state: MatchState): void {
     const owner = state.ball.owner;
     if (!owner) {
-      this.lastPossessionTeamId = null;
+      // A physical pass has no owner while travelling. Keep the possession
+      // spell alive until another team actually controls the ball.
       return;
     }
     const ownerIsHome = state.home.players.includes(owner);

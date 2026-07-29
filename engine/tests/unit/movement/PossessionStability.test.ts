@@ -80,4 +80,25 @@ describe("Possession stability", () => {
     expect(p.hasBall).toBe(true);
     expect(match.ball.state).toBe(BallState.CONTROLLED);
   });
+
+  it("usually deflects a 25m/s interception instead of granting clean control", () => {
+    let cleanControls = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      const match = buildMinimalMatchState();
+      const interceptor = match.away.players[0];
+      for (const player of [...match.home.players, ...match.away.players]) player.position = new Vector2(0, 0);
+      interceptor.position = new Vector2(11, 10);
+      interceptor.facingDirection = new Vector2(-1, 0);
+      match.ball.release();
+      match.ball.state = BallState.IN_FLIGHT;
+      match.ball.previousPosition = new Vector2(10, 10);
+      match.ball.position = new Vector2(12, 10);
+      match.ball.velocity = new Vector2(25, 0);
+      match.ball.height = 0;
+      match.ball.intendedReceiverId = match.home.players[1].player.id;
+      new PossessionSystem(new SeededRandom(seed), new ReachCalculator()).update(match);
+      if (match.ball.owner === interceptor) cleanControls++;
+    }
+    expect(cleanControls).toBeLessThanOrEqual(8);
+  });
 });

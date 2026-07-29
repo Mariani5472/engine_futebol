@@ -1,6 +1,8 @@
 import { Vector2 } from "../../../core/geometry/Vector2";
 import { BallMatchState, BallState } from "../../../core/movement/BallMatchState";
 import { MatchState } from "../../../core/movement/MatchState";
+import { Milliseconds, TeamId, type MatchEvent } from "../../../domain";
+import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
 
 const GROUND_FRICTION = 0.82;
 const BOUNCE_RESTITUTION = 0.55;
@@ -10,7 +12,7 @@ const MIN_SPEED = 0.1;
 
 export class BallPhysicsSystem {
 
-  public update(state: MatchState, deltaTime: number): void {
+  public update(state: MatchState, deltaTime: number): MatchEvent[] {
     const ball = state.ball;
     ball.previousPosition = ball.position;
 
@@ -32,16 +34,18 @@ export class BallPhysicsSystem {
       if (!ball.owner.hasBall) {
         ball.owner.hasBall = true;
       }
-      return;
+      return [];
     }
 
     // Owner pointer without CONTROLLED — clear stale owner so contests work.
     if (ball.motion) {
       this.updateAuthoritativeMotion(ball, deltaTime);
+      const restartEvents = this.resolveOutOfPlay(state);
+      if (restartEvents) return restartEvents;
       this.clampToPitch(ball, state);
       ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
       this.syncVisual(ball);
-      return;
+      return [];
     }
 
     if (ball.owner && ball.state !== BallState.CONTROLLED) {
@@ -52,10 +56,89 @@ export class BallPhysicsSystem {
     this.applyGravity(ball, deltaTime);
     this.applyGroundFriction(ball, deltaTime);
     this.applyMovement(ball, deltaTime);
+    const restartEvents = this.resolveOutOfPlay(state);
+    if (restartEvents) return restartEvents;
     this.clampToPitch(ball, state);
     this.checkRestState(ball);
     ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
     this.syncVisual(ball);
+    return [];
+  }
+
+  private resolveOutOfPlay(state: MatchState): MatchEvent[] | null {
+    const ball = state.ball;
+    const left = ball.position.x <= 0 && ball.velocity.x < 0;
+    const right = ball.position.x >= state.pitch.length && ball.velocity.x > 0;
+    const top = ball.position.y <= 0 && ball.velocity.y < 0;
+    const bottom = ball.position.y >= state.pitch.width && ball.velocity.y > 0;
+    if (!left && !right && !top && !bottom) return null;
+
+    const lastTouchTeam = this.teamOfPlayer(state, ball.lastTouchedPlayerId);
+    const period = state.currentSecond < 45 * 60 ? "FIRST_HALF" as const : "SECOND_HALF" as const;
+    let awarded: TeamMatchState;
+    let restartPosition: Vector2;
+    let event: MatchEvent;
+
+    if (top || bottom) {
+      awarded = lastTouchTeam === state.home ? state.away : state.home;
+      restartPosition = new Vector2(
+        Math.max(2, Math.min(state.pitch.length - 2, ball.position.x)),
+        top ? 1 : state.pitch.width - 1,
+      );
+      event = {
+        id: `throw-in-${awarded.team.id}-${state.currentSecond.toFixed(2)}`,
+        type: "THROW_IN", timestamp: (state.currentSecond * 1000) as Milliseconds,
+        period, teamId: awarded.team.id as TeamId,
+      };
+    } else {
+      const defending = right
+        ? (state.home.attackingDirection === -1 ? state.home : state.away)
+        : (state.home.attackingDirection === 1 ? state.home : state.away);
+      const attacking = defending === state.home ? state.away : state.home;
+      const corner = lastTouchTeam === defending;
+      awarded = corner ? attacking : defending;
+      restartPosition = corner
+        ? new Vector2(right ? state.pitch.length - 1 : 1, ball.position.y < state.pitch.width / 2 ? 1 : state.pitch.width - 1)
+        : new Vector2(right ? state.pitch.length - 6 : 6, state.pitch.width / 2);
+      event = corner ? {
+        id: `corner-${awarded.team.id}-${state.currentSecond.toFixed(2)}`,
+        type: "CORNER", timestamp: (state.currentSecond * 1000) as Milliseconds,
+        period, teamId: awarded.team.id as TeamId,
+      } : {
+        id: `goal-kick-${awarded.team.id}-${state.currentSecond.toFixed(2)}`,
+        type: "GOAL_KICK", timestamp: (state.currentSecond * 1000) as Milliseconds,
+        period, teamId: awarded.team.id as TeamId,
+      };
+    }
+
+    const goalkeeperRestart = event.type === "GOAL_KICK";
+    const candidates = goalkeeperRestart
+      ? awarded.players.filter(player => player.currentRole.includes("GOALKEEPER"))
+      : awarded.players.filter(player => !player.currentRole.includes("GOALKEEPER"));
+    const taker = (candidates.length ? candidates : awarded.players)
+      .slice().sort((a, b) => a.position.distanceTo(restartPosition) - b.position.distanceTo(restartPosition))[0];
+
+    for (const player of [...state.home.players, ...state.away.players]) player.hasBall = false;
+    ball.resolvePendingPass(taker.player.id, state.currentSecond);
+    taker.position = restartPosition;
+    taker.velocity = Vector2.zero();
+    taker.targetPosition = restartPosition;
+    ball.position = restartPosition;
+    ball.previousPosition = restartPosition;
+    ball.velocity = Vector2.zero();
+    ball.height = 0;
+    ball.acquirePossession(taker, "RESTART", state.currentSecond);
+    ball.state = BallState.CONTROLLED;
+    ball.lastPhysicsDisplacement = 0;
+    this.syncVisual(ball);
+    return [event];
+  }
+
+  private teamOfPlayer(state: MatchState, playerId: string | null): TeamMatchState | null {
+    if (!playerId) return null;
+    if (state.home.players.some(player => player.player.id === playerId)) return state.home;
+    if (state.away.players.some(player => player.player.id === playerId)) return state.away;
+    return null;
   }
 
   private updateAuthoritativeMotion(ball: BallMatchState, deltaTime: number): void {

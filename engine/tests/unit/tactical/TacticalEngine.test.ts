@@ -1,5 +1,7 @@
 import { TacticalEngine } from "../../../src/application/match/tactical/TacticalEngine";
 import { buildMinimalMatchState, buildPlayerMatchState } from "../../helpers/builders";
+import { buildSimulationConfig } from "../../helpers/builders";
+import { MatchInitializer } from "../../../src/application/match/engine/MatchInitializer";
 import { Vector2 } from "../../../src/core/geometry/Vector2";
 
 describe("TacticalEngine", () => {
@@ -49,5 +51,28 @@ describe("TacticalEngine", () => {
     const state = buildMinimalMatchState();
     (state.ball as any).position = new Vector2(20, 34); // defensive half for home
     expect(engine.isBallInAttackingHalf(state, state.home)).toBe(false);
+  });
+
+  it("keeps traditional goalkeepers inside their own ten-metre zone", () => {
+    const state = new MatchInitializer().initialize(buildSimulationConfig(1)).state;
+    state.home.collectivePhase = "FINAL_THIRD";
+    state.away.collectivePhase = "FINAL_THIRD";
+    state.ball.position = new Vector2(90, 34);
+    engine.update(state);
+
+    const homeGoalkeeper = state.home.players.find(player => player.currentRole === "GOALKEEPER")!;
+    const awayGoalkeeper = state.away.players.find(player => player.currentRole === "GOALKEEPER")!;
+    expect(homeGoalkeeper.targetPosition.x).toBeLessThanOrEqual(10);
+    expect(105 - awayGoalkeeper.targetPosition.x).toBeLessThanOrEqual(10);
+  });
+
+  it("does not target attackers onto the end line", () => {
+    const state = new MatchInitializer().initialize(buildSimulationConfig(1)).state;
+    state.home.collectivePhase = "FINAL_THIRD";
+    state.ball.position = new Vector2(92, 34);
+    engine.update(state);
+
+    const attackers = state.home.players.filter(player => ["STRIKER", "WINGER"].includes(String(player.currentRole)));
+    expect(attackers.every(player => player.targetPosition.x <= 96)).toBe(true);
   });
 });

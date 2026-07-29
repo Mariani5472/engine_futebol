@@ -73,6 +73,8 @@ function createState(player: PlayerMatchState): unknown {
   return {
     home: { players: [player] },
     away: { players: [] },
+    pitch: { length: 105, width: 68 },
+    ball: { position: new Vector2(52.5, 34), motion: null },
   };
 }
 
@@ -169,10 +171,62 @@ describe("MovementSystem + ActionExecution physical state", () => {
     const state = {
       home: { players: [first] }, away: { players: [second] },
       pitch: { length: 105, width: 68 },
+      ball: { position: new Vector2(52.5, 34), motion: null },
     };
     const movement = new MovementSystem();
     for (let tick = 0; tick < 12; tick++) movement.update(state as never, .05);
     expect(first.position.distanceTo(second.position)).toBeGreaterThan(1);
+  });
+
+  it("accelerates toward a target instead of receiving maximum speed instantly", () => {
+    const player = createPlayer("runner");
+    const movement = new MovementSystem();
+    movement.update(createState(player) as never, .05);
+    expect(player.velocity.magnitude()).toBeGreaterThan(0);
+    expect(player.velocity.magnitude()).toBeLessThan(1);
+  });
+
+  it("decelerates with inertia and does not stop instantly at its target", () => {
+    const player = createPlayer("runner");
+    player.position = new Vector2(10, 10);
+    player.targetPosition = player.position;
+    player.velocity = new Vector2(4, 0);
+    new MovementSystem().update(createState(player) as never, .05);
+    expect(player.velocity.magnitude()).toBeGreaterThan(3);
+    expect(player.velocity.magnitude()).toBeLessThan(4);
+  });
+
+  it("cannot reverse its running direction by 180 degrees in one frame", () => {
+    const player = createPlayer("runner");
+    player.position = new Vector2(50, 34);
+    player.targetPosition = new Vector2(20, 34);
+    player.runCorridorOrigin = player.position;
+    player.velocity = new Vector2(4, 0);
+    new MovementSystem().update(createState(player) as never, .05);
+    expect(player.velocity.x).toBeGreaterThan(0);
+    expect(new Vector2(4, 0).angleTo(player.velocity)).toBeLessThan(.35);
+  });
+
+  it("stops at a crossed target instead of coasting to the boundary", () => {
+    const player = createPlayer("runner");
+    player.position = new Vector2(9.8, 20);
+    player.targetPosition = new Vector2(10, 20);
+    player.velocity = new Vector2(5, 0);
+
+    new MovementSystem().update(createState(player) as never, .05);
+
+    expect(player.position.x).toBeCloseTo(10);
+    expect(player.velocity.magnitude()).toBe(0);
+  });
+
+  it("ignores tiny tactical target changes through spatial hysteresis", () => {
+    const player = createPlayer("runner");
+    const original = player.targetPosition;
+    player.setTarget(original.add(new Vector2(.2, .1)));
+    expect(player.targetPosition).toBe(original);
+    expect(player.acceptedTargetChanges).toBe(0);
+    player.setTarget(original.add(new Vector2(2, 0)));
+    expect(player.acceptedTargetChanges).toBe(1);
   });
 });
 

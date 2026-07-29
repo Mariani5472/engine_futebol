@@ -26,6 +26,10 @@ export class PassEvaluator implements ActionEvaluator {
     const decisions: Decision[] = [];
 
     for (const lane of lanes) {
+      // Ordinary ground passes should not become hopeful clearances across
+      // half the pitch. Crosses and goalkeeper distribution have evaluators
+      // and execution profiles of their own.
+      if (lane.distance > 42) continue;
       const score = this.scoreLane(
         context,
         lane,
@@ -74,7 +78,7 @@ export class PassEvaluator implements ActionEvaluator {
         ? (lane.distance - 4) * 4
         : lane.distance <= 24
           ? 18
-          : Math.max(0, 18 - (lane.distance - 24) * .65);
+          : Math.max(-22, 18 - (lane.distance - 24) * 2.2);
     const nearbyOpponents = world.opponents.filter(opponent => opponent.position.distanceTo(lane.targetPosition) < 3).length;
     const nearbyTeammates = world.teammates.filter(teammate =>
       teammate.player.id !== lane.targetId && teammate.position.distanceTo(lane.targetPosition) < 2,
@@ -82,7 +86,7 @@ export class PassEvaluator implements ActionEvaluator {
     const receiverCongestion = nearbyOpponents * -8 + nearbyTeammates * -4;
     const progressBonus = Math.max(-20, Math.min(55, lane.forwardProgress * 1.6));
     const certaintyBonus = lane.certainty * 6;
-    const clearanceBonus = lane.clear ? 12 : -6;
+    const clearanceBonus = lane.clear ? 12 : -42;
 
     const desiredDirection = lane.targetPosition.subtract(context.player.position);
     const orientationQuality = ActionReadiness.orientationQuality(

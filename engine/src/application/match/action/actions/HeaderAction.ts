@@ -21,6 +21,7 @@ export class HeaderAction {
     }
 
     const origin = match.ball.visualPosition;
+    match.ball.noteTouch(player.player.id);
     const attrs = player.player.attributes;
     const heading = attrs.technical.heading / 20;
     const jumpingReach = attrs.physical.jumpingReach / 20;
