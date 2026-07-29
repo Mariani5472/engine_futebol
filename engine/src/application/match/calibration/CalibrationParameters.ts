@@ -36,8 +36,11 @@ export const ENGINE_CALIBRATION_PARAMETERS = {
     goalkeeperMinimumReactionSeconds: 0.08,
   },
   discipline: {
-    baseFoulChance: 0.13,
-    foulDangerFloor: 0.34,
+    // With tackles now counted only at physical contact, unsuccessful
+    // challenges must carry the foul probability previously diluted across
+    // hundreds of non-contact "attempts".
+    baseFoulChance: 0.92,
+    foulDangerFloor: 0.18,
     directRedDanger: 0.97,
     directRedChance: 0.006,
     baseYellowChance: 0.22,

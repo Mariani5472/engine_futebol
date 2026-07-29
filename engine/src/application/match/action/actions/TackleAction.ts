@@ -8,7 +8,8 @@ import { RefereeSystem } from "../../referee/RefereeSystem";
 import { ActionEvent } from "../ActionResult";
 
 export class TackleAction {
-  private static readonly TACKLE_COOLDOWN_SECONDS = 4;
+  private static readonly TACKLE_COOLDOWN_SECONDS = 8;
+  private static readonly CONTACT_RADIUS_METRES = 1.45;
 
   constructor(private readonly referee: RefereeSystem) {}
 
@@ -49,6 +50,13 @@ export class TackleAction {
       };
     }
     if (matchSecond < ballOwner.possessionProtectedUntil) {
+      return { actorId: player.player.id, type: DecisionType.TACKLE, success: false, events: [] };
+    }
+
+    // An attempted press or lunge outside contact range is not an Opta-style
+    // tackle and must not create a tackle/foul event.
+    if (player.position.distanceTo(match.ball.position) > TackleAction.CONTACT_RADIUS_METRES) {
+      player.tackleLockUntil = Math.max(player.tackleLockUntil, matchSecond + 1.5);
       return { actorId: player.player.id, type: DecisionType.TACKLE, success: false, events: [] };
     }
 
@@ -103,7 +111,7 @@ export class TackleAction {
       };
     }
 
-    const physicalContact = player.position.distanceTo(match.ball.position) <= 1.5;
+    const physicalContact = player.position.distanceTo(match.ball.position) <= TackleAction.CONTACT_RADIUS_METRES;
     if (success && physicalContact) {
       if (ballOwner.activePipeline?.isBusy()) {
         ballOwner.activePipeline.interrupt("TACKLE", matchSecond);

@@ -23,13 +23,13 @@ export class TackleEvaluator implements ActionEvaluator {
 
     if (!ownerIsOpponent) return [];
 
-    const distance = context.player.position.distanceTo(ballOwner.position);
+    const distance = context.player.position.distanceTo(context.match.ball.position);
     // Do not start impossible remote tackles that only pull more players into
     // an already congested ball zone. The action itself uses a 1.5m contact cap.
-    if (distance > 1.7) return [];
+    if (distance > 1.45) return [];
 
     const score = this.calculateUtility(context, ballOwner, distance);
-    if (score.total < 14) return [];
+    if (score.total < 58) return [];
 
     return [
       new Decision(

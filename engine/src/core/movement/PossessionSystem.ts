@@ -8,7 +8,8 @@ import { Vector2 } from "../geometry/Vector2";
 import { DecisionType } from "../../application/match/decision/DecisionType";
 
 const GROUND_CONTROL_RADIUS = 1.15;
-const INTERCEPTION_RADIUS = 1.25;
+const INTERCEPTION_RADIUS = 0.85;
+const INTENDED_RECEPTION_RADIUS = 1.5;
 const MAX_CONTROL_HEIGHT = 1.5;
 
 export class PossessionSystem {
@@ -40,8 +41,7 @@ export class PossessionSystem {
 
     if (ball.height > MAX_CONTROL_HEIGHT) return;
     const intendedReceiverId = ball.intendedReceiverId;
-    const radius = ball.state === BallState.IN_FLIGHT ? INTERCEPTION_RADIUS : GROUND_CONTROL_RADIUS;
-    const candidates = this.getCandidates(state, radius);
+    const candidates = this.getCandidates(state);
 
     if (candidates.length === 0) return;
 
@@ -57,6 +57,20 @@ export class PossessionSystem {
     }
 
     if (!this.controlsBall(winner, state, intendedReceiverId === winner.player.id)) {
+      // Completion and control are separate facts. If the pass physically
+      // reaches a teammate, record the pass as completed even when a poor
+      // first touch spills the ball and possession is subsequently lost.
+      const pending = ball.pendingPass;
+      if (pending && (pending.teammateIds ?? [pending.intendedReceiverId]).includes(winner.player.id)) {
+        const intended = [...state.home.players, ...state.away.players]
+          .find(player => player.player.id === pending.intendedReceiverId);
+        ball.noteTouch(winner.player.id);
+        ball.resolvePendingPass(
+          winner.player.id,
+          state.currentSecond,
+          intended?.position.distanceTo(ball.position) ?? null,
+        );
+      }
       winner.controlAttemptLockUntil = state.currentSecond + .65;
       this.deflectAfterFailedControl(state);
       return;
@@ -64,16 +78,24 @@ export class PossessionSystem {
     const reason: PossessionAcquisitionReason = intendedReceiverId === winner.player.id
       ? "INTENDED_RECEPTION"
       : ball.state === BallState.IN_FLIGHT ? "INTERCEPTION" : "PHYSICAL_CLAIM";
-    this.givePossession(state, winner, reason);
+    this.givePossession(state, winner, reason, candidates.length > 1);
   }
 
-  private givePossession(state: MatchState, player: PlayerMatchState, reason: PossessionAcquisitionReason): void {
+  private givePossession(
+    state: MatchState,
+    player: PlayerMatchState,
+    reason: PossessionAcquisitionReason,
+    contested: boolean,
+  ): void {
     this.syncOwnerFlags(state, player);
 
     const incomingSpeed = state.ball.velocity.subtract(player.velocity).magnitude();
     const controlSeconds = Math.min(1.1, .38 + incomingSpeed * .022 + state.ball.height * .12);
-    state.ball.resolvePendingPass(player.player.id, state.currentSecond);
-    state.ball.acquirePossession(player, reason, state.currentSecond);
+    const intended=state.ball.pendingPass
+      ? [...state.home.players,...state.away.players].find(candidate=>candidate.player.id===state.ball.pendingPass!.intendedReceiverId)
+      : undefined;
+    state.ball.resolvePendingPass(player.player.id,state.currentSecond,intended?.position.distanceTo(state.ball.position)??null);
+    state.ball.acquirePossession(player, reason, state.currentSecond, contested);
     player.possessionControlUntil = state.currentSecond + controlSeconds;
     player.possessionProtectedUntil = state.currentSecond + Math.min(.65, controlSeconds * .7);
     player.actionLockUntil = Math.max(player.actionLockUntil, player.possessionControlUntil);
@@ -91,7 +113,6 @@ export class PossessionSystem {
 
   private getCandidates(
     state: MatchState,
-    radius: number,
   ): PossessionCandidate[] {
     const players = [...state.home.players, ...state.away.players];
     const candidates: PossessionCandidate[] = [];
@@ -101,6 +122,10 @@ export class PossessionSystem {
       const distance = state.ball.state === BallState.IN_FLIGHT
         ? this.distanceToSegment(player.position, state.ball.previousPosition, state.ball.position)
         : player.position.distanceTo(state.ball.position);
+      const intended = state.ball.intendedReceiverId === player.player.id && state.ball.pendingPass !== null;
+      const radius = state.ball.state === BallState.IN_FLIGHT
+        ? intended ? INTENDED_RECEPTION_RADIUS : INTERCEPTION_RADIUS
+        : intended ? INTENDED_RECEPTION_RADIUS : GROUND_CONTROL_RADIUS;
       const reach = this.reachCalculator.calculateReachTime(player, state.ball);
 
       if (distance > radius) continue;
@@ -111,7 +136,7 @@ export class PossessionSystem {
       candidates.push({
         player,
         distance,
-        score: this.calculateControlScore(player, reach, distance),
+        score: this.calculateControlScore(player, reach, distance) + (intended ? 24 : 0),
       });
     }
 
@@ -121,14 +146,19 @@ export class PossessionSystem {
   private controlsBall(player: PlayerMatchState, state: MatchState, intended: boolean): boolean {
     const a = player.player.attributes;
     const relativeSpeed = state.ball.velocity.subtract(player.velocity).magnitude();
-    const speedPenalty = Math.min(.86, Math.max(0, relativeSpeed - 4) / 22 * .86);
-    const heightPenalty = state.ball.height * .16;
+    // A well-aimed pass must not be subjected to the same control lottery as
+    // an interception. Ground-pass speed is expected and the receiver has
+    // already adjusted body/route to the causal destination.
+    const speedPenalty = intended
+      ? Math.min(.35, Math.max(0, relativeSpeed - 10) / 30 * .35)
+      : Math.min(.86, Math.max(0, relativeSpeed - 4) / 22 * .86);
+    const heightPenalty = state.ball.height * (intended ? .10 : .16);
     const incoming = state.ball.velocity.magnitude() > .01 ? state.ball.velocity.multiply(-1).normalize() : player.facingDirection;
     const orientation = (player.facingDirection.normalize().dot(incoming) + 1) / 2;
-    const orientationPenalty = (1 - orientation) * (intended ? .14 : .28);
+    const orientationPenalty = (1 - orientation) * (intended ? .08 : .28);
     const quality = a.technical.firstTouch / 20 * .32 + a.mental.composure / 20 * .18 + a.mental.anticipation / 20 * .12;
-    const floor = state.ball.state === BallState.IN_FLIGHT ? .015 : .1;
-    const probability = Math.max(floor, Math.min(.96, .28 + quality + (intended ? .12 : 0) - speedPenalty - heightPenalty - orientationPenalty));
+    const floor = intended ? .55 : state.ball.state === BallState.IN_FLIGHT ? .015 : .1;
+    const probability = Math.max(floor, Math.min(.97, .28 + quality + (intended ? .26 : 0) - speedPenalty - heightPenalty - orientationPenalty));
     return this.random.nextFloat(0, 1) < probability;
   }
 

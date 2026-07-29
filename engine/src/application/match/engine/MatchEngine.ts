@@ -242,7 +242,9 @@ export class MatchEngine {
       );
       const acquisitions = state.ball.drainPossessionAcquisitions();
       const passResolutions = state.ball.drainPassResolutions();
-      const passEvents = passResolutions.map(resolution => this.makePassResolutionEvent(resolution, state, period));
+      const passEvents = passResolutions
+        .filter(resolution => resolution.statisticalAttemptRecorded)
+        .map(resolution => this.makePassResolutionEvent(resolution, state, period));
       const possessionEvents = acquisitions.map(acquisition => this.makePossessionChangedEvent(acquisition, state, period));
       allEvents.push(...passEvents, ...possessionEvents);
       frameEvents.push(...passEvents, ...possessionEvents);
@@ -664,9 +666,11 @@ export class MatchEngine {
       period,
       teamId: team.team.id as TeamId,
       playerId: resolution.passerId as PlayerId,
-      receiverId: resolution.intendedReceiverId as PlayerId,
+      receiverId: resolution.controllingPlayerId as PlayerId,
+      intendedReceiverId: resolution.intendedReceiverId as PlayerId,
       controllingPlayerId: resolution.controllingPlayerId as PlayerId,
       forwardGain: resolution.realForwardGain,
+      intendedReceiverDistance:resolution.intendedReceiverDistance,
     };
   }
 
@@ -682,6 +686,7 @@ export class MatchEngine {
       type:"POSSESSION_CHANGED", timestamp:(acquisition.matchSecond*1000) as Milliseconds,
       period, teamId:team.team.id as TeamId, playerId:acquisition.playerId as PlayerId,
       previousPlayerId:acquisition.previousPlayerId as PlayerId|null, reason:acquisition.reason,
+      contested: acquisition.contested ?? false,
       positionX:acquisition.ballPosition.x, positionY:acquisition.ballPosition.y,
       ballSpeed:acquisition.ballSpeed,
     };

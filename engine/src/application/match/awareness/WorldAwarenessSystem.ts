@@ -14,7 +14,9 @@ import {
 
 const PRESSURE_RADIUS = 8;
 const NEAREST_SEARCH_RADIUS = 30;
-const PASS_LANE_OBSTACLE_RADIUS = 1.2;
+// Includes the defender's immediate step/reach during ball flight, not only
+// the centre point occupied at decision time.
+const PASS_LANE_OBSTACLE_RADIUS = 1.65;
 
 /**
  * Builds a WorldAwareness snapshot for a single player.
@@ -258,12 +260,16 @@ export class WorldAwarenessSystem {
             (len * len),
         ),
       );
-      if (t < 0.08 || t > 0.92) continue;
+      // Ignore pressure virtually on top of the passer, which is handled by
+      // the action's pressure model. Do not ignore the receiver endpoint: a
+      // marker beside the target is precisely what makes a pass unsafe.
+      if (t < 0.08) continue;
 
       const projX = from.x + t * dx;
       const projY = from.y + t * dy;
       const dist = Math.hypot(opp.position.x - projX, opp.position.y - projY);
-      if (dist < PASS_LANE_OBSTACLE_RADIUS) return false;
+      const requiredClearance = t > .8 ? 2.6 : PASS_LANE_OBSTACLE_RADIUS;
+      if (dist < requiredClearance) return false;
     }
 
     return true;

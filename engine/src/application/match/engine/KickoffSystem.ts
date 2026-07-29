@@ -75,8 +75,10 @@ export class KickoffSystem {
       state.ball.pendingPass = {
         passerId: taker.player.id,
         intendedReceiverId: receiver.player.id,
+        teammateIds:state.attackingTeam.players.map(player=>player.player.id),
         startedAtSecond: state.currentSecond,
         realForwardGain: (receiver.position.x - taker.position.x) * state.attackingTeam.attackingDirection,
+        statisticalAttemptRecorded: false,
       };
       kickoff.launched = true;
       return false;

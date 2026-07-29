@@ -162,6 +162,8 @@ export interface PassCompletedEvent extends BaseMatchEvent {
   readonly teamId: TeamId;
   readonly playerId: PlayerId;
   readonly receiverId: PlayerId;
+  readonly intendedReceiverId?: PlayerId;
+  readonly intendedReceiverDistance?: number | null;
   readonly controllingPlayerId: PlayerId;
   readonly forwardGain: number;
 }
@@ -199,6 +201,7 @@ export interface PossessionChangedEvent extends BaseMatchEvent {
   readonly positionX: number;
   readonly positionY: number;
   readonly ballSpeed: number;
+  readonly contested?: boolean;
 }
 
 export interface TackleEvent extends BaseMatchEvent {

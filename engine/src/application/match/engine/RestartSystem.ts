@@ -86,8 +86,10 @@ export class RestartSystem {
       state.ball.pendingPass = {
         passerId: taker.player.id,
         intendedReceiverId: receiver.player.id,
+        teammateIds:this.team(state,restart.teamId).players.map(player=>player.player.id),
         startedAtSecond: state.currentSecond,
         realForwardGain: (receiver.position.x - taker.position.x) * this.team(state, restart.teamId).attackingDirection,
+        statisticalAttemptRecorded: false,
       };
       state.ball.restrictedTouchPlayerId = taker.player.id;
       restart.launched = true;

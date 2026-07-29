@@ -7,8 +7,8 @@ import { DecisionType } from "../../decision/DecisionType";
 import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 import { Milliseconds, PlayerId, TeamId, type PassAttemptedEvent } from "../../../../domain";
 
-const MAX_PASS_SPEED = 28;
-const MIN_PASS_SPEED = 8;
+const MAX_PASS_SPEED = 30;
+const MIN_PASS_SPEED = 11;
 const MAX_RECEIVER_LEAD = 5;
 
 export class PassAction {
@@ -47,8 +47,10 @@ export class PassAction {
     match.ball.pendingPass = {
       passerId: player.player.id,
       intendedReceiverId: target.player.id,
+      teammateIds:team.players.filter(teammate=>teammate!==player).map(teammate=>teammate.player.id),
       startedAtSecond: matchSecond,
       realForwardGain,
+      statisticalAttemptRecorded: true,
     };
     this.prepareOneTwo(player, target, team.attackingDirection, origin, destination, matchSecond, match.pitch.length, match.pitch.width);
     const flightSeconds = Math.max(.16, origin.distanceTo(destination) / this.calculatePower(origin.distanceTo(destination)));

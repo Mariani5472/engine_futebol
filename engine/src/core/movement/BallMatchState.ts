@@ -36,6 +36,8 @@ export interface PossessionAcquisitionRecord {
   readonly ballSpeed: number;
   readonly reason: PossessionAcquisitionReason;
   readonly previousAction: string | null;
+  /** More than one player was physically eligible to control this ball. */
+  readonly contested?: boolean;
   readonly ballPosition: Vector2;
   readonly playerPosition: Vector2;
 }
@@ -43,8 +45,12 @@ export interface PossessionAcquisitionRecord {
 export interface PendingPass {
   readonly passerId: string;
   readonly intendedReceiverId: string;
+  /** A pass is complete when any teammate controls it, not only the nominated target. */
+  readonly teammateIds?: readonly string[];
   readonly startedAtSecond: number;
   readonly realForwardGain: number;
+  /** False for restart motions that did not emit PASS_ATTEMPTED. */
+  readonly statisticalAttemptRecorded?: boolean;
 }
 
 export interface PassResolutionRecord {
@@ -55,6 +61,8 @@ export interface PassResolutionRecord {
   readonly controllingPlayerId: string;
   readonly success: boolean;
   readonly realForwardGain: number;
+  readonly intendedReceiverDistance: number | null;
+  readonly statisticalAttemptRecorded: boolean;
 }
 
 export interface LastCompletedPass {
@@ -111,8 +119,17 @@ export class BallMatchState {
     this.visualVelocity = motion.target.subtract(motion.origin).divide(Math.max(.01, motion.duration));
   }
 
-  public acquirePossession(player: PlayerMatchState, reason: PossessionAcquisitionReason, matchSecond: number): void {
-    const previousPlayerId = this.owner?.player.id ?? null;
+  public acquirePossession(
+    player: PlayerMatchState,
+    reason: PossessionAcquisitionReason,
+    matchSecond: number,
+    contested = false,
+  ): void {
+    // During a pass or loose-ball phase owner is null, but the last physical
+    // touch still identifies which team relinquished the ball. Keeping that
+    // provenance lets analytics distinguish a true recovery from a harmless
+    // same-team reception without inventing possession.
+    const previousPlayerId = this.owner?.player.id ?? this.lastTouchedPlayerId ?? null;
     if (this.lastCompletedPass && player.player.id !== this.lastCompletedPass.receiverId
       && !this.lastCompletedPass.interventions.includes("CONTROL_CHANGE")) {
       this.lastCompletedPass.interventions.push("CONTROL_CHANGE");
@@ -123,7 +140,7 @@ export class BallMatchState {
         previousPlayerId,
         distanceToBall: player.position.distanceTo(this.position),
         ballSpeed: Math.max(this.velocity.magnitude(), this.visualVelocity.magnitude()),
-        reason, previousAction: player.lastActionType === undefined ? null : String(player.lastActionType),
+        reason, previousAction: player.lastActionType === undefined ? null : String(player.lastActionType), contested,
         ballPosition: this.position, playerPosition: player.position,
       });
     }
@@ -158,19 +175,22 @@ export class BallMatchState {
     return records;
   }
 
-  public resolvePendingPass(controllingPlayerId: string, matchSecond: number): void {
+  public resolvePendingPass(controllingPlayerId: string, matchSecond: number, intendedReceiverDistance: number | null = null): void {
     const pending = this.pendingPass;
     if (!pending) return;
+    const success = (pending.teammateIds ?? [pending.intendedReceiverId]).includes(controllingPlayerId);
     this.passResolutions.push({
       type: "PASS_RESOLVED",
       matchSecond,
       passerId: pending.passerId,
       intendedReceiverId: pending.intendedReceiverId,
       controllingPlayerId,
-      success: controllingPlayerId === pending.intendedReceiverId,
+      success,
       realForwardGain: pending.realForwardGain,
+      intendedReceiverDistance,
+      statisticalAttemptRecorded: pending.statisticalAttemptRecorded !== false,
     });
-    if (controllingPlayerId === pending.intendedReceiverId) {
+    if (success) {
       this.lastCompletedPass={
         passerId:pending.passerId,
         receiverId:controllingPlayerId,

@@ -73,6 +73,14 @@ export class PlayerIntentSystem {
 
   private effectivePossessionTeamId(match: MatchState): string | null {
     if (match.ball.owner) return match.home.players.includes(match.ball.owner) ? match.home.team.id : match.away.team.id;
+    // A pending pass is still an attacking-team action until physical control
+    // resolves it. A transient loose-ball prediction must not cancel the
+    // receiver's run while the ball is travelling toward that receiver.
+    if (match.ball.pendingPass) {
+      const passerId = match.ball.pendingPass.passerId;
+      if (match.home.players.some(player => player.player.id === passerId)) return match.home.team.id;
+      if (match.away.players.some(player => player.player.id === passerId)) return match.away.team.id;
+    }
     if (match.home.possessionPrediction.likelyTeamId && match.home.possessionPrediction.confidence >= .55)
       return match.home.possessionPrediction.likelyTeamId;
     return null;

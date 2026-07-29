@@ -102,6 +102,18 @@ describe("authoritative pass flow", () => {
     expect(controlled).toBe(true);
   });
 
+  it("credits a completed pass when another teammate collects the intended ball",()=>{
+    const {match,ctx}=buildContext(7);
+    const teammate=match.away.players[0];
+    new PassAction().execute(ctx);
+    match.ball.pendingPass={...match.ball.pendingPass!,teammateIds:[match.home.players[1].player.id,teammate.player.id]};
+    match.ball.resolvePendingPass(teammate.player.id,10.8);
+    expect(match.ball.drainPassResolutions()[0]).toMatchObject({
+      success:true,
+      controllingPlayerId:teammate.player.id,
+    });
+  });
+
   it("does not claim a stopped ball outside the physical control radius", () => {
     const { match, receiver } = buildContext();
     for (const player of [...match.home.players, ...match.away.players]) {

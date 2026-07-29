@@ -48,7 +48,7 @@ export class RefereeSystem {
 
     const successFactor = tackleSucceeded ? 0.28 : 1.0;
     const foulChance = Math.min(
-      0.58,
+      0.88,
       DISCIPLINE_CALIBRATION.baseFoulChance
         * successFactor
         * (0.55 + danger * 1.15)

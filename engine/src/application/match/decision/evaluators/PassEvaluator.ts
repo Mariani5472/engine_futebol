@@ -17,7 +17,25 @@ export class PassEvaluator implements ActionEvaluator {
     const lanes = context.world.passingLanes;
     if (lanes.length === 0) return [];
 
-    const bestForward = Math.max(...lanes.map((l) => l.forwardProgress));
+    const tacticallySafe = lanes.filter(lane => {
+      const future = context.teamTacticalContext?.passingLanes.find(item =>
+        item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+      );
+      return lane.clear && (!future || future.clearAtArrival);
+    });
+    const viableOutlets = lanes.filter(lane => {
+      const future = context.teamTacticalContext?.passingLanes.find(item =>
+        item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+      );
+      return lane.clear && (!future || future.arrivalMargin > 0);
+    });
+    // When a safe outlet exists, risky lanes are not merely assigned a lower
+    // score: they are excluded. Otherwise large progression bonuses could
+    // still select a visibly blocked pass hundreds of times per match.
+    const candidateLanes = tacticallySafe.length > 0 ? tacticallySafe : viableOutlets;
+    if (candidateLanes.length === 0) return [];
+
+    const bestForward = Math.max(...candidateLanes.map((l) => l.forwardProgress));
     const hasProgressiveOption = bestForward >= 6;
 
     const team = context.match.home.players.includes(context.player)
@@ -27,7 +45,7 @@ export class PassEvaluator implements ActionEvaluator {
 
     const decisions: Decision[] = [];
 
-    for (const lane of lanes) {
+    for (const lane of candidateLanes) {
       // Ordinary ground passes should not become hopeful clearances across
       // half the pitch. Crosses and goalkeeper distribution have evaluators
       // and execution profiles of their own.
@@ -116,18 +134,20 @@ export class PassEvaluator implements ActionEvaluator {
     // Very short passes inside a crowd perpetuate local pinball. Reward useful
     // separation (roughly 8-24m) and strongly discourage sub-4m recycling.
     const distanceScore = lane.distance < 4
-      ? -22 + lane.distance * 2
+      ? -18 + lane.distance * 3
       : lane.distance < 8
-        ? (lane.distance - 4) * 4
-        : lane.distance <= 24
-          ? 18
-          : Math.max(-22, 18 - (lane.distance - 24) * 2.2);
+        ? 12 + (lane.distance - 4) * 2
+        : lane.distance <= 16
+          ? 24
+          : lane.distance <= 22
+            ? 24 - (lane.distance - 16) * 1.5
+            : Math.max(-24, 15 - (lane.distance - 22) * 2.4);
     const nearbyOpponents = world.opponents.filter(opponent => opponent.position.distanceTo(lane.targetPosition) < 3).length;
     const nearbyTeammates = world.teammates.filter(teammate =>
       teammate.player.id !== lane.targetId && teammate.position.distanceTo(lane.targetPosition) < 2,
     ).length;
     const receiverCongestion = nearbyOpponents * -8 + nearbyTeammates * -4;
-    const progressBonus = Math.max(-20, Math.min(55, lane.forwardProgress * 1.6));
+    const progressBonus = Math.max(-12, Math.min(30, lane.forwardProgress * 1.15));
     const certaintyBonus = lane.certainty * 6;
     const clearanceBonus = lane.clear ? 12 : -42;
     const arrivalValue = futureLane
@@ -151,9 +171,9 @@ export class PassEvaluator implements ActionEvaluator {
     let antiStagnation = 0;
     if (hasProgressiveOption || holdProgressive) {
       if (lane.forwardProgress < 0) {
-        antiStagnation = holdProgressive ? -45 : -35;
+        antiStagnation = holdProgressive ? -18 : -12;
       } else if (lane.forwardProgress < 3) {
-        antiStagnation = holdProgressive ? -30 : -22;
+        antiStagnation = holdProgressive ? -12 : -6;
       } else if (lane.forwardProgress < bestForward * 0.5) {
         antiStagnation = -10;
       }

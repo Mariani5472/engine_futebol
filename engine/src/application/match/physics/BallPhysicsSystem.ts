@@ -206,6 +206,11 @@ export class BallPhysicsSystem {
     if (time >= 1) {
       ball.position = motion.target;
       ball.height = motion.targetHeight;
+      // The planned path has reached its endpoint. Do not leak the final
+      // finite-difference velocity into free-ball physics; mathematically the
+      // eased ground pass has stopped here, and retaining ~1-2 m/s caused the
+      // ball to roll out while its receiver was arriving.
+      if (motion.kind === "GROUND_PASS") ball.velocity = Vector2.zero();
       ball.motion = null;
       ball.state = BallState.FREE;
     }
