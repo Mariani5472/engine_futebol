@@ -1,5 +1,9 @@
 export interface Point { readonly x: number; readonly y: number }
 export interface BallPoint extends Point {
+  readonly enginePosition?:Point;
+  readonly velocity?:Point;
+  readonly state?:string;
+  readonly ownerId?:string|null;
   readonly height?: number;
   readonly motionKind?: string | null;
   readonly hasExplicitEffect?: boolean;
@@ -31,6 +35,13 @@ export interface PlayerSnapshot extends Point {
   readonly number: number;
   readonly team: "HOME" | "AWAY";
   readonly hasBall?: boolean;
+  readonly enginePosition?:Point;
+  readonly velocity?:Point;
+  readonly acceleration?:Point;
+  readonly facingDirection?:Point;
+  readonly bodyOrientation?:number;
+  readonly action?:string|null;
+  readonly bodyState?:string;
   readonly targetPosition?: Point;
   readonly tacticalAnchorPosition?: Point;
   readonly runCorridorOrigin?: Point;
@@ -42,6 +53,12 @@ export interface PlayerSnapshot extends Point {
   readonly goalkeeperInterceptionTarget?: Point|null;
   readonly goalkeeperInterceptionHeight?: number|null;
   readonly animationState?:string;
+  readonly stamina?:number;
+  readonly fatigue?:number;
+  readonly condition?:number;
+  readonly currentIntent?:string|null;
+  readonly actionTargetId?:string|null;
+  readonly lastDecisionAt?:number|null;
 }
 export interface TeamTacticalDiagnostics {
   readonly averageLineHeight: { readonly defence:number; readonly midfield:number; readonly attack:number };
@@ -66,6 +83,11 @@ export interface MatchSnapshot {
   readonly type?: "snapshot";
   readonly matchId?: string;
   readonly sequence?: number;
+  readonly simulationTick?:number;
+  readonly simulationTimeMs?:number;
+  readonly lastEventSequence?:number;
+  readonly generatedAt?:number;
+  readonly serverSentAt?:number;
   readonly time: number;
   readonly status?: "RUNNING" | "PAUSED";
   readonly homePhase?: string;
@@ -77,6 +99,7 @@ export interface MatchSnapshot {
   readonly players: readonly PlayerSnapshot[];
   readonly ball: BallPoint;
   readonly score?:{readonly homeGoals:number;readonly awayGoals:number};
+  readonly possessionTeamId?:string|null;
   readonly events?:readonly MatchFeedEvent[];
   readonly diagnostics?:readonly MatchFeedEvent[];
   readonly tacticalDiagnostics?: { readonly home:TeamTacticalDiagnostics; readonly away:TeamTacticalDiagnostics };
@@ -85,7 +108,16 @@ export interface MatchSnapshot {
   readonly timeline?:readonly MatchTimelineEntry[];
   readonly replayGoalIds?:readonly string[];
   readonly analytics?:unknown|null;
-  readonly decisionTrace?:readonly {readonly playerId:string;readonly decisionType:string|number;readonly utility:number;readonly objective:string;readonly targetId?:string;readonly selected:boolean;readonly rejectionReasons:readonly string[];readonly components?:Readonly<Record<string,number>>}[];
+  readonly decisionTrace?:readonly {
+    readonly playerId:string;readonly decisionType:string|number;readonly utility:number;readonly objective:string;
+    readonly targetId?:string;readonly selected:boolean;readonly rejectionReasons:readonly string[];
+    readonly components?:Readonly<Record<string,number>>;readonly tacticalPhase?:string;
+    readonly currentIntent?:{readonly type:string;readonly reason:string;readonly confidence:number;readonly commitment:number};
+    readonly predictedOutcome?:{readonly possessionProbability:number;readonly territorialProgression:number;
+      readonly shotCreationProbability:number;readonly expectedGoalThreat:number;readonly turnoverProbability:number;
+      readonly counterattackRisk:number;readonly explanation:readonly string[]};
+    readonly selectionReason?:string;
+  }[];
   readonly replayCamera?:{readonly centerX:number;readonly centerY:number;readonly zoom:number};
 }
 

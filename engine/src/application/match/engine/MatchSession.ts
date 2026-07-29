@@ -5,7 +5,7 @@ import { MatchEngine, type IncrementalMatchFrame, type MatchResult, type MatchDi
 import type { SimulationConfig } from "./SimulationConfig";
 import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 import type { MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollector";
-import type { EventDerivedMatchReport, MatchTimelineEntry } from "../analytics/MatchEventStore";
+import type { EventDerivedMatchReport, MatchTimelineEntry, StoredMatchEvent } from "../analytics/MatchEventStore";
 import type { GoalReplay } from "../replay/GoalReplayRecorder";
 import type { DecisionDebugEntry } from "../decision/DecisionDebug";
 
@@ -19,7 +19,9 @@ export interface PlayerSnapshot {
   readonly teamId: string;
   readonly position: SnapshotVector;
   readonly velocity: SnapshotVector;
+  readonly acceleration: SnapshotVector;
   readonly facingDirection: SnapshotVector;
+  readonly bodyOrientation: number;
   readonly role: string;
   readonly action: string | null;
   readonly hasBall: boolean;
@@ -34,6 +36,12 @@ export interface PlayerSnapshot {
   readonly goalkeeperInterceptionTarget: SnapshotVector | null;
   readonly goalkeeperInterceptionHeight: number | null;
   readonly animationState:string;
+  readonly stamina:number;
+  readonly fatigue:number;
+  readonly condition:number;
+  readonly currentIntent: string | null;
+  readonly actionTargetId: string | null;
+  readonly lastDecisionAt: number | null;
 }
 
 export interface BallSnapshot {
@@ -60,6 +68,11 @@ export type MatchSpeed = 1 | 2 | 4 | 8 | 50;
 export interface MatchSnapshot {
   readonly seed: number;
   readonly sequence: number;
+  readonly simulationTick: number;
+  readonly simulationTimeMs: number;
+  readonly matchMinute: number;
+  readonly stoppageTimeSeconds: number;
+  readonly lastEventSequence: number;
   readonly matchSecond: number;
   readonly phase: MatchPeriod | "FINISHED";
   readonly score: { readonly homeGoals: number; readonly awayGoals: number };
@@ -79,6 +92,7 @@ export interface MatchSnapshot {
   readonly players: readonly PlayerSnapshot[];
   readonly ball: BallSnapshot;
   readonly events: readonly MatchEvent[];
+  readonly sequencedEvents: readonly StoredMatchEvent[];
   readonly tacticalDiagnostics: MatchTacticalDiagnostics;
   readonly offensiveFunnel: MatchOffensiveFunnel;
   readonly tacticalDebug: {
@@ -107,6 +121,7 @@ export class MatchSession {
   private finalResult: MatchResult | null = null;
   private paused = false;
   private speed: MatchSpeed = 1;
+  private lastEventSequence = 0;
 
   private constructor(private readonly config: SimulationConfig) {
     this.iterator = this.engine.runIncrementally({
@@ -175,12 +190,15 @@ export class MatchSession {
     const frame = this.latestFrame;
     if (!frame) throw new Error("Match session produced no frame");
     const state = frame.state;
+    this.lastEventSequence = Math.max(this.lastEventSequence, frame.eventStore.at(-1)?.sequence ?? 0);
     const playerSnapshot = (teamId: string, player: typeof state.home.players[number]): PlayerSnapshot => ({
       id: player.player.id,
       teamId,
       position: { x: player.position.x, y: player.position.y },
       velocity: { x: player.velocity.x, y: player.velocity.y },
+      acceleration: { x: 0, y: 0 },
       facingDirection: { x: player.facingDirection.x, y: player.facingDirection.y },
+      bodyOrientation: player.bodyOrientation,
       role: player.currentRole,
       action: player.activeAction ? String(player.activeAction.type) : null,
       hasBall: player.hasBall && !state.ball.motion,
@@ -204,10 +222,21 @@ export class MatchSession {
         : player.currentRole.includes("GOALKEEPER") ? player.goalkeeperState
         : player.activeAction ? `${String(player.activeAction.type)}_${String(player.activeAction.phase)}`
         : player.velocity.magnitude()>.2 ? "RUNNING" : "IDLE",
+      stamina:player.stamina,
+      fatigue:player.fatigue,
+      condition:Math.max(0,Math.min(1,player.stamina*(1-player.fatigue))),
+      currentIntent:player.intent?.type??null,
+      actionTargetId:frame.decisionTrace.find(entry=>entry.playerId===player.player.id&&entry.selected)?.targetId??null,
+      lastDecisionAt:frame.decisionTrace.find(entry=>entry.playerId===player.player.id&&entry.selected)?.matchSecond??null,
     });
     return {
       seed: this.config.seed,
       sequence: frame.sequence,
+      simulationTick:frame.sequence,
+      simulationTimeMs:Math.round(state.currentSecond*1000),
+      matchMinute:Math.floor(state.currentSecond/60),
+      stoppageTimeSeconds:0,
+      lastEventSequence:this.lastEventSequence,
       matchSecond: state.currentSecond,
       phase: this.finalResult ? "FINISHED" : frame.period,
       score: { homeGoals: state.home.score, awayGoals: state.away.score },
@@ -242,6 +271,7 @@ export class MatchSession {
         } : null,
       },
       events: frame.events,
+      sequencedEvents:frame.eventStore,
       tacticalDiagnostics: frame.tacticalDiagnostics,
       offensiveFunnel: frame.offensiveFunnel,
       tacticalDebug: {
@@ -256,7 +286,7 @@ export class MatchSession {
       diagnostics: frame.diagnostics,
       timeline: frame.timeline,
       replayGoalIds: frame.goalReplays.map(replay => replay.goalEventId),
-      analytics: this.finalResult?.analytics ?? null,
+      analytics: frame.analytics,
       decisionTrace:frame.decisionTrace,
     };
   }

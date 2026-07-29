@@ -52,6 +52,8 @@ import { MatchEventStore, type EventDerivedMatchReport, type MatchTimelineEntry,
 import { GoalReplayRecorder, type GoalReplay } from "../replay/GoalReplayRecorder";
 import { PlayerId, TeamId } from "../../../domain";
 import { DecisionDebug, type DecisionDebugEntry } from "../decision/DecisionDebug";
+import { TacticalIntelligenceSystem } from "../tactical/intelligence/TacticalIntelligenceSystem";
+import { DecisionQualityMetrics, type DecisionQualityReport } from "../decision/DecisionQualityMetrics";
 
 const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
@@ -60,6 +62,8 @@ const POSSESSION_DECISION_INTERVAL_SECONDS = 1;
 const OFF_BALL_DECISION_INTERVAL_SECONDS = 2;
 /** Perception/cognition run at 5 Hz; locomotion and physics remain at 20 Hz. */
 const COGNITIVE_UPDATE_INTERVAL_TICKS = 4;
+/** Expensive shared space-time field runs at 2.5 Hz; decisions reuse the latest immutable frame. */
+const TACTICAL_INTELLIGENCE_UPDATE_INTERVAL_TICKS = 8;
 
 export interface MatchResult {
   readonly homeTeamId: string;
@@ -78,6 +82,7 @@ export interface MatchResult {
   readonly analytics: EventDerivedMatchReport;
   readonly timeline: readonly MatchTimelineEntry[];
   readonly goalReplays: readonly GoalReplay[];
+  readonly decisionQuality: DecisionQualityReport;
 }
 
 export type MatchDiagnosticEvent = PossessionAcquisitionRecord | PassResolutionRecord | BallTeleportViolation;
@@ -94,6 +99,8 @@ export interface IncrementalMatchFrame {
   readonly timeline: readonly MatchTimelineEntry[];
   readonly goalReplays: readonly GoalReplay[];
   readonly decisionTrace:readonly DecisionDebugEntry[];
+  readonly eventStore: readonly StoredMatchEvent[];
+  readonly analytics: EventDerivedMatchReport;
 }
 
 export class MatchEngine {
@@ -149,7 +156,8 @@ export class MatchEngine {
       undefined,
       undefined,
       undefined,
-      config.pitch.length
+      config.pitch.length,
+      decisionDebug,
     );
     const refereeSystem = new RefereeSystem(rng);
     const actionFactory = new ActionFactory(refereeSystem);
@@ -158,6 +166,7 @@ export class MatchEngine {
     const collectivePhaseSystem = new CollectivePhaseSystem();
     const possessionPredictionSystem = new PossessionPredictionSystem();
     const collectiveCoordination = new CollectiveCoordinationSystem();
+    const tacticalIntelligence = new TacticalIntelligenceSystem();
     const goalkeeperSystem = new GoalkeeperSystem();
     const restartSystem = new RestartSystem();
     const teamBehaviour = new TeamBehaviourSystem();
@@ -183,6 +192,8 @@ export class MatchEngine {
     const firstHalfStarted = this.makePeriodStarted("FIRST_HALF", 0);
     allEvents.push(firstHalfStarted);
     eventStore.append([firstHalfStarted]);
+    let lastPublishedEventSequence = 0;
+    let liveAnalytics = eventStore.snapshot(state);
 
     while (state.currentSecond < matchDuration) {
       const frameEvents: MatchEvent[] = [];
@@ -206,7 +217,7 @@ export class MatchEngine {
         perceptionSystem, cognitiveSystem, worldAwarenessSystem,
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
-        collectivePhaseSystem, possessionPredictionSystem, collectiveCoordination, restartSystem, goalkeeperSystem, teamBehaviour, movementSystem, possessionSystem,
+        collectivePhaseSystem, possessionPredictionSystem, collectiveCoordination, tacticalIntelligence, restartSystem, goalkeeperSystem, teamBehaviour, movementSystem, possessionSystem,
         tick, period, metrics, offensiveFunnel, attackFunnel
       );
 
@@ -253,6 +264,9 @@ export class MatchEngine {
       eventStore.sample(state);
       replayRecorder.sample(state, frameEvents);
       tick++;
+      if (tick % Math.max(1, Math.round(1 / deltaTime)) === 0) liveAnalytics = eventStore.snapshot(state);
+      const storedFrameEvents = eventStore.events().filter(event => event.sequence > lastPublishedEventSequence);
+      lastPublishedEventSequence = storedFrameEvents.at(-1)?.sequence ?? lastPublishedEventSequence;
 
       if (state.currentSecond >= matchDuration) {
         const matchEnded = this.makePeriodEnded("SECOND_HALF", state.currentSecond);
@@ -279,8 +293,9 @@ export class MatchEngine {
           analytics: eventStore.finalize(state),
           timeline: eventStore.timeline(replayGoalIds),
           goalReplays,
+          decisionQuality: new DecisionQualityMetrics().summarize(decisionDebug.getEntries()),
         };
-        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics, offensiveFunnel: offensiveFunnel.snapshot(), timeline: finalResult.timeline, goalReplays, decisionTrace:decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1) };
+        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics, offensiveFunnel: offensiveFunnel.snapshot(), timeline: finalResult.timeline, goalReplays, decisionTrace:decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1), eventStore:storedFrameEvents, analytics:finalResult.analytics };
         return finalResult;
       }
 
@@ -295,6 +310,8 @@ export class MatchEngine {
         timeline: eventStore.timeline(new Set(replayRecorder.replays().map(replay => replay.goalEventId))),
         goalReplays: replayRecorder.replays(),
         decisionTrace:decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1),
+        eventStore:storedFrameEvents,
+        analytics:liveAnalytics,
       };
     }
 
@@ -322,6 +339,7 @@ export class MatchEngine {
       analytics: eventStore.finalize(state),
       timeline: eventStore.timeline(replayGoalIds),
       goalReplays,
+      decisionQuality: new DecisionQualityMetrics().summarize(decisionDebug.getEntries()),
     };
   }
 
@@ -341,6 +359,7 @@ export class MatchEngine {
     collectivePhaseSystem: CollectivePhaseSystem,
     possessionPredictionSystem: PossessionPredictionSystem,
     collectiveCoordination: CollectiveCoordinationSystem,
+    tacticalIntelligence: TacticalIntelligenceSystem,
     restartSystem: RestartSystem,
     goalkeeperSystem: GoalkeeperSystem,
     teamBehaviour: TeamBehaviourSystem,
@@ -383,6 +402,10 @@ export class MatchEngine {
         } satisfies CognitiveContext);
       }
     }
+
+    const tacticalSnapshot = tick % TACTICAL_INTELLIGENCE_UPDATE_INTERVAL_TICKS === 0
+      ? tacticalIntelligence.update(state)
+      : tacticalIntelligence.snapshot();
 
     const executingCandidates: ActionExecution[] = [];
 
@@ -444,7 +467,7 @@ export class MatchEngine {
 
       const world = worldAwarenessSystem.build(state, player, awareness);
       const decisionCtx = new DecisionContext(
-        state, player, awareness, tick, deltaTime, world,
+        state, player, awareness, tick, deltaTime, world, tacticalSnapshot,
       );
       const decision = player.hasBall
         ? possessionDecisionSystem.decide(decisionCtx)
@@ -498,6 +521,7 @@ export class MatchEngine {
     tacticalEngine.update(state);
     teamBehaviour.update(state);
     collectiveCoordination.update(state);
+    tacticalIntelligence.intents.enforce(state);
     goalkeeperSystem.update(state);
     restartSystem.enforceWaitingPositions(state);
     movementSystem.update(state, deltaTime);
@@ -568,8 +592,15 @@ export class MatchEngine {
   private syncPossessionSide(state: MatchState): void {
     const owner = state.ball.owner;
     if (!owner) {
-      // A physical pass has no owner while travelling. Keep the possession
-      // spell alive until another team actually controls the ball.
+      // Ball flight has no physical owner. Change collective attacking side
+      // only when ETA/control prediction provides strong evidence, never from
+      // controllerId === null alone.
+      const prediction = state.home.possessionPrediction;
+      if (prediction.likelyTeamId && prediction.confidence >= .68 && prediction.state !== "contested") {
+        const likely = prediction.likelyTeamId === state.home.team.id ? state.home : state.away;
+        state.attackingTeam = likely;
+        state.defendingTeam = likely === state.home ? state.away : state.home;
+      }
       return;
     }
     const ownerIsHome = state.home.players.includes(owner);

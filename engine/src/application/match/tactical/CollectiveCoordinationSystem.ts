@@ -195,13 +195,17 @@ export class CollectiveCoordinationSystem {
 
   private reserveSpaces(state: MatchState, team: TeamMatchState): void {
     const reservations = new Map<string, PlayerMatchState>();
-    for (const player of team.players.filter(player => !player.hasBall)) {
+    const ordered = team.players.filter(player => !player.hasBall)
+      .sort((a,b) => (b.intent?.commitment ?? 0) - (a.intent?.commitment ?? 0));
+    for (const player of ordered) {
       let target = player.targetPosition;
       let channel = this.channel(target.y, state.pitch.width);
       const band = Math.floor(this.progress(state, team, target.x) / 10);
       let key = `${band}:${channel}`;
       const occupied = reservations.get(key);
       if (occupied && target.distanceTo(occupied.targetPosition) < 5) {
+        // Higher-commitment collective intentions keep the requested space;
+        // the lower-priority runner bends into a neighbouring lane.
         const preferredSide = player.tacticalAnchorPosition.y <= occupied.tacticalAnchorPosition.y ? -1 : 1;
         target = this.clamp(state, target.add(new Vector2(0, preferredSide * 4)));
         channel = this.channel(target.y, state.pitch.width);

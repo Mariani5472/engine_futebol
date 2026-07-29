@@ -51,6 +51,35 @@ export class PassAction {
       realForwardGain,
     };
     this.prepareOneTwo(player, target, team.attackingDirection, origin, destination, matchSecond, match.pitch.length, match.pitch.width);
+    const flightSeconds = Math.max(.16, origin.distanceTo(destination) / this.calculatePower(origin.distanceTo(destination)));
+    target.intent = {
+      type: "receiveBall",
+      targetPlayerId: player.player.id,
+      targetPosition: destination,
+      startedAt: matchSecond,
+      expiresAt: matchSecond + flightSeconds + 1.2,
+      confidence: accuracy,
+      commitment: .9,
+      possessionTeamId: team.team.id,
+      cancelConditions: ["possessionChanged", "ballTrajectoryChanged", "higherPriorityThreat", "expired"],
+      reason: `prepare body and arrive for pass from ${player.player.id}`,
+    };
+    target.setTarget(destination);
+    target.facingDirection = origin.subtract(destination).normalize();
+    const postPassTarget = player.oneTwoRunTarget ?? this.postPassTarget(context, player, target, realForwardGain);
+    player.intent = {
+      type: player.oneTwoRunTarget ? "completeOneTwo" : realForwardGain > 5 ? "attackSpace" : "supportCarrier",
+      targetPlayerId: target.player.id,
+      targetPosition: postPassTarget,
+      startedAt: matchSecond,
+      expiresAt: matchSecond + (player.oneTwoRunTarget ? 3.2 : 2.4),
+      confidence: player.oneTwoRunTarget ? .82 : .68,
+      commitment: player.oneTwoRunTarget ? .86 : .62,
+      possessionTeamId: team.team.id,
+      cancelConditions: ["possessionChanged", "spaceOccupied", "higherPriorityThreat", "expired"],
+      reason: player.oneTwoRunTarget ? "continue after pass for possible one-two" : realForwardGain > 5 ? "continue into space after progressive pass" : "restore support angle after pass",
+    };
+    player.setTarget(postPassTarget);
     const passKind = decision.type === DecisionType.CROSS ? "CROSS" as const
       : decision.type === DecisionType.GK_DISTRIBUTE ? "GOALKEEPER_DISTRIBUTION" as const
       : "PASS" as const;
@@ -151,6 +180,18 @@ export class PassAction {
     const technique = context.player.player.attributes.technical.technique / 20;
     const side = origin.y < context.match.pitch.width / 2 ? 1 : -1;
     return side * (1 + technique * 1.5);
+  }
+
+  private postPassTarget(
+    context: ActionContext,
+    passer: PlayerMatchState,
+    receiver: PlayerMatchState,
+    forwardGain: number,
+  ): Vector2 {
+    const team = context.match.home.players.includes(passer) ? context.match.home : context.match.away;
+    const forward = forwardGain > 5 ? Math.min(8, 3 + forwardGain * .25) : -2;
+    const lateral = Math.sign(passer.position.y - receiver.position.y) || 1;
+    return this.clampToPitch(passer.position.add(new Vector2(team.attackingDirection * forward, lateral * 4)), context);
   }
 
   private calculateSuccessProb(

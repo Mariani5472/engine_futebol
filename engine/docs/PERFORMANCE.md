@@ -15,6 +15,18 @@ Environment: Node 22 Alpine containers on the local Docker Desktop host. Measure
 - `MatchSession.advance()` avoids materializing discarded snapshots. The API performs multiple fixed advances for speed and serializes only the 20 Hz network frame.
 - Timeline entries are indexed when events are appended rather than rescanning the complete event store every tick.
 
+## Tactical-intelligence refactor
+
+- The first complete 20-seed run with the shared space-time context took
+  1,247 seconds.
+- A later repeat exceeded the external execution timeout and returned no
+  statistical report. It is treated as a performance regression, not as a
+  successful calibration run.
+- Perception remains at 5 Hz, the shared 6x4 tactical field runs at 2.5 Hz and
+  physics/locomotion remain at 20 Hz.
+- The next optimization target is profiling lane/combination construction,
+  followed by incremental spatial indexing and dirty-zone recomputation.
+
 The optional assertion remains behind `RUN_SLOW_SESSION_TESTS=1` because `ts-jest` instrumentation took about 307 seconds for the regulation match even though the production `tsx` runtime is substantially faster. Use:
 
 ```bash

@@ -7,6 +7,7 @@ import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCal
 import { FieldThird } from "../../../../domain";
 import { ActionReadiness } from "./ActionReadiness";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
+import { GoalOpportunityAnalyzer } from "../GoalOpportunityAnalyzer";
 
 /**
  * Scale tuned so clear box chances beat DRIBBLE (~80) while not returning
@@ -16,6 +17,7 @@ import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationPara
 const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
 
 export class ShotEvaluator implements ActionEvaluator {
+  private readonly goalOpportunity = new GoalOpportunityAnalyzer();
 
   public evaluate(context: DecisionContext): Decision[] {
     if (!context.player.hasBall) return [];
@@ -48,6 +50,7 @@ export class ShotEvaluator implements ActionEvaluator {
 
   private calculateUtility(context: DecisionContext): UtilityScore {
     const { player, world } = context;
+    const opportunity = this.goalOpportunity.analyze(context);
     const attrs = player.player.attributes;
 
     const distance = world.goalDistance;
@@ -106,7 +109,9 @@ export class ShotEvaluator implements ActionEvaluator {
       ROLE: role * executionQuality * 0.32,
       PRESSURE: pressureComp * executionQuality,
       BODY: body,
-      TACTICAL: tactical + proximityBoost + repeatPlayerPenalty,
+      TACTICAL: tactical + proximityBoost + repeatPlayerPenalty
+        - (opportunity.teammateBetterPositioned ? 18 : 0),
+      GOAL_OPPORTUNITY: opportunity.shotQuality * 26,
     });
 
     const scaledTotal = raw.total * SHOT_CALIBRATION.utilityScale;

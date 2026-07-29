@@ -60,6 +60,15 @@ export class CollectivePhaseSystem {
       return predictedHome ? state.home : state.away;
     }
 
+    // A genuinely divided ball remains tactically contested. The last passer
+    // is evidence only when no physical ETA prediction is available.
+    if (state.home.possessionPrediction.state === "contested") {
+      this.looseBallSince ??= state.currentSecond;
+      if (this.previousPossessionTeamId && state.currentSecond - this.looseBallSince <= LOOSE_BALL_PHASE_HOLD_SECONDS)
+        return state.home.team.id === this.previousPossessionTeamId ? state.home : state.away;
+      return null;
+    }
+
     const passerId = state.ball.pendingPass?.passerId;
     const intendedReceiverId = state.ball.intendedReceiverId;
     const playerId = passerId ?? intendedReceiverId;

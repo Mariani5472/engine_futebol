@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, Pause, Play, RotateCcw, Wifi, WifiOff } from "lucide-react";
 import { Pitch } from "./components/Pitch";
+import { DebugPanel } from "./components/DebugPanel";
 import type { PitchLayers } from "./components/Pitch";
 import { DemoMatchFeed } from "./simulation/DemoMatchFeed";
 import type { GoalReplay, MatchFeedEvent, MatchSnapshot } from "./simulation/types";
-import { controlMatch, getGoalReplay, getOrCreateMatch, recoverMatch, setMatchSpeed, subscribeToMatch } from "./api/matchClient";
+import { interpolatePoint } from "./simulation/types";
+import { controlMatch, getGoalReplay, getOrCreateMatch, recoverMatch, setMatchSpeed, stepMatch, subscribeToMatch } from "./api/matchClient";
+import { MatchStateAdapter, type CommunicationHealth, type DebugAlert, type DebugLevel, type RawNetworkSnapshot, type ReconciliationRow, type RetentionMode } from "./debug/observability";
 
 export function App() {
   const initialSeed = Number(new URLSearchParams(window.location.search).get("seed") ?? 1) || 1;
@@ -12,6 +15,9 @@ export function App() {
   const previous = useRef<MatchSnapshot>(initial.current);
   const current = useRef<MatchSnapshot>(initial.current);
   const lastSnapshotAt = useRef(performance.now());
+  const adapter=useRef(new MatchStateAdapter());
+  const rendererFrozenRef=useRef(false);
+  const lastRenderCaptureAt=useRef(0);
   const [frame, setFrame] = useState({ previous: initial.current, current: initial.current, alpha: 0 });
   const [matchId, setMatchId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
@@ -22,7 +28,16 @@ export function App() {
   const [goalReplay, setGoalReplay] = useState<GoalReplay | null>(null);
   const [replayFrameIndex, setReplayFrameIndex] = useState(0);
   const [replayPlaying, setReplayPlaying] = useState(false);
-  const [layers, setLayers] = useState<PitchLayers>({ influence:false, targets:false, passingLines:false, pressure:false, anchors:false, sectorLines:false, roles:false, logicalBall:false });
+  const [layers, setLayers] = useState<PitchLayers>({ influence:false, targets:false, passingLines:false, pressure:false, anchors:false, sectorLines:false, roles:false, logicalBall:false, enginePositions:false, velocityVectors:false, orientation:false });
+  const [rawSnapshot,setRawSnapshot]=useState<RawNetworkSnapshot|null>(null);
+  const [health,setHealth]=useState<CommunicationHealth>(adapter.current.health());
+  const [alerts,setAlerts]=useState<readonly DebugAlert[]>([]);
+  const [reconciliation,setReconciliation]=useState<readonly ReconciliationRow[]>([]);
+  const [selectedPlayerId,setSelectedPlayerId]=useState<string|null>(null);
+  const [rendererFrozen,setRendererFrozen]=useState(false);
+  const [debugLevel,setDebugLevel]=useState<DebugLevel>("FULL");
+  const [retention,setRetention]=useState<RetentionMode>("rollingBuffer");
+  const [renderedState,setRenderedState]=useState<{players:Readonly<Record<string,{x:number;y:number}>>;ball:{x:number;y:number};capturedAt:number}>({players:{},ball:{x:50,y:50},capturedAt:0});
 
   useEffect(() => {
     let active = true;
@@ -38,12 +53,22 @@ export function App() {
         if (!active) return;
         setMatchId(id);
         socket = subscribeToMatch(id, {
-          onSnapshot: (snapshot) => {
+          onSnapshot: (raw) => {
+            let result;
+            try { result=adapter.current.ingest(raw); }
+            catch (error) { console.error("Snapshot rejected by adapter",error); return; }
+            setRawSnapshot(raw);
+            setHealth(result.health);
+            setAlerts([...result.alerts]);
+            setReconciliation(adapter.current.reconcile(raw));
+            const snapshot=result.snapshot;
+            if(!snapshot)return;
             previous.current = current.current;
             current.current = snapshot;
             lastSnapshotAt.current = performance.now();
             setRunning(snapshot.status !== "PAUSED");
-            const visible = [...(snapshot.events??[]),...(snapshot.diagnostics??[])].filter(event=>["SHOT","SHOT_STARTED","SHOT_ON_TARGET","SHOT_OFF_TARGET","SHOT_BLOCKED","WOODWORK","GOALKEEPER_SAVE","REBOUND","GOAL","FOUL","CORNER","THROW_IN","GOAL_KICK","POSSESSION_CHANGED","BALL_TELEPORT"].includes(event.type));
+            const normalizedEvents=result.newEvents.map(event=>({...event,...event.metadata,timestamp:event.simulationTimeMs}) as MatchFeedEvent);
+            const visible = [...normalizedEvents,...(snapshot.diagnostics??[])].filter(event=>["SHOT","SHOT_STARTED","SHOT_ON_TARGET","SHOT_OFF_TARGET","SHOT_BLOCKED","WOODWORK","GOALKEEPER_SAVE","REBOUND","GOAL","FOUL","CORNER","THROW_IN","GOAL_KICK","POSSESSION_CHANGED","BALL_TELEPORT"].includes(event.type));
             if(visible.length)setFeed(previousFeed=>deduplicateFeed([...visible,...previousFeed]).slice(0,40));
           },
           onSpeedChanged: setSpeed,
@@ -62,7 +87,14 @@ export function App() {
 
     const render = (timestamp: number) => {
       const alpha = Math.max(0, Math.min(1, (timestamp-lastSnapshotAt.current)/50));
-      setFrame({ previous:previous.current, current:current.current, alpha });
+      if(!rendererFrozenRef.current){
+        setFrame({ previous:previous.current, current:current.current, alpha });
+        if(timestamp-lastRenderCaptureAt.current>=200){
+          lastRenderCaptureAt.current=timestamp;
+          const positions=Object.fromEntries(current.current.players.map(player=>{const old=previous.current.players.find(candidate=>candidate.id===player.id)??player;return [player.id,interpolatePoint(old,player,alpha)];}));
+          setRenderedState({players:positions,ball:interpolatePoint(previous.current.ball,current.current.ball,alpha),capturedAt:Date.now()});
+        }
+      }
       animationFrame = requestAnimationFrame(render);
     };
     animationFrame = requestAnimationFrame(render);
@@ -96,6 +128,9 @@ export function App() {
     await setMatchSpeed(matchId, nextSpeed);
   };
   const toggleLayer = (layer: keyof PitchLayers) => setLayers(value => ({ ...value, [layer]:!value[layer] }));
+  const setRendererFreeze=(value:boolean)=>{rendererFrozenRef.current=value;setRendererFrozen(value);if(!value)setFrame({previous:previous.current,current:current.current,alpha:1});};
+  const changeRetention=(value:RetentionMode)=>{adapter.current.setRetention(value);setRetention(value);};
+  const advanceOneTick=async()=>{if(matchId)await stepMatch(matchId,1);};
   const openGoalReplay = async (goalEventId: string) => {
     if (!matchId) return;
     const loaded = await getGoalReplay(matchId, goalEventId);
@@ -124,7 +159,7 @@ export function App() {
       <div className="team team-away">Racing Sul<i className="away-mark"/></div>
     </section>
     <section className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[1fr_270px]">
-      <Pitch {...pitchFrame} layers={layers}/>
+      <Pitch {...pitchFrame} layers={layers} selectedId={selectedPlayerId} onSelectPlayer={setSelectedPlayerId}/>
       <aside className="panel"><p className="eyebrow">Controles</p><h2>Partida remota</h2>
         {goalReplay&&<div className="replay-controls"><div><b>Replay do gol</b><span>{(goalReplay.frames[replayFrameIndex]?.timestamp??0).toFixed(2)}s</span></div><button aria-label="Pausar ou reproduzir replay" onClick={()=>setReplayPlaying(value=>!value)}>{replayPlaying?<Pause size={14}/>:<Play size={14}/>}</button><button aria-label="Reiniciar replay" onClick={()=>{setReplayFrameIndex(0);setReplayPlaying(true)}}><RotateCcw size={14}/></button><button onClick={closeGoalReplay}>Voltar ao vivo</button></div>}
         <button className="primary" onClick={toggle} disabled={!connected}>{running?<Pause size={17}/>:<Play size={17}/>} {running?"Pausar":"Continuar"}</button>
@@ -146,7 +181,7 @@ export function App() {
         <div className="metric"><span>Interpolação</span><b>{frame.alpha.toFixed(2)}</b></div>
         <div className="divider"/><p className="label">Camadas de análise</p>
         <div className="layer-controls">
-          {([['logicalBall','Bola lógica × visual'],['anchors','Âncoras táticas'],['targets','Alvos atuais'],['sectorLines','Linhas entre setores'],['passingLines','Portador e opções'],['roles','Funções ativas'],['influence','Área de influência'],['pressure','Pressão']] as const).map(([key,label])=><label key={key}><input type="checkbox" checked={layers[key]} onChange={()=>toggleLayer(key)}/><span>{label}</span></label>)}
+          {([['logicalBall','Bola lógica × visual'],['enginePositions','Posições da engine'],['velocityVectors','Vetores de velocidade'],['orientation','Orientação corporal'],['anchors','Âncoras táticas'],['targets','Alvos atuais'],['sectorLines','Linhas entre setores'],['passingLines','Portador e opções'],['roles','Funções ativas'],['influence','Área de influência'],['pressure','Pressão']] as const).map(([key,label])=><label key={key}><input type="checkbox" checked={layers[key]} onChange={()=>toggleLayer(key)}/><span>{label}</span></label>)}
         </div>
         {diagnostics&&<><div className="divider"/><p className="label">Diagnósticos — Aurora</p>
           <div className="metric"><span>Linhas D / M / A</span><b>{diagnostics.averageLineHeight.defence} / {diagnostics.averageLineHeight.midfield} / {diagnostics.averageLineHeight.attack}m</b></div>
@@ -170,6 +205,12 @@ export function App() {
         {latestDecision&&<details className="funnel-details"><summary>Ãšltima decisÃ£o explicada</summary>
           <div className="metric"><span>Jogador / objetivo</span><b>{latestDecision.playerId} Â· {latestDecision.objective}</b></div>
           <div className="metric"><span>AÃ§Ã£o / utilidade</span><b>{String(latestDecision.decisionType)} Â· {latestDecision.utility.toFixed(1)}</b></div>
+          <div className="metric"><span>Fase / intenÃ§Ã£o</span><b>{latestDecision.tacticalPhase??'â€”'} Â· {latestDecision.currentIntent?.type??'sem intenÃ§Ã£o persistente'}</b></div>
+          {latestDecision.predictedOutcome&&<>
+            <div className="metric"><span>Posse / perda prevista</span><b>{(latestDecision.predictedOutcome.possessionProbability*100).toFixed(0)}% / {(latestDecision.predictedOutcome.turnoverProbability*100).toFixed(0)}%</b></div>
+            <div className="metric"><span>AmeaÃ§a / progressÃ£o</span><b>{latestDecision.predictedOutcome.expectedGoalThreat.toFixed(2)} xG Â· {latestDecision.predictedOutcome.territorialProgression.toFixed(1)}m</b></div>
+          </>}
+          {latestDecision.selectionReason&&<p className="hint">{latestDecision.selectionReason}</p>}
           {(frame.current.decisionTrace??[]).filter(entry=>!entry.selected).slice(-4).map((entry,index)=><div className="metric" key={`${entry.playerId}-${index}`}><span>Rejeitada {String(entry.decisionType)}</span><b>{entry.rejectionReasons.join(", ")}</b></div>)}
         </details>}
         <div className="divider"/><p className="label">Eventos e posse</p>
@@ -179,6 +220,7 @@ export function App() {
         <p className="hint">A API produz snapshots a 20 Hz. O navegador somente interpola e desenha.</p>
       </aside>
     </section>
+    <div className="mx-auto mt-4 max-w-7xl"><DebugPanel raw={rawSnapshot} snapshot={frame.current} renderedState={renderedState} health={health} alerts={alerts} reconciliation={reconciliation} adapter={adapter.current} selectedPlayerId={selectedPlayerId} onSelectPlayer={setSelectedPlayerId} rendererFrozen={rendererFrozen} onRendererFrozen={setRendererFreeze} debugLevel={debugLevel} onDebugLevel={setDebugLevel} retention={retention} onRetention={changeRetention} onStep={()=>void advanceOneTick()}/></div>
   </main>;
 }
 

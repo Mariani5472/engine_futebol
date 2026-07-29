@@ -102,7 +102,12 @@ export class OffBallDecisionSystem {
 
     this.debug.record(context.player, best.decision, {
       tick: context.currentTick,
-      matchSecond: context.currentTick * context.deltaTime,
+      matchSecond: context.match.currentSecond,
+      tacticalPhase: context.teamTacticalContext?.currentPhase,
+      currentIntent: context.player.intent ?? undefined,
+      perceivedSpaces: context.teamTacticalContext?.spaces.filter(space => space.reachablePlayers.includes(context.player.player.id)).slice(0, 8),
+      possessionPrediction: teamMatchState.possessionPrediction,
+      selectionReason: `highest risk-adjusted off-ball utility; objective=${best.decision.objective}`,
     });
 
     return best.decision;

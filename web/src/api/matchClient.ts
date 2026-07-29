@@ -1,132 +1,40 @@
-import type { GoalReplay, MatchSnapshot } from "../simulation/types";
+import type { GoalReplay } from "../simulation/types";
+import type { RawNetworkSnapshot } from "../debug/observability";
 
 const API_URL = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:3000`;
 
-export function getOrCreateMatch(seed = 1): Promise<{ id: string }> {
-  return fetch(`${API_URL}/matches`, { method: "POST", headers:{"content-type":"application/json"}, body:JSON.stringify({seed}) }).then(async (response) => {
-    if (!response.ok) throw new Error(`Could not create match: ${response.status}`);
-    return response.json() as Promise<{ id: string }>;
+export function getOrCreateMatch(seed=1):Promise<{id:string}>{
+  return fetch(`${API_URL}/matches`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({seed})}).then(async response=>{
+    if(!response.ok)throw new Error(`Could not create match: ${response.status}`);
+    return response.json() as Promise<{id:string}>;
   });
 }
 
-export async function recoverMatch(id: string, seed: number): Promise<{ id: string }> {
-  try {
-    const response = await fetch(`${API_URL}/matches/${id}`);
-    if (response.ok) return { id };
-  } catch {
-    // A fresh match with the same seed is created below after API restarts.
-  }
+export async function recoverMatch(id:string,seed:number):Promise<{id:string}>{
+  try{const response=await fetch(`${API_URL}/matches/${id}`);if(response.ok)return {id};}catch{/* recreate below */}
   return getOrCreateMatch(seed);
 }
 
-export function subscribeToMatch(
-  id: string,
-  handlers: {
-    onSnapshot: (snapshot: MatchSnapshot) => void;
-    onSpeedChanged: (speed: 1 | 2 | 4 | 8 | 50) => void;
-  },
-): WebSocket {
-  const url = new URL(API_URL);
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  url.pathname = `/matches/${id}/stream`;
-  const socket = new WebSocket(url);
-  socket.addEventListener("message", (event) => {
-    const wire = JSON.parse(event.data) as any;
-    if (wire.type === "speed_changed") {
-      handlers.onSpeedChanged(wire.speed);
-      return;
-    }
-    handlers.onSnapshot({
-      type: "snapshot",
-      seed: wire.seed,
-      matchId: wire.matchId,
-      sequence: wire.sequence,
-      time: wire.matchSecond,
-      status: wire.status === "FINISHED" ? "PAUSED" : wire.status,
-      homePhase: wire.homePhase,
-      awayPhase: wire.awayPhase,
-      homePossessionState:wire.homePossessionState,
-      awayPossessionState:wire.awayPossessionState,
-      possessionPrediction:wire.possessionPrediction,
-      phase: wire.phase,
-      score: wire.score,
-      events: wire.events,
-      diagnostics: wire.diagnostics,
-      timeline: wire.timeline,
-      replayGoalIds: wire.replayGoalIds,
-      analytics: wire.analytics,
-      decisionTrace:wire.decisionTrace,
-      players: wire.players.map((player: any) => ({
-        id: player.id,
-        number: Number(player.id.match(/(\d+)$/)?.[1] ?? 0),
-        team: player.teamId === "home" ? "HOME" : "AWAY",
-        x: player.position.x / wire.pitch.length * 100,
-        y: player.position.y / wire.pitch.width * 100,
-        hasBall: player.hasBall,
-        targetPosition: {
-          x: player.targetPosition.x / wire.pitch.length * 100,
-          y: player.targetPosition.y / wire.pitch.width * 100,
-        },
-        tacticalAnchorPosition: {
-          x: player.tacticalAnchorPosition.x / wire.pitch.length * 100,
-          y: player.tacticalAnchorPosition.y / wire.pitch.width * 100,
-        },
-        role: player.role,
-        tacticalResponsibility: player.tacticalResponsibility,
-        occupiedChannel: player.occupiedChannel,
-        goalkeeperState: player.goalkeeperState,
-        animationState:player.animationState,
-        goalkeeperInterceptionHeight: player.goalkeeperInterceptionHeight ?? null,
-        goalkeeperInterceptionTarget: player.goalkeeperInterceptionTarget ? {
-          x: player.goalkeeperInterceptionTarget.x / wire.pitch.length * 100,
-          y: player.goalkeeperInterceptionTarget.y / wire.pitch.width * 100,
-        } : null,
-      })),
-      ball: {
-        x: wire.ball.position.x / wire.pitch.length * 100,
-        y: wire.ball.position.y / wire.pitch.width * 100,
-        height: wire.ball.height,
-        motionKind: wire.ball.motion?.kind ?? null,
-        hasExplicitEffect: wire.ball.motion?.hasExplicitEffect ?? false,
-        logicalPosition: {
-          x: wire.ball.logicalPosition.x / wire.pitch.length * 100,
-          y: wire.ball.logicalPosition.y / wire.pitch.width * 100,
-        },
-        activeShot: wire.ball.activeShot,
-      },
-      tacticalDiagnostics: wire.tacticalDiagnostics,
-      tacticalDebug: {
-        carrierId: wire.tacticalDebug.carrierId,
-        passOptionIds: wire.tacticalDebug.passOptionIds,
-        homeSectors: mapSectors(wire.tacticalDebug.homeSectors, wire.pitch),
-        awaySectors: mapSectors(wire.tacticalDebug.awaySectors, wire.pitch),
-      },
-    });
+export function subscribeToMatch(id:string,handlers:{onSnapshot:(snapshot:RawNetworkSnapshot)=>void;onSpeedChanged:(speed:1|2|4|8|50)=>void}):WebSocket{
+  const url=new URL(API_URL);url.protocol=url.protocol==="https:"?"wss:":"ws:";url.pathname=`/matches/${id}/stream`;
+  const socket=new WebSocket(url);
+  socket.addEventListener("message",event=>{
+    const wire=JSON.parse(event.data) as RawNetworkSnapshot|{type:"speed_changed";speed:1|2|4|8|50};
+    if(wire.type==="speed_changed"){handlers.onSpeedChanged(wire.speed);return;}
+    handlers.onSnapshot(wire);
   });
   return socket;
 }
 
-function mapSectors(sectors: any, pitch: { length:number; width:number }) {
-  const point = (value:any) => value ? ({ x:value.x / pitch.length * 100, y:value.y / pitch.width * 100 }) : null;
-  return { defence:point(sectors.defence), midfield:point(sectors.midfield), attack:point(sectors.attack) };
+export async function controlMatch(id:string,action:"pause"|"resume"):Promise<void>{
+  const response=await fetch(`${API_URL}/matches/${id}/${action}`,{method:"POST"});if(!response.ok)throw new Error(`Could not ${action} match: ${response.status}`);
 }
-
-export async function controlMatch(id: string, action: "pause" | "resume"): Promise<void> {
-  const response = await fetch(`${API_URL}/matches/${id}/${action}`, { method: "POST" });
-  if (!response.ok) throw new Error(`Could not ${action} match: ${response.status}`);
+export async function setMatchSpeed(id:string,speed:1|2|4|8|50):Promise<void>{
+  const response=await fetch(`${API_URL}/matches/${id}/speed`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({speed})});if(!response.ok)throw new Error(`Could not set match speed: ${response.status}`);
 }
-
-export async function setMatchSpeed(id: string, speed: 1 | 2 | 4 | 8 | 50): Promise<void> {
-  const response = await fetch(`${API_URL}/matches/${id}/speed`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ speed }),
-  });
-  if (!response.ok) throw new Error(`Could not set match speed: ${response.status}`);
+export async function stepMatch(id:string,count=1):Promise<void>{
+  const response=await fetch(`${API_URL}/matches/${id}/step`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({count})});if(!response.ok)throw new Error(`Could not step match: ${response.status}`);
 }
-
-export async function getGoalReplay(id: string, goalEventId: string): Promise<GoalReplay> {
-  const response = await fetch(`${API_URL}/matches/${id}/replays/${goalEventId}`);
-  if (!response.ok) throw new Error(`Could not load replay: ${response.status}`);
-  return response.json() as Promise<GoalReplay>;
+export async function getGoalReplay(id:string,goalEventId:string):Promise<GoalReplay>{
+  const response=await fetch(`${API_URL}/matches/${id}/replays/${goalEventId}`);if(!response.ok)throw new Error(`Could not load replay: ${response.status}`);return response.json() as Promise<GoalReplay>;
 }

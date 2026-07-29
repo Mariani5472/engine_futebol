@@ -6,8 +6,10 @@ import { UtilityScore } from "../UtilityScore";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 import { PassingLane } from "../../awareness/WorldAwareness";
 import { ActionReadiness } from "./ActionReadiness";
+import { GoalOpportunityAnalyzer } from "../GoalOpportunityAnalyzer";
 
 export class PassEvaluator implements ActionEvaluator {
+  private readonly goalOpportunity = new GoalOpportunityAnalyzer();
   public evaluate(context: DecisionContext): Decision[] {
     if (!context.player.hasBall) return [];
     if (!ActionReadiness.canStartAction(context, 0.2)) return [];
@@ -37,15 +39,27 @@ export class PassEvaluator implements ActionEvaluator {
         bestForward,
         holdProgressive,
       );
+      const futureLane = context.teamTacticalContext?.passingLanes.find(item =>
+        item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+      );
       if (context.player.oneTwoReturnTargetId===lane.targetId
         && context.match.currentSecond<=context.player.oneTwoAvailableUntil
-        && lane.clear && lane.distance<=22) {
+        && lane.clear && (futureLane?.clearAtArrival ?? true) && lane.distance<=22) {
         score=UtilityScore.fromComponents({
           ...score.components,
           TACTICAL:(score.components.TACTICAL??0)+32,
         });
       }
       const targetPlayer = team.players.find(player => player.player.id === lane.targetId);
+      const combination = context.teamTacticalContext?.combinations.find(item =>
+        item.receiverId === context.player.player.id && item.thirdPlayerId === lane.targetId && item.availableReturnLane,
+      );
+      if (combination) {
+        score = UtilityScore.fromComponents({
+          ...score.components,
+          COMBINATION_PLAY: 10 + combination.completionProbability * 18 + Math.max(0, combination.progressionGain) * .25,
+        });
+      }
       const combinationActive = context.match.currentSecond <= context.player.thirdManAvailableUntil;
       if (combinationActive && context.player.thirdManNextTargetId === lane.targetId && lane.clear) {
         score = UtilityScore.fromComponents({
@@ -86,6 +100,10 @@ export class PassEvaluator implements ActionEvaluator {
   ): UtilityScore {
     const attrs = context.player.player.attributes;
     const world = context.world;
+    const futureLane = context.teamTacticalContext?.passingLanes.find(item =>
+      item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+    );
+    const opportunity = this.goalOpportunity.analyze(context);
 
     const passing = (attrs.technical.passing ?? 10) / 20;
     const vision = (attrs.mental.vision ?? 10) / 20;
@@ -112,6 +130,9 @@ export class PassEvaluator implements ActionEvaluator {
     const progressBonus = Math.max(-20, Math.min(55, lane.forwardProgress * 1.6));
     const certaintyBonus = lane.certainty * 6;
     const clearanceBonus = lane.clear ? 12 : -42;
+    const arrivalValue = futureLane
+      ? Math.max(-30, Math.min(18, futureLane.arrivalMargin * 14)) + (futureLane.clearAtArrival ? 8 : -18)
+      : 0;
 
     const desiredDirection = lane.targetPosition.subtract(context.player.position);
     const orientationQuality = ActionReadiness.orientationQuality(
@@ -161,7 +182,10 @@ export class PassEvaluator implements ActionEvaluator {
           ? 12 * bodyExecutionQuality
           : 0;
 
-    const raw = technique + space + pressureRelief + progressiveFloor;
+    const shotOpportunityCost = opportunity.shotAvailable && !opportunity.teammateBetterPositioned
+      ? -opportunity.shotQuality * (lane.forwardProgress < 3 ? 44 : 22)
+      : opportunity.teammateBetterPositioned ? 8 : 0;
+    const raw = technique + space + pressureRelief + progressiveFloor + shotOpportunityCost + arrivalValue;
     const phaseRisk = this.phaseRiskAdjustment(teamPhase(context), lane);
     const adjustedRaw = raw + phaseRisk;
     const scaled = Math.max(0, adjustedRaw * roleQuality * bodyExecutionQuality);
@@ -173,7 +197,8 @@ export class PassEvaluator implements ActionEvaluator {
       PRESSURE: pressureRelief * scale,
       ROLE: roleQuality * 12 * bodyExecutionQuality * 0.35,
       BODY: bodyQuality * 8 * roleQuality * 0.3,
-      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4 + phaseRisk * scale,
+      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4 + phaseRisk * scale + shotOpportunityCost * scale,
+      ARRIVAL_MARGIN: arrivalValue * scale,
     });
   }
 

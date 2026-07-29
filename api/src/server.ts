@@ -48,6 +48,10 @@ app.post<{ Params: { id: string; action: string }; Body?: { speed?: number } }>(
     try { return match.setSpeed(request.body.speed); }
     catch (error) { return reply.code(400).send({ message: (error as Error).message }); }
   }
+  if (request.params.action === "step") {
+    try { return match.step(Number((request.body as { count?:number } | undefined)?.count ?? 1)); }
+    catch (error) { return reply.code(400).send({ message: (error as Error).message }); }
+  }
   return reply.code(400).send({ message: "Unsupported action" });
 });
 

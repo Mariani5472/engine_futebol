@@ -15,6 +15,7 @@ import { ActionReadiness } from "../evaluators/ActionReadiness";
 import { applyRoleDecisionModifier } from "../RoleDecisionModifier";
 import { applyTacticalInstructionDecisionModifier } from "../TacticalInstructionDecisionModifier";
 import { ExpectedValueModel } from "../ExpectedValueModel";
+import { CognitiveCapabilityResolver } from "../CognitiveCapabilities";
 
 export class PossessionDecisionSystem {
   private readonly fieldThirdResolver: FieldThirdResolver;
@@ -22,6 +23,7 @@ export class PossessionDecisionSystem {
   private readonly riskCalculator: RiskCalculator;
   private readonly debug: DecisionDebug;
   private readonly expectedValue = new ExpectedValueModel();
+  private readonly cognition = new CognitiveCapabilityResolver();
 
   constructor(
     private readonly evaluators: ActionEvaluator[],
@@ -45,9 +47,9 @@ export class PossessionDecisionSystem {
       candidates.push(...evaluator.evaluate(context));
     }
 
-    const readyCandidates = candidates.filter(() =>
+    const readyCandidates = this.cognition.selectCandidates(candidates.filter(() =>
       ActionReadiness.canStartAction(context)
-    );
+    ), context);
 
     const biasedCandidates = readyCandidates.map((decision) => {
       const bias = this.personalityModifier.calculate({
@@ -56,13 +58,13 @@ export class PossessionDecisionSystem {
       });
 
       return {
-        decision: this.expectedValue.apply(applyTacticalInstructionDecisionModifier(applyRoleDecisionModifier(new Decision(
+        decision: this.cognition.applyEvaluationError(this.expectedValue.apply(applyTacticalInstructionDecisionModifier(applyRoleDecisionModifier(new Decision(
           decision.type,
           decision.utility + bias.utilityModifier,
           decision.targetId,
           decision.reasons,
           decision.components,
-        ), context), context), context),
+        ), context), context), context), context),
         riskToleranceModifier: bias.riskToleranceModifier,
       };
     });
@@ -102,10 +104,22 @@ export class PossessionDecisionSystem {
 
     const best = this.selector.select(evaluated);
 
-    for(const item of evaluated) this.debug.record(context.player,item.decision,{
-      tick:context.currentTick,matchSecond:context.match.currentSecond,
-      selected:item===best,rejectionReasons:item===best?[]:["LOWER_EXPECTED_UTILITY_AFTER_RISK"],
-    });
+    for(const item of evaluated) {
+      const expected = this.expectedValue.evaluate(item.decision, context);
+      this.debug.record(context.player,item.decision,{
+        tick:context.currentTick,matchSecond:context.match.currentSecond,
+        selected:item===best,rejectionReasons:item===best?[]:["LOWER_EXPECTED_UTILITY_AFTER_RISK"],
+        tacticalPhase:context.teamTacticalContext?.currentPhase,
+        currentIntent:context.player.intent??undefined,
+        perceivedSpaces:context.teamTacticalContext?.spaces.filter(space=>space.reachablePlayers.includes(context.player.player.id)).slice(0,8),
+        possessionPrediction:teamMatchState.possessionPrediction,
+        predictedOutcome:expected.predictedOutcome,
+        tacticalUtility:expected.tacticalUtility,
+        selectionReason:item===best
+          ? `highest risk-adjusted tactical utility; objective=${item.decision.objective}`
+          : undefined,
+      });
+    }
     for(const candidate of biasedCandidates.map(item=>item.decision).filter(item=>!valid.includes(item))) {
       this.debug.record(context.player,candidate,{
         tick:context.currentTick,matchSecond:context.match.currentSecond,selected:false,rejectionReasons:["ILLEGAL_OR_CONTEXT_FILTERED"],

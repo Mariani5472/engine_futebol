@@ -52,6 +52,17 @@ export class DribbleAction {
       origin: player.position, destination: new Vector2(clampedX,clampedY), desiredSpeed,
       controlMode, purpose, startedAt: matchSecond,
     };
+    player.intent = {
+      type: "continueCarry",
+      targetPosition: new Vector2(clampedX, clampedY),
+      startedAt: matchSecond,
+      expiresAt: matchSecond + Math.max(.8, player.position.distanceTo(new Vector2(clampedX, clampedY)) / Math.max(1, desiredSpeed) + .5),
+      confidence: Math.max(.35, 1 - pressure * .2),
+      commitment: controlMode === "SPRINT" ? .82 : .68,
+      possessionTeamId: team.team.id,
+      cancelConditions: ["possessionChanged", "opportunityGone", "higherPriorityThreat", "expired"],
+      reason: `${purpose} through ${controlMode.toLowerCase()} continuous carry`,
+    };
 
     // Keep CONTROLLED ownership glued during dribble.
     if (match.ball.owner === player || player.hasBall) {

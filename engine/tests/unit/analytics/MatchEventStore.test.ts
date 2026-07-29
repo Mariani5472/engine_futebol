@@ -4,6 +4,29 @@ import type { MatchEvent } from "../../../src/domain";
 import { buildSimulationConfig } from "../../helpers/builders";
 
 describe("MatchEventStore", () => {
+  it("assigns a stable causal sequence and simulation coordinates to every event",()=>{
+    const store=new MatchEventStore("ordered");
+    store.append([
+      {id:"first",type:"PERIOD_STARTED",timestamp:0 as any,period:"FIRST_HALF",periodName:"FIRST_HALF"},
+      {id:"second",type:"FOUL",timestamp:250 as any,period:"FIRST_HALF",teamId:"home" as any,playerId:"home-2" as any},
+    ]);
+    expect(store.events().map(event=>event.sequence)).toEqual([1,2]);
+    expect(store.events()[1]).toMatchObject({simulationTick:5,simulationTimeMs:250,matchId:"ordered"});
+  });
+
+  it("can build live analytics without closing the active possession",()=>{
+    const state=new MatchInitializer().initialize(buildSimulationConfig(9)).state;
+    const store=new MatchEventStore("live");
+    state.ball.owner=state.home.players[1];
+    state.currentSecond=1;store.sample(state);
+    state.currentSecond=3;
+    const first=store.snapshot(state);
+    expect(first.teams[state.home.team.id].possessionSeconds).toBe(2);
+    state.currentSecond=5;
+    const second=store.snapshot(state);
+    expect(second.teams[state.home.team.id].possessionSeconds).toBe(4);
+  });
+
   it("derives team/player pass and shot reports from normalized events", () => {
     const state = new MatchInitializer().initialize(buildSimulationConfig(4)).state;
     const store = new MatchEventStore("match-analytics");

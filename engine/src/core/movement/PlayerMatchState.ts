@@ -3,6 +3,7 @@ import type { ActionExecution } from "../../application/match/action/ActionExecu
 import type { PipelineExecution } from "../../application/match/action/PipelineExecution";
 import { Player, PlayerRole } from "../../domain";
 import { Vector2 } from "../geometry/Vector2";
+import type { PlayerIntent } from "../../application/match/tactical/intelligence/TacticalIntelligenceTypes";
 
 export class PlayerMatchState {
   public tacticalAnchorPosition: Vector2;
@@ -43,6 +44,8 @@ export class PlayerMatchState {
     readonly purpose: "PROGRESS" | "ESCAPE_PRESSURE" | "CREATE_ANGLE" | "ATTACK_SPACE" | "PROTECT_POSSESSION";
     readonly startedAt: number;
   } | null = null;
+  /** Stable tactical intention. It survives decision ticks until a causal cancel condition fires. */
+  public intent: PlayerIntent | null = null;
   /** Short-lived pass-and-move relationship used to create organic one-twos. */
   public oneTwoPartnerId: string | null = null;
   public oneTwoReturnTargetId: string | null = null;

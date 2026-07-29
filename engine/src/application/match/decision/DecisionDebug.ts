@@ -4,6 +4,8 @@ import { UtilityComponents } from "./UtilityScore";
 import { Decision } from "./Decision";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import type { TacticalObjective } from "./TacticalObjective";
+import type { DecisionTacticalPhase, PlayerIntent, PredictedActionOutcome, SpaceOpportunity, TacticalUtility } from "../tactical/intelligence/TacticalIntelligenceTypes";
+import type { PossessionPrediction } from "../../../core/movement/PossessionPrediction";
 
 export interface DecisionDebugEntry {
   readonly tick: number;
@@ -19,6 +21,13 @@ export interface DecisionDebugEntry {
   readonly hasBall: boolean;
   readonly selected:boolean;
   readonly rejectionReasons:readonly string[];
+  readonly tacticalPhase?: DecisionTacticalPhase;
+  readonly currentIntent?: PlayerIntent;
+  readonly perceivedSpaces?: readonly SpaceOpportunity[];
+  readonly possessionPrediction?: PossessionPrediction;
+  readonly predictedOutcome?: PredictedActionOutcome;
+  readonly tacticalUtility?: TacticalUtility;
+  readonly selectionReason?: string;
 }
 
 export interface DecisionDebugOptions {
@@ -84,7 +93,12 @@ export class DecisionDebug {
   public record(
     player: PlayerMatchState,
     decision: Decision,
-    meta: { tick: number; matchSecond: number; selected?:boolean; rejectionReasons?:readonly string[] },
+    meta: {
+      tick: number; matchSecond: number; selected?:boolean; rejectionReasons?:readonly string[];
+      tacticalPhase?: DecisionTacticalPhase; currentIntent?: PlayerIntent;
+      perceivedSpaces?: readonly SpaceOpportunity[]; possessionPrediction?: PossessionPrediction;
+      predictedOutcome?: PredictedActionOutcome; tacticalUtility?: TacticalUtility; selectionReason?: string;
+    },
   ): void {
     if (!this.enabled) return;
 
@@ -103,6 +117,13 @@ export class DecisionDebug {
       hasBall: player.hasBall,
       selected:meta.selected??true,
       rejectionReasons:meta.rejectionReasons??[],
+      tacticalPhase: meta.tacticalPhase,
+      currentIntent: meta.currentIntent,
+      perceivedSpaces: meta.perceivedSpaces,
+      possessionPrediction: meta.possessionPrediction,
+      predictedOutcome: meta.predictedOutcome,
+      tacticalUtility: meta.tacticalUtility,
+      selectionReason: meta.selectionReason,
     };
 
     this.entries.push(entry);
@@ -129,6 +150,8 @@ export class DecisionDebug {
       `Objective: ${entry.objective}`,
       `Utility: ${entry.utility.toFixed(1)}`,
     ];
+    if (entry.tacticalPhase) lines.push(`Phase: ${entry.tacticalPhase}`);
+    if (entry.selectionReason) lines.push(`Selection: ${entry.selectionReason}`);
 
     if (entry.reasons.length > 0) {
       lines.push("Reasons:");

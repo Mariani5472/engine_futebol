@@ -4,7 +4,11 @@ import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParamet
 
 export interface StoredMatchEvent {
   readonly id: string;
+  /** Monotonic order assigned by the authoritative event store. */
+  readonly sequence: number;
   readonly matchId: string;
+  readonly simulationTick: number;
+  readonly simulationTimeMs: number;
   readonly timestamp: number;
   readonly matchMinute: number;
   readonly period:string;
@@ -179,6 +183,21 @@ export class MatchEventStore {
 
   public finalize(state: MatchState): EventDerivedMatchReport {
     this.closePossession(state.currentSecond, "PERIOD_END");
+    return this.buildReport(state);
+  }
+
+  /** Builds live statistics without closing or otherwise changing possession state. */
+  public snapshot(state: MatchState): EventDerivedMatchReport {
+    const active = this.activePossession;
+    const intervalCount = this.intervals.length;
+    this.closePossession(state.currentSecond, "PERIOD_END");
+    const report = this.buildReport(state);
+    this.intervals.splice(intervalCount);
+    this.activePossession = active;
+    return report;
+  }
+
+  private buildReport(state: MatchState): EventDerivedMatchReport {
     const teamIds = [state.home.team.id, state.away.team.id];
     const teamReports: Record<string, EventDerivedTeamReport> = {};
     const playerReports: Record<string, MutablePlayerReport> = {};
@@ -348,7 +367,12 @@ export class MatchEventStore {
     for (const key of ["id", "type", "timestamp", "period", "teamId", "playerId", "scorerId", "goalkeeperId", "assistId", "receiverId", "shooterId", "positionX", "positionY", "originX", "originY"]) delete metadata[key];
     if (x !== undefined) metadata.zone = x < 35 ? "OWN_THIRD" : x < 70 ? "MIDDLE_THIRD" : "FINAL_THIRD";
     return {
-      id: event.id, matchId: this.matchId, timestamp: Number(event.timestamp) / 1000,
+      id: event.id,
+      sequence: this.stored.length + 1,
+      matchId: this.matchId,
+      simulationTick: Math.round(Number(event.timestamp) / 1000 / ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds),
+      simulationTimeMs: Number(event.timestamp),
+      timestamp: Number(event.timestamp) / 1000,
       matchMinute: Math.floor(Number(event.timestamp) / 60000), type: event.type,
       period:String(event.period),
       teamId, playerId, secondaryPlayerId,

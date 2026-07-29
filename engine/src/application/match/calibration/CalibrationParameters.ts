@@ -3,7 +3,7 @@ export const ENGINE_CALIBRATION_PARAMETERS = {
   /** Official simulation timestep: 20 updates per simulated second. */
   officialTickSeconds: 0.05,
   shot: {
-    cooldownSeconds: 110,
+    cooldownSeconds: 105,
     cornerFromMissRate: 0.58,
     cornerFromParryRate: 0.30,
     goalkeeperSaveBonus: 0.15,
@@ -11,12 +11,12 @@ export const ENGINE_CALIBRATION_PARAMETERS = {
     goalkeeperSaveCap: 0.90,
     onTargetProbabilityScale: 1.18,
     onTargetProbabilityCap: 0.75,
-    utilityScale: 0.82,
+    utilityScale: 0.86,
     boxFlatBoost: 42,
     maxPerPossession: 1,
-    maxDistanceMeters: 22,
+    maxDistanceMeters: 24,
     closeRangeMeters: 14,
-    minimumWindowOutsideCloseRange: 0.70,
+    minimumWindowOutsideCloseRange: 0.68,
     /** Spatial execution parameters; these shape outcomes, never pick them. */
     aimLateralBaseMeters: 0.75,
     aimTechniqueScaleMeters: 0.75,

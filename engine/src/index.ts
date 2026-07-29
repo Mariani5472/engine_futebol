@@ -59,6 +59,26 @@ export { CollectiveCoordinationSystem } from "./application/match/tactical/Colle
 export { PossessionPredictionSystem } from "./application/match/tactical/PossessionPredictionSystem";
 export { ExpectedValueModel } from "./application/match/decision/ExpectedValueModel";
 export type { DecisionExpectedValue } from "./application/match/decision/ExpectedValueModel";
+export { ShortHorizonPredictionSystem } from "./application/match/decision/ShortHorizonPredictionSystem";
+export { TacticalUtilityModel } from "./application/match/decision/TacticalUtilityModel";
+export { GoalOpportunityAnalyzer } from "./application/match/decision/GoalOpportunityAnalyzer";
+export type { GoalOpportunity } from "./application/match/decision/GoalOpportunityAnalyzer";
+export { CognitiveCapabilityResolver } from "./application/match/decision/CognitiveCapabilities";
+export type { CognitiveCapabilities } from "./application/match/decision/CognitiveCapabilities";
+export { DecisionQualityMetrics } from "./application/match/decision/DecisionQualityMetrics";
+export type { DecisionQualityReport } from "./application/match/decision/DecisionQualityMetrics";
+export { TacticalIntelligenceSystem } from "./application/match/tactical/intelligence/TacticalIntelligenceSystem";
+export { SpatioTemporalSystem } from "./application/match/tactical/intelligence/SpatioTemporalSystem";
+export { SpaceAnalysisSystem } from "./application/match/tactical/intelligence/SpaceAnalysisSystem";
+export { PlayerIntentSystem } from "./application/match/tactical/intelligence/PlayerIntentSystem";
+export { CombinationPlaySystem } from "./application/match/tactical/intelligence/CombinationPlaySystem";
+export type {
+  DecisionTacticalPhase, PlayerIntent, PlayerIntentType, PlayerSpatioTemporalState,
+  ReachableArea, SpaceOpportunity, SpaceKind, TeamTacticalContext,
+  TacticalIntelligenceSnapshot, TacticalPattern, TacticalPatternDetection,
+  TacticalReservation, TacticalLane, CombinationPlayContext,
+  PredictedActionOutcome, TacticalUtility,
+} from "./application/match/tactical/intelligence/TacticalIntelligenceTypes";
 export type { PossessionPrediction, TeamPossessionState } from "./core/movement/PossessionPrediction";
 export type { MatchOffensiveFunnel, TeamOffensiveFunnel, OffensiveFailureReason, GoalContext } from "./application/match/diagnostics/OffensiveFunnelCollector";
 
