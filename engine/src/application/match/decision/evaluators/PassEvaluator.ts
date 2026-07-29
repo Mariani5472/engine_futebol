@@ -30,13 +30,21 @@ export class PassEvaluator implements ActionEvaluator {
       // half the pitch. Crosses and goalkeeper distribution have evaluators
       // and execution profiles of their own.
       if (lane.distance > 42) continue;
-      const score = this.scoreLane(
+      let score = this.scoreLane(
         context,
         lane,
         hasProgressiveOption,
         bestForward,
         holdProgressive,
       );
+      if (context.player.oneTwoReturnTargetId===lane.targetId
+        && context.match.currentSecond<=context.player.oneTwoAvailableUntil
+        && lane.clear && lane.distance<=22) {
+        score=UtilityScore.fromComponents({
+          ...score.components,
+          TACTICAL:(score.components.TACTICAL??0)+32,
+        });
+      }
       if (score.total <= 0) continue;
       decisions.push(
         new Decision(

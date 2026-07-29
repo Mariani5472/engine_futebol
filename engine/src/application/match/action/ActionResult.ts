@@ -1,8 +1,8 @@
-import { CardEvent, CornerEvent, FoulEvent, GoalEvent, ShotEvent } from "../../../domain";
+import { MatchEvent } from "../../../domain";
 import { DecisionType } from "../decision/DecisionType";
 
 /** Events that an action can produce within a single tick. */
-export type ActionEvent = ShotEvent | GoalEvent | CardEvent | CornerEvent | FoulEvent;
+export type ActionEvent = MatchEvent;
 
 export interface ActionResultMeta {
   passRealForwardGain?: number;

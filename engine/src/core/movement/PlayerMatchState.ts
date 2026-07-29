@@ -28,6 +28,15 @@ export class PlayerMatchState {
   public tacticalResponsibility: string | null = null;
   public responsibilityUntil = 0;
   public occupiedChannel: "LEFT" | "CENTRE" | "RIGHT" | null = null;
+  public goalkeeperState: "POSITIONING" | "SET" | "CLOSING_ANGLE" | "RUSHING_OUT" | "DIVING" | "SMOTHERING" | "PARRYING" | "CATCHING" | "RECOVERING" | "DISTRIBUTING" = "POSITIONING";
+  public goalkeeperReactionUntil = 0;
+  public goalkeeperInterceptionTarget: Vector2 | null = null;
+  public goalkeeperCommittedAt = 0;
+  /** Short-lived pass-and-move relationship used to create organic one-twos. */
+  public oneTwoPartnerId: string | null = null;
+  public oneTwoReturnTargetId: string | null = null;
+  public oneTwoAvailableUntil = 0;
+  public oneTwoRunTarget: Vector2 | null = null;
 
   constructor(
     public readonly player: Player,

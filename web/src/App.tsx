@@ -3,8 +3,8 @@ import { Activity, Pause, Play, RotateCcw, Wifi, WifiOff } from "lucide-react";
 import { Pitch } from "./components/Pitch";
 import type { PitchLayers } from "./components/Pitch";
 import { DemoMatchFeed } from "./simulation/DemoMatchFeed";
-import type { MatchFeedEvent, MatchSnapshot } from "./simulation/types";
-import { controlMatch, getOrCreateMatch, recoverMatch, setMatchSpeed, subscribeToMatch } from "./api/matchClient";
+import type { GoalReplay, MatchFeedEvent, MatchSnapshot } from "./simulation/types";
+import { controlMatch, getGoalReplay, getOrCreateMatch, recoverMatch, setMatchSpeed, subscribeToMatch } from "./api/matchClient";
 
 export function App() {
   const initialSeed = Number(new URLSearchParams(window.location.search).get("seed") ?? 1) || 1;
@@ -16,9 +16,12 @@ export function App() {
   const [matchId, setMatchId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [running, setRunning] = useState(true);
-  const [speed, setSpeed] = useState<1 | 2 | 4 | 8>(1);
+  const [speed, setSpeed] = useState<1 | 2 | 4 | 8 | 50>(1);
   const [seed, setSeed] = useState(initialSeed);
   const [feed, setFeed] = useState<MatchFeedEvent[]>([]);
+  const [goalReplay, setGoalReplay] = useState<GoalReplay | null>(null);
+  const [replayFrameIndex, setReplayFrameIndex] = useState(0);
+  const [replayPlaying, setReplayPlaying] = useState(false);
   const [layers, setLayers] = useState<PitchLayers>({ influence:false, targets:false, passingLines:false, pressure:false, anchors:false, sectorLines:false, roles:false, logicalBall:false });
 
   useEffect(() => {
@@ -40,7 +43,7 @@ export function App() {
             current.current = snapshot;
             lastSnapshotAt.current = performance.now();
             setRunning(snapshot.status !== "PAUSED");
-            const visible = [...(snapshot.events??[]),...(snapshot.diagnostics??[])].filter(event=>["SHOT","GOAL","FOUL","CORNER","THROW_IN","GOAL_KICK","POSSESSION_CHANGED","BALL_TELEPORT"].includes(event.type));
+            const visible = [...(snapshot.events??[]),...(snapshot.diagnostics??[])].filter(event=>["SHOT","SHOT_STARTED","SHOT_ON_TARGET","SHOT_OFF_TARGET","SHOT_BLOCKED","WOODWORK","GOALKEEPER_SAVE","REBOUND","GOAL","FOUL","CORNER","THROW_IN","GOAL_KICK","POSSESSION_CHANGED","BALL_TELEPORT"].includes(event.type));
             if(visible.length)setFeed(previousFeed=>deduplicateFeed([...visible,...previousFeed]).slice(0,40));
           },
           onSpeedChanged: setSpeed,
@@ -67,6 +70,20 @@ export function App() {
     return () => { active = false; if(reconnectTimer)clearTimeout(reconnectTimer); socket?.close(); cancelAnimationFrame(animationFrame); };
   }, []);
 
+  useEffect(() => {
+    if (!goalReplay || !replayPlaying) return;
+    const timer = window.setInterval(() => {
+      setReplayFrameIndex(index => {
+        if (index >= goalReplay.frames.length - 1) {
+          setReplayPlaying(false);
+          return index;
+        }
+        return index + 1;
+      });
+    }, 50);
+    return () => window.clearInterval(timer);
+  }, [goalReplay, replayPlaying]);
+
   const toggle = async () => {
     if (!matchId) return;
     await controlMatch(matchId, running ? "pause" : "resume");
@@ -74,11 +91,20 @@ export function App() {
   };
 
   const replay = () => { const url=new URL(window.location.href); url.searchParams.set("seed",String(Math.max(1,Math.floor(seed)))); window.location.href=url.toString(); };
-  const changeSpeed = async (nextSpeed: 1 | 2 | 4 | 8) => {
+  const changeSpeed = async (nextSpeed: 1 | 2 | 4 | 8 | 50) => {
     if (!matchId || !connected) return;
     await setMatchSpeed(matchId, nextSpeed);
   };
   const toggleLayer = (layer: keyof PitchLayers) => setLayers(value => ({ ...value, [layer]:!value[layer] }));
+  const openGoalReplay = async (goalEventId: string) => {
+    if (!matchId) return;
+    const loaded = await getGoalReplay(matchId, goalEventId);
+    setGoalReplay(loaded);
+    setReplayFrameIndex(0);
+    setReplayPlaying(true);
+  };
+  const closeGoalReplay = () => { setGoalReplay(null); setReplayPlaying(false); setReplayFrameIndex(0); };
+  const pitchFrame = goalReplay ? buildReplayPitchFrame(goalReplay, replayFrameIndex, frame.current) : frame;
   const minutes = Math.floor(frame.current.time/60).toString().padStart(2,"0");
   const seconds = Math.floor(frame.current.time%60).toString().padStart(2,"0");
   const tenths = Math.floor((frame.current.time%1)*10);
@@ -97,11 +123,12 @@ export function App() {
       <div className="team team-away">Racing Sul<i className="away-mark"/></div>
     </section>
     <section className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[1fr_270px]">
-      <Pitch {...frame} layers={layers}/>
+      <Pitch {...pitchFrame} layers={layers}/>
       <aside className="panel"><p className="eyebrow">Controles</p><h2>Partida remota</h2>
+        {goalReplay&&<div className="replay-controls"><div><b>Replay do gol</b><span>{(goalReplay.frames[replayFrameIndex]?.timestamp??0).toFixed(2)}s</span></div><button onClick={()=>setReplayPlaying(value=>!value)}>{replayPlaying?<Pause size={14}/>:<Play size={14}/>}</button><button onClick={closeGoalReplay}>Fechar</button></div>}
         <button className="primary" onClick={toggle} disabled={!connected}>{running?<Pause size={17}/>:<Play size={17}/>} {running?"Pausar":"Continuar"}</button>
         <div className="speed-controls" aria-label="Velocidade da partida">
-          {([1,2,4,8] as const).map(value=><button key={value} className={speed===value?"speed-active":""} onClick={()=>changeSpeed(value)} disabled={!connected}>{value}x</button>)}
+          {([1,2,4,8,50] as const).map(value=><button key={value} className={speed===value?"speed-active":""} onClick={()=>changeSpeed(value)} disabled={!connected}>{value}x</button>)}
         </div>
         <div className="seed-control"><label>Seed</label><input type="number" min="1" step="1" value={seed} onChange={event=>setSeed(Number(event.target.value)||1)}/></div>
         <button className="secondary" onClick={replay}><RotateCcw size={16}/>Repetir pela seed</button>
@@ -113,6 +140,8 @@ export function App() {
         <div className="metric"><span>Estado</span><b>{phaseLabels[frame.current.phase]}</b></div>
         <div className="metric"><span>Aurora</span><b>{frame.current.homePhase??"—"}</b></div>
         <div className="metric"><span>Racing</span><b>{frame.current.awayPhase??"—"}</b></div>
+        <div className="metric"><span>Posse provável</span><b>{frame.current.possessionPrediction?.likelyTeamId??"disputada"} · {((frame.current.possessionPrediction?.confidence??0)*100).toFixed(0)}%</b></div>
+        <div className="metric"><span>Motivo</span><b>{frame.current.possessionPrediction?.transitionReason??"—"}</b></div>
         <div className="metric"><span>Interpolação</span><b>{frame.alpha.toFixed(2)}</b></div>
         <div className="divider"/><p className="label">Camadas de análise</p>
         <div className="layer-controls">
@@ -139,6 +168,8 @@ export function App() {
         </>}
         <div className="divider"/><p className="label">Eventos e posse</p>
         <div className="event-feed">{feed.length?feed.map((event,index)=><div className={`feed-event feed-${event.type.toLowerCase()}`} key={eventKey(event,index)}><b>{formatEventTime(event)}</b><span>{describeEvent(event)}</span></div>):<p className="hint">Aguardando eventos da partida.</p>}</div>
+        <div className="divider"/><p className="label">Timeline</p>
+        <div className="match-timeline">{frame.current.timeline?.length?frame.current.timeline.slice(-20).reverse().map(entry=><button className="timeline-entry" key={entry.eventId} disabled={!entry.replayAvailable} onClick={()=>void openGoalReplay(entry.eventId)}><b>{entry.minute}'</b><span>{entry.label}</span>{entry.replayAvailable&&<i>replay</i>}</button>):<p className="hint">Aguardando eventos normalizados.</p>}</div>
         <p className="hint">A API produz snapshots a 20 Hz. O navegador somente interpola e desenha.</p>
       </aside>
     </section>
@@ -150,6 +181,13 @@ function eventKey(event:MatchFeedEvent,index:number){return `${stableEventKey(ev
 function deduplicateFeed(events:MatchFeedEvent[]){const seen=new Set<string>();return events.filter(event=>{const key=stableEventKey(event);if(seen.has(key))return false;seen.add(key);return true})}
 function formatEventTime(event:MatchFeedEvent){const seconds=event.matchSecond??((event.timestamp??0)/1000);return `${Math.floor(seconds/60).toString().padStart(2,"0")}:${Math.floor(seconds%60).toString().padStart(2,"0")}`}
 function describeEvent(event:MatchFeedEvent){
+  if(event.type==="SHOT_STARTED")return `Chute iniciado — ${event.playerId??""}`;
+  if(event.type==="SHOT_ON_TARGET")return "Finalização no alvo";
+  if(event.type==="SHOT_OFF_TARGET")return "Finalização para fora";
+  if(event.type==="SHOT_BLOCKED")return "Finalização bloqueada";
+  if(event.type==="WOODWORK")return "Bola na trave";
+  if(event.type==="GOALKEEPER_SAVE")return `Defesa — ${event.playerId??"goleiro"}`;
+  if(event.type==="REBOUND")return "Rebote em jogo";
   if(event.type==="SHOT")return `Finalização ${event.result??""}`;
   if(event.type==="GOAL")return `GOL — ${event.teamId??""}`;
   if(event.type==="FOUL")return `Falta — ${event.playerId??""}`;
@@ -161,3 +199,35 @@ function describeEvent(event:MatchFeedEvent){
 }
 function reasonLabel(reason:string){return ({PASS_BLOCKED:'Passe bloqueado',PASS_NO_OPTION:'Passe sem opção',OFFSIDE:'Impedimento',SHOT_DECLINED:'Chute recusado',SHOT_BLOCKED:'Chute bloqueado',SHOT_SAVED:'Chute defendido',SHOT_OFF_TARGET:'Chute para fora',POSSESSION_RECYCLED:'Posse reciclada',BALL_LOST:'Bola perdida'} as Record<string,string>)[reason]??reason}
 function contextLabel(context:string){return ({THROUGH_BALL:'Passe em profundidade',CROSS:'Cruzamento',REBOUND:'Rebote',TRANSITION:'Transição',POSITIONAL:'Ataque posicional'} as Record<string,string>)[context]??context}
+
+function buildReplayPitchFrame(replay:GoalReplay,index:number,live:MatchSnapshot) {
+  const currentFrame=replay.frames[Math.min(index,replay.frames.length-1)];
+  const previousFrame=replay.frames[Math.max(0,Math.min(index-1,replay.frames.length-1))]??currentFrame;
+  return { previous:replaySnapshot(previousFrame,live), current:replaySnapshot(currentFrame,live), alpha:1 };
+}
+
+function replaySnapshot(replayFrame:GoalReplay["frames"][number]|undefined,live:MatchSnapshot):MatchSnapshot {
+  if(!replayFrame)return live;
+  const sourceById=new Map(live.players.map(player=>[player.id,player]));
+  return {
+    ...live,
+    time:replayFrame.timestamp,
+    events:[],
+    diagnostics:[],
+    players:replayFrame.players.map(player=>{
+      const source=sourceById.get(player.id);
+      return {
+        id:player.id,
+        number:source?.number??Number(player.id.match(/(\d+)$/)?.[1]??0),
+        team:player.teamId==="home"?"HOME":"AWAY",
+        x:player.x/105*100,
+        y:player.y/68*100,
+        hasBall:false,
+        role:source?.role,
+        tacticalResponsibility:source?.tacticalResponsibility,
+        goalkeeperState:source?.goalkeeperState,
+      };
+    }),
+    ball:{ x:replayFrame.ball.x/105*100, y:replayFrame.ball.y/68*100, height:replayFrame.ball.height },
+  };
+}

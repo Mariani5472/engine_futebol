@@ -1,10 +1,16 @@
 import { Tactic, Team, TacticalPhase } from "../../domain";
 import { PlayerMatchState } from "./PlayerMatchState";
+import type { PossessionPrediction, TeamPossessionState } from "./PossessionPrediction";
 
 export class TeamMatchState {
 
   public collectivePhase: TacticalPhase = "DEFENSIVE_BLOCK";
   public collectivePhaseSince = 0;
+  public possessionState: TeamPossessionState = "defending";
+  public possessionPrediction: PossessionPrediction = {
+    confidence: 0, interceptionRisk: 1, state: "contested",
+    estimatedArrivalTimes: {}, transitionReason: "INITIAL_STATE",
+  };
 
   /** Match second until which non-progressive passes are demoted. */
   public progressiveHoldUntil = 0;

@@ -5,6 +5,8 @@ import { MatchEngine, type IncrementalMatchFrame, type MatchResult, type MatchDi
 import type { SimulationConfig } from "./SimulationConfig";
 import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 import type { MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollector";
+import type { EventDerivedMatchReport, MatchTimelineEntry } from "../analytics/MatchEventStore";
+import type { GoalReplay } from "../replay/GoalReplayRecorder";
 
 export interface SnapshotVector {
   readonly x: number;
@@ -27,6 +29,8 @@ export interface PlayerSnapshot {
   readonly acceptedTargetChanges: number;
   readonly tacticalResponsibility: string | null;
   readonly occupiedChannel: string | null;
+  readonly goalkeeperState: string | null;
+  readonly goalkeeperInterceptionTarget: SnapshotVector | null;
 }
 
 export interface BallSnapshot {
@@ -37,7 +41,18 @@ export interface BallSnapshot {
   readonly state: string;
   readonly ownerId: string | null;
   readonly motion: { readonly kind: string; readonly hasExplicitEffect: boolean } | null;
+  readonly activeShot: {
+    readonly id: string;
+    readonly shooterId: string;
+    readonly lifecycle: string;
+    readonly shotType: string;
+    readonly intendedTarget: { readonly x: number; readonly y: number; readonly z: number };
+    readonly actualTarget: { readonly x: number; readonly y: number; readonly z: number };
+    readonly speed: number;
+  } | null;
 }
+
+export type MatchSpeed = 1 | 2 | 4 | 8 | 50;
 
 export interface MatchSnapshot {
   readonly seed: number;
@@ -48,6 +63,16 @@ export interface MatchSnapshot {
   readonly possessionTeamId: string | null;
   readonly homePhase: string;
   readonly awayPhase: string;
+  readonly homePossessionState: string;
+  readonly awayPossessionState: string;
+  readonly possessionPrediction: {
+    readonly likelyTeamId?: string;
+    readonly likelyReceiverId?: string;
+    readonly confidence: number;
+    readonly interceptionRisk: number;
+    readonly state: string;
+    readonly transitionReason: string;
+  };
   readonly players: readonly PlayerSnapshot[];
   readonly ball: BallSnapshot;
   readonly events: readonly MatchEvent[];
@@ -60,6 +85,9 @@ export interface MatchSnapshot {
     readonly awaySectors: SectorCentroids;
   };
   readonly diagnostics: readonly MatchDiagnosticEvent[];
+  readonly timeline: readonly MatchTimelineEntry[];
+  readonly replayGoalIds: readonly string[];
+  readonly analytics: EventDerivedMatchReport | null;
 }
 
 export interface SectorCentroids {
@@ -74,7 +102,7 @@ export class MatchSession {
   private latestFrame: IncrementalMatchFrame | null = null;
   private finalResult: MatchResult | null = null;
   private paused = false;
-  private speed = 1;
+  private speed: MatchSpeed = 1;
 
   private constructor(private readonly config: SimulationConfig) {
     this.iterator = this.engine.runIncrementally({
@@ -108,12 +136,17 @@ export class MatchSession {
   public resume(): void { this.paused = false; }
   public isPaused(): boolean { return this.paused; }
   public setSpeed(speed: number): void {
-    if (![1, 2, 4, 8].includes(speed)) throw new Error("Speed must be 1, 2, 4 or 8");
-    this.speed = speed;
+    if (![1, 2, 4, 8, 50].includes(speed)) throw new Error("Speed must be 1, 2, 4, 8 or 50");
+    this.speed = speed as MatchSpeed;
   }
-  public getSpeed(): number { return this.speed; }
+  public getSpeed(): MatchSpeed { return this.speed; }
   public isFinished(): boolean { return this.finalResult !== null; }
   public result(): MatchResult | null { return this.finalResult; }
+  public goalReplay(goalEventId: string): GoalReplay | null {
+    return this.latestFrame?.goalReplays.find(replay => replay.goalEventId === goalEventId)
+      ?? this.finalResult?.goalReplays.find(replay => replay.goalEventId === goalEventId)
+      ?? null;
+  }
 
   public snapshot(): MatchSnapshot {
     if (!this.latestFrame) {
@@ -144,6 +177,10 @@ export class MatchSession {
       acceptedTargetChanges: player.acceptedTargetChanges,
       tacticalResponsibility: player.tacticalResponsibility,
       occupiedChannel: player.occupiedChannel,
+      goalkeeperState: player.currentRole.includes("GOALKEEPER") ? player.goalkeeperState : null,
+      goalkeeperInterceptionTarget: player.goalkeeperInterceptionTarget
+        ? { x: player.goalkeeperInterceptionTarget.x, y: player.goalkeeperInterceptionTarget.y }
+        : null,
     });
     return {
       seed: this.config.seed,
@@ -156,6 +193,9 @@ export class MatchSession {
         : null,
       homePhase: state.home.collectivePhase,
       awayPhase: state.away.collectivePhase,
+      homePossessionState: state.home.possessionState,
+      awayPossessionState: state.away.possessionState,
+      possessionPrediction: state.home.possessionPrediction,
       players: [
         ...state.home.players.map((player) => playerSnapshot(state.home.team.id, player)),
         ...state.away.players.map((player) => playerSnapshot(state.away.team.id, player)),
@@ -168,6 +208,15 @@ export class MatchSession {
         state: BallState[state.ball.state],
         ownerId: state.ball.motion ? null : state.ball.owner?.player.id ?? null,
         motion: state.ball.motion ? { kind: state.ball.motion.kind, hasExplicitEffect: state.ball.motion.hasExplicitEffect } : null,
+        activeShot: state.ball.activeShot ? {
+          id: state.ball.activeShot.id,
+          shooterId: state.ball.activeShot.shooterId,
+          lifecycle: state.ball.activeShot.lifecycle,
+          shotType: state.ball.activeShot.shotType,
+          intendedTarget: state.ball.activeShot.intendedTarget,
+          actualTarget: state.ball.activeShot.actualTarget,
+          speed: state.ball.activeShot.speed,
+        } : null,
       },
       events: frame.events,
       tacticalDiagnostics: frame.tacticalDiagnostics,
@@ -182,6 +231,9 @@ export class MatchSession {
         awaySectors: sectorCentroids(state.away.players),
       },
       diagnostics: frame.diagnostics,
+      timeline: frame.timeline,
+      replayGoalIds: frame.goalReplays.map(replay => replay.goalEventId),
+      analytics: this.finalResult?.analytics ?? null,
     };
   }
 }

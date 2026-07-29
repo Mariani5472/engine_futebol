@@ -93,6 +93,21 @@ export class MatchMetricsCollector {
         case "GOAL":
           this.handleGoal(event.teamId);
           break;
+        case "SHOT_ON_TARGET":
+          this.statsForTeam(event.teamId)!.shotsOnTarget++;
+          break;
+        case "SHOT_OFF_TARGET":
+        case "WOODWORK":
+          this.statsForTeam(event.teamId)!.shotsOffTarget++;
+          break;
+        case "SHOT_BLOCKED":
+          this.statsForTeam(event.teamId)!.shotsBlocked++;
+          break;
+        case "GOALKEEPER_SAVE": {
+          const shooterIsHome = state.home.players.some(player => player.player.id === event.shooterId);
+          (shooterIsHome ? this.home : this.away).shotsSaved++;
+          break;
+        }
         case "CARD":
           this.handleCard(event.teamId, event.cardType);
           break;
@@ -223,6 +238,8 @@ export class MatchMetricsCollector {
     stats.shots++;
 
     switch (result) {
+      case "IN_FLIGHT":
+        break;
       case "GOAL":
         stats.shotsOnTarget++;
         break;

@@ -1,318 +1,229 @@
 import { Vector2 } from "../../../../core/geometry/Vector2";
-import { BallState } from "../../../../core/movement/BallMatchState";
-import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
+import { Vector3 } from "../../../../core/geometry/Vector3";
+import type { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import {
-  CornerEvent,
-  GoalEvent,
   Milliseconds,
   PlayerId,
   ShotEvent,
+  ShotStartedEvent,
+  ShotTakenEvent,
   TeamId,
+  createGoalFrame,
+  type PreferredFoot,
+  type ShotExecution,
+  type ShotType,
 } from "../../../../domain";
-import { ActionContext } from "../ActionContext";
-import { ActionResult } from "../ActionResult";
-import { DecisionType } from "../../decision/DecisionType";
-import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
+import { DecisionType } from "../../decision/DecisionType";
 import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
-import { KickoffSystem } from "../../engine/KickoffSystem";
+import type { ActionContext } from "../ActionContext";
+import type { ActionResult } from "../ActionResult";
 
-/** Team-wide shot cooldown — primary volume control with 1/possession. */
 const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
 
+/**
+ * Starts a spatial shot. It deliberately does not decide goal/save/miss here:
+ * those outcomes are produced later by BallPhysicsSystem interactions.
+ */
 export class ShotAction {
-
   public execute(context: ActionContext): ActionResult {
-
     const { player, match, random, matchSecond, pitch, teamSide, attackingDirection } = context;
     const period = matchSecond < 45 * 60 ? "FIRST_HALF" as const : "SECOND_HALF" as const;
-
-    const goal = attackingDirection === 1
-      ? pitch.geometry.rightGoal
-      : pitch.geometry.leftGoal;
-
-    const goalCenter = new Vector2(goal.center.x, goal.center.y);
-    const origin = player.position;
-
-    const aimOffset = random.nextFloat(-goal.width / 2.5, goal.width / 2.5);
-    const aimPoint = new Vector2(goalCenter.x, goalCenter.y + aimOffset);
-
-    const isHome = teamSide === "HOME";
-    const attacking = isHome ? match.home : match.away;
-    attacking.noteShotTaken(matchSecond, SHOT_CALIBRATION.cooldownSeconds);
-
-    const onTargetProb = this.calculateOnTargetProb(context, player, goalCenter);
-    const isOnTarget = random.nextFloat(0, 1) < onTargetProb;
-
-    const shotId = `shot-${player.player.id}-${matchSecond.toFixed(1)}`;
-    const teamId = (isHome ? match.home.team.id : match.away.team.id) as TeamId;
+    const goal = attackingDirection === 1 ? pitch.geometry.rightGoal : pitch.geometry.leftGoal;
+    const defending = teamSide === "HOME" ? match.away : match.home;
+    const attacking = teamSide === "HOME" ? match.home : match.away;
+    const goalkeeper = defending.players.find(candidate => candidate.currentRole.includes("GOALKEEPER")) ?? null;
+    const pressure = this.pressureLevel(player, defending.players);
+    const quality = this.executionQuality(player, pressure);
+    const shotType = this.selectShotType(player, goalkeeper, goal.center.x, quality);
+    const intendedTarget = this.selectTarget(context, goalkeeper, shotType, goal.center.y, goal.width, goal.height);
+    const actualTarget = this.applyExecutionError(context, intendedTarget, quality, shotType);
+    const speed = this.initialSpeed(player, shotType, quality);
+    const origin = new Vector3(player.position.x, player.position.y, .18);
+    const direction = actualTarget.subtract(origin).normalize();
+    const initialVelocity = direction.multiply(speed);
+    const shotId = `shot-${player.player.id}-${matchSecond.toFixed(2)}`;
+    const teamId = attacking.team.id as TeamId;
     const playerId = player.player.id as PlayerId;
+    const technique = player.player.attributes.technical.technique / 20;
+    const flair = player.player.attributes.mental.flair / 20;
+    const curve = technique >= .78 && flair >= .7
+      ? (actualTarget.y < goal.center.y ? -1 : 1) * (.35 + technique * .65)
+      : 0;
+    const beyondDistance = .28;
+    const goalDistanceX = Math.max(.1, Math.abs(goal.center.x - origin.x));
+    const trajectoryFactor = (goalDistanceX + beyondDistance) / goalDistanceX;
+    const targetBeyondLine = new Vector2(
+      goal.center.x + attackingDirection * beyondDistance,
+      origin.y + (actualTarget.y - origin.y) * trajectoryFactor,
+    );
+    const peakHeight = shotType === "CHIP" ? 1.25 : .2 + technique * .25;
+    const goalProgress = goalDistanceX / (goalDistanceX + beyondDistance);
+    const targetHeightBeyond = Math.max(0, (
+      actualTarget.z
+      - origin.z * (1 - goalProgress)
+      - peakHeight * 4 * goalProgress * (1 - goalProgress)
+    ) / goalProgress);
+    const distance = origin.subtract(actualTarget).magnitude();
 
-    player.hasBall = false;
-    match.ball.noteTouch(player.player.id);
-    match.ball.owner = null;
-
-    if (!isOnTarget) {
-      const missAngle = random.nextFloat(-0.55, 0.55);
-      const along = player.position.add(
-        aimPoint.subtract(player.position).multiply(random.nextFloat(0.55, 1.05)),
-      );
-      let ballX = Math.max(0, Math.min(match.pitch.length, along.x + Math.sin(missAngle) * 5));
-      let ballY = Math.max(0, Math.min(match.pitch.width, along.y + Math.cos(missAngle) * 5));
-
-      const events: Array<ShotEvent | CornerEvent> = [];
-
-      const shot: ShotEvent = {
-        id: shotId,
-        type: "SHOT",
-        timestamp: (matchSecond * 1000) as Milliseconds,
-        period,
-        teamId,
-        playerId,
-        result: "OFF_TARGET",
-        targetX: aimPoint.x,
-        targetY: aimPoint.y
-      };
-      events.push(shot);
-
-      const endLineX = attackingDirection === 1 ? match.pitch.length : 0;
-      const distToEnd = Math.abs(ballX - endLineX);
-      const nearEnd = distToEnd < 8 || ballX <= 0.5 || ballX >= match.pitch.length - 0.5;
-      const wideOfGoal = Math.abs(ballY - goalCenter.y) > goal.width * 0.35;
-
-      if (nearEnd && (wideOfGoal || distToEnd < 3) && random.nextFloat(0, 1) < SHOT_CALIBRATION.cornerFromMissRate) {
-        const cornerY = ballY < goalCenter.y ? 0 : match.pitch.width;
-        ballX = endLineX;
-        ballY = cornerY;
-
-        const corner: CornerEvent = {
-          id: `corner-${teamId}-${matchSecond.toFixed(1)}`,
-          type: "CORNER",
-          timestamp: (matchSecond * 1000) as Milliseconds,
-          period,
-          teamId,
-        };
-        events.push(corner);
-      }
-
-      match.ball.position = new Vector2(ballX, ballY);
-      match.ball.velocity = Vector2.zero();
-      match.ball.height = 0;
-      match.ball.state = BallState.FREE;
-      this.startShotMotion(context, origin, new Vector2(ballX, ballY), aimPoint);
-
-      return {
-        actorId: player.player.id,
-        type: DecisionType.SHOT,
-        success: false,
-        events,
-      };
-    }
-
-    const gkSaveProb = this.calculateGkSaveProb(context, goalCenter);
-    const isSaved = random.nextFloat(0, 1) < gkSaveProb;
-
-    if (isSaved) {
-      const defending = isHome ? match.away : match.home;
-      const gk = defending.players.find((p) => p.currentRole === "GOALKEEPER")
-        ?? defending.players[0];
-
-      for (const p of [...match.home.players, ...match.away.players]) {
-        p.hasBall = false;
-      }
-
-      const parryCorner = random.nextFloat(0, 1) < SHOT_CALIBRATION.cornerFromParryRate;
-      if (parryCorner) {
-        const endLineX = attackingDirection === 1 ? match.pitch.length : 0;
-        const cornerY = random.nextFloat(0, 1) < 0.5 ? 0 : match.pitch.width;
-        match.ball.owner = null;
-        match.ball.position = new Vector2(endLineX, cornerY);
-        match.ball.state = BallState.FREE;
-        match.ball.velocity = Vector2.zero();
-        match.ball.height = 0;
-        this.startShotMotion(context, origin, new Vector2(endLineX, cornerY), aimPoint);
-
-        const shot: ShotEvent = {
-          id: shotId,
-          type: "SHOT",
-          timestamp: (matchSecond * 1000) as Milliseconds,
-          period,
-          teamId,
-          playerId,
-          result: "SAVED",
-          targetX: aimPoint.x,
-          targetY: aimPoint.y
-        };
-        const corner: CornerEvent = {
-          id: `corner-${teamId}-${matchSecond.toFixed(1)}`,
-          type: "CORNER",
-          timestamp: (matchSecond * 1000) as Milliseconds,
-          period,
-          teamId,
-        };
-        attacking.resetPossessionShotCount();
-        return {
-          actorId: player.player.id,
-          type: DecisionType.SHOT,
-          success: false,
-          events: [shot, corner],
-        };
-      }
-
-      if (gk) {
-        gk.hasBall = false;
-        match.ball.owner = null;
-      } else {
-        match.ball.position = goalCenter;
-        match.ball.state = BallState.FREE;
-        match.ball.velocity = Vector2.zero();
-        match.ball.owner = null;
-      }
-      this.startShotMotion(context, origin, gk?.position ?? goalCenter, aimPoint, gk?.player.id ?? null);
-
-      attacking.resetPossessionShotCount();
-
-      const shot: ShotEvent = {
-        id: shotId,
-        type: "SHOT",
-        timestamp: (matchSecond * 1000) as Milliseconds,
-        period,
-        teamId,
-        playerId,
-        result: "SAVED",
-        targetX: aimPoint.x,
-        targetY: aimPoint.y
-      };
-      return { actorId: player.player.id, type: DecisionType.SHOT, success: false, events: [shot] };
-    }
-
-    const scoringTeam = isHome ? match.home : match.away;
-    scoringTeam.score++;
-    scoringTeam.resetPossessionShotCount();
-
-    const conceding = isHome ? match.away : match.home;
-    conceding.resetPossessionShotCount();
-    new KickoffSystem().setup(match, conceding, matchSecond);
-
-    const shotEvent: ShotEvent = {
+    const execution: ShotExecution = {
       id: shotId,
-      type: "SHOT",
-      timestamp: (matchSecond * 1000) as Milliseconds,
-      period,
-      teamId,
-      playerId,
-      result: "GOAL",
-      targetX: aimPoint.x,
-      targetY: aimPoint.y
+      shooterId: player.player.id,
+      teamId: attacking.team.id,
+      defendingTeamId: defending.team.id,
+      goalkeeperId: goalkeeper?.player.id ?? null,
+      origin,
+      intendedTarget,
+      actualTarget,
+      initialVelocity,
+      speed,
+      shotType,
+      footUsed: this.footUsed(player, intendedTarget.y, goal.center.y),
+      expectedArrivalTime: matchSecond + distance / Math.max(1, speed),
+      executionQuality: quality,
+      pressureLevel: pressure,
+      bodyPosture: player.bodyState,
+      balance: Math.max(0, Math.min(1, player.balance / 100)),
+      contactQuality: Math.max(0, Math.min(1, quality * (.85 + player.stability / 700))),
+      curve,
+      startedAt: matchSecond,
+      goalFrame: createGoalFrame(goal.center.x, goal.center.y, goal.width, goal.height),
+      lifecycle: "IN_FLIGHT",
+      outcome: null,
+      deflectionCount: 0,
+      lastInteractionPlayerId: null,
     };
 
-    const goalEvent: GoalEvent = {
-      id: `goal-${player.player.id}-${matchSecond.toFixed(1)}`,
-      type: "GOAL",
-      timestamp: (matchSecond * 1000) as Milliseconds,
-      period,
-      teamId,
-      scorerId: playerId,
-      assistId: null
+    attacking.noteShotTaken(matchSecond, SHOT_CALIBRATION.cooldownSeconds);
+    player.hasBall = false;
+    match.ball.noteTouch(player.player.id);
+    match.ball.release();
+    match.ball.activeShot = execution;
+    BallMotionPlanner.start(match.ball, {
+      kind: "SHOT",
+      origin: player.position,
+      target: targetBeyondLine,
+      speed,
+      startHeight: origin.z,
+      targetHeight: targetHeightBeyond,
+      peakHeight,
+      curve,
+      hasExplicitEffect: curve !== 0,
+    });
+
+    const started: ShotStartedEvent = {
+      id: `${shotId}-started`, type: "SHOT_STARTED", shotId,
+      timestamp: (matchSecond * 1000) as Milliseconds, period, teamId, playerId,
+      originX: origin.x, originY: origin.y,
+      intendedTargetY: intendedTarget.y, intendedTargetZ: intendedTarget.z,
+      shotType,
+    };
+    const taken: ShotTakenEvent = {
+      id: `${shotId}-taken`, type: "SHOT_TAKEN", shotId,
+      timestamp: (matchSecond * 1000) as Milliseconds, period, teamId, playerId,
+      actualTargetY: actualTarget.y, actualTargetZ: actualTarget.z,
+      initialSpeed: speed, executionQuality: quality, pressureLevel: pressure,
+    };
+    const shot: ShotEvent = {
+      id: shotId, type: "SHOT", timestamp: (matchSecond * 1000) as Milliseconds,
+      period, teamId, playerId, result: "IN_FLIGHT",
+      targetX: intendedTarget.x, targetY: intendedTarget.y,
     };
 
     return {
       actorId: player.player.id,
       type: DecisionType.SHOT,
       success: true,
-      events: [shotEvent, goalEvent]
+      events: [started, taken, shot],
     };
   }
 
-  private startShotMotion(context: ActionContext, origin: Vector2, target: Vector2, aimPoint: Vector2, intendedReceiverId: string | null = null): void {
-    const technique = context.player.player.attributes.technical.technique / 20;
-    const flair = context.player.player.attributes.mental.flair / 20;
-    const hasExplicitEffect = technique >= .8 && flair >= .75;
-    const side = aimPoint.y < context.match.pitch.width / 2 ? -1 : 1;
-    BallMotionPlanner.start(context.match.ball, {
-      kind: "SHOT",
-      origin,
-      target,
-      speed: 30 + technique * 8,
-      peakHeight: 1.2 + technique * 1.4,
-      curve: hasExplicitEffect ? side * (1 + technique) : 0,
-      hasExplicitEffect,
-      intendedReceiverId,
-    });
-  }
-
-  private calculateOnTargetProb(
-    context: ActionContext,
-    shooter: PlayerMatchState,
-    goalCenter: Vector2
-  ): number {
-
-    const attrs = shooter.player.attributes;
-    const finishing = attrs.technical.finishing / 20;
-    const composure = attrs.mental.composure / 20;
-    const technique = attrs.technical.technique / 20;
-
-    const roleQuality = PositionInfluenceCalculator.shootingQuality(shooter.currentRole);
-
-    const distance = shooter.position.distanceTo(goalCenter);
-    const distanceFactor = Math.max(0.18, 1 - distance / 42);
-
-    const opponents = context.match.home.players.includes(shooter)
-      ? context.match.away.players
-      : context.match.home.players;
-
-    let pressureCount = 0;
-    for (const opp of opponents) {
-      if (shooter.position.distanceTo(opp.position) < 3.5) {
-        pressureCount++;
-      }
+  private pressureLevel(shooter: PlayerMatchState, opponents: readonly PlayerMatchState[]): number {
+    let pressure = 0;
+    for (const opponent of opponents) {
+      const distance = shooter.position.distanceTo(opponent.position);
+      if (distance < 1.3) pressure += .42;
+      else if (distance < 2.5) pressure += .24;
+      else if (distance < 4) pressure += .08;
     }
-    const pressurePenalty = Math.min(0.48, pressureCount * 0.13);
+    return Math.max(0, Math.min(1, pressure));
+  }
 
-    const fatiguePenalty = 1 - (shooter.fatigue / 100) * 0.16;
+  private executionQuality(shooter: PlayerMatchState, pressure: number): number {
+    const attributes = shooter.player.attributes;
+    const technical = attributes.technical.finishing * .42
+      + attributes.technical.technique * .25
+      + attributes.mental.composure * .23
+      + attributes.physical.balance * .1;
+    const fatigue = 1 - Math.min(.25, shooter.fatigue / 400);
+    const posture = shooter.bodyState === "BALANCED" || shooter.bodyState === "STANDING" ? 1 : .78;
+    return Math.max(.08, Math.min(.98, technical / 20 * fatigue * posture * (1 - pressure * .42)));
+  }
 
-    const raw = (finishing * 0.50 + composure * 0.30 + technique * 0.20)
-      * roleQuality
-      * distanceFactor
-      * (1 - pressurePenalty)
-      * fatiguePenalty;
+  private selectShotType(
+    shooter: PlayerMatchState,
+    goalkeeper: PlayerMatchState | null,
+    goalX: number,
+    quality: number,
+  ): ShotType {
+    const goalDistance = Math.abs(shooter.position.x - goalX);
+    const keeperAdvanced = goalkeeper ? Math.abs(goalkeeper.position.x - goalX) > 4.5 : false;
+    if (keeperAdvanced && goalDistance < 22 && shooter.player.attributes.technical.technique >= 14) return "CHIP";
+    if (quality >= .62 && goalDistance <= 24) return "PLACED";
+    return "POWER";
+  }
 
-    return Math.max(
-      0.14,
-      Math.min(SHOT_CALIBRATION.onTargetProbabilityCap, raw * SHOT_CALIBRATION.onTargetProbabilityScale),
+  private selectTarget(
+    context: ActionContext,
+    goalkeeper: PlayerMatchState | null,
+    shotType: ShotType,
+    centreY: number,
+    goalWidth: number,
+    goalHeight: number,
+  ): Vector3 {
+    const keeperY = goalkeeper?.position.y ?? centreY;
+    // Aim inside the frame rather than at the post itself. Execution error may
+    // still produce a miss or woodwork, but a nominal high-quality target must
+    // leave room for the complete ball to cross the plane.
+    const inset = 1.0;
+    const targetY = keeperY <= centreY
+      ? centreY + goalWidth / 2 - inset
+      : centreY - goalWidth / 2 + inset;
+    const technique = context.player.player.attributes.technical.technique / 20;
+    const targetZ = shotType === "CHIP"
+      ? Math.min(goalHeight - .18, 1.55 + technique * .6)
+      : shotType === "PLACED" ? .35 + technique * 1.05 : .55 + technique * .55;
+    const goalX = context.attackingDirection === 1 ? context.pitch.length : 0;
+    return new Vector3(goalX, targetY, targetZ);
+  }
+
+  private applyExecutionError(
+    context: ActionContext,
+    target: Vector3,
+    quality: number,
+    shotType: ShotType,
+  ): Vector3 {
+    const baseError = shotType === "POWER" ? 2.15 : shotType === "CHIP" ? 1.5 : 1.2;
+    const errorScale = baseError * (1.08 - quality);
+    // Triangular noise avoids a uniform wall of extreme misses and remains seeded.
+    const lateralNoise = (context.random.nextFloat(-1, 1) + context.random.nextFloat(-1, 1)) / 2;
+    const heightNoise = (context.random.nextFloat(-1, 1) + context.random.nextFloat(-1, 1)) / 2;
+    return new Vector3(
+      target.x,
+      target.y + lateralNoise * errorScale * 2.0,
+      Math.max(-.15, target.z + heightNoise * errorScale * .9),
     );
   }
 
-  private calculateGkSaveProb(
-    context: ActionContext,
-    goalCenter: Vector2
-  ): number {
+  private initialSpeed(shooter: PlayerMatchState, shotType: ShotType, quality: number): number {
+    const finishing = shooter.player.attributes.technical.finishing / 20;
+    const technique = shooter.player.attributes.technical.technique / 20;
+    const typeBonus = shotType === "POWER" ? 5 : shotType === "CHIP" ? -5 : 0;
+    return Math.max(16, 22 + finishing * 7 + technique * 4 + quality * 3 + typeBonus);
+  }
 
-    const isHome = context.match.home.players.includes(context.player);
-    const defendingTeam = isHome ? context.match.away : context.match.home;
-    const gk = defendingTeam.players.find(p => p.currentRole === "GOALKEEPER");
-
-    if (!gk) return 0.08;
-
-    const attrs = gk.player.attributes;
-    const reflexes = attrs.goalkeeping.reflexes / 20;
-    const handling = attrs.goalkeeping.handling / 20;
-    const positioning = attrs.mental.positioning / 20;
-
-    const gkDistToGoal = gk.position.distanceTo(goalCenter);
-    const positionBonus = Math.max(0, 1 - gkDistToGoal / 6);
-
-    const shooterDist = context.player.position.distanceTo(goalCenter);
-    const distanceSavabilityBonus = Math.min(0.20, shooterDist / 80);
-
-    const raw = (reflexes * 0.45 + handling * 0.30 + positioning * 0.25)
-      * (0.68 + positionBonus * 0.25)
-      + distanceSavabilityBonus;
-
-    // ~65% saves of on-target → with ~25 shots and ~35% OT ≈ 2.5 goals.
-    return Math.max(
-      SHOT_CALIBRATION.goalkeeperSaveFloor,
-      Math.min(SHOT_CALIBRATION.goalkeeperSaveCap, raw + SHOT_CALIBRATION.goalkeeperSaveBonus),
-    );
+  private footUsed(shooter: PlayerMatchState, targetY: number, centreY: number): PreferredFoot {
+    if (shooter.player.preferredFoot !== "BOTH") return shooter.player.preferredFoot;
+    return targetY < centreY ? "RIGHT" : "LEFT";
   }
 }

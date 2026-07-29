@@ -118,7 +118,8 @@ export class OffensiveFunnelCollector {
   public onEvents(events: readonly MatchEvent[], state: MatchState): void {
     let terminalShot = false;
     for (const event of events) {
-      if (event.type !== "SHOT" && event.type !== "GOAL") continue;
+      if (!["SHOT", "SHOT_ON_TARGET", "SHOT_OFF_TARGET", "SHOT_BLOCKED", "WOODWORK", "GOAL"].includes(event.type)) continue;
+      if (!("teamId" in event)) continue;
       const side = event.teamId === state.home.team.id ? "home" : "away";
       const data = this.data(side);
       if (event.type === "SHOT") {
@@ -128,6 +129,15 @@ export class OffensiveFunnelCollector {
         if (event.result === "OFF_TARGET") data.reasons.SHOT_OFF_TARGET++;
         if (this.active?.team === side) { this.active.priorShot = this.active.shot; this.active.shot = true; }
         if (event.result === "OFF_TARGET" || event.result === "SAVED" || event.result === "GOAL") terminalShot = true;
+      } else if (event.type === "SHOT_ON_TARGET") {
+        data.shotsOnTarget++;
+        if (event.outcome === "SAVED") data.reasons.SHOT_SAVED++;
+        if (event.outcome === "SAVED") terminalShot = true;
+      } else if (event.type === "SHOT_OFF_TARGET" || event.type === "WOODWORK") {
+        data.reasons.SHOT_OFF_TARGET++;
+        terminalShot = true;
+      } else if (event.type === "SHOT_BLOCKED") {
+        data.reasons.SHOT_BLOCKED++;
       } else {
         data.goals++;
         const active = this.active?.team === side ? this.active : null;

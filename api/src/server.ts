@@ -25,6 +25,13 @@ app.get<{ Params: { id: string } }>("/matches/:id", async (request, reply) => {
   return match ? match.current() : reply.code(404).send({ message: "Match not found" });
 });
 
+app.get<{ Params: { id: string; goalEventId: string } }>("/matches/:id/replays/:goalEventId", async (request, reply) => {
+  const match = matches.get(request.params.id);
+  if (!match) return reply.code(404).send({ message: "Match not found" });
+  const replay = match.goalReplay(request.params.goalEventId);
+  return replay ? replay : reply.code(404).send({ message: "Replay not available" });
+});
+
 app.post<{ Params: { id: string; action: string }; Body?: { speed?: number } }>("/matches/:id/:action", async (request, reply) => {
   const match = matches.get(request.params.id);
   if (!match) return reply.code(404).send({ message: "Match not found" });

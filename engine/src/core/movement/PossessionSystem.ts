@@ -88,6 +88,7 @@ export class PossessionSystem {
     const players = [...state.home.players, ...state.away.players];
     const candidates: PossessionCandidate[] = [];
     for (const player of players) {
+      if (state.ball.restrictedTouchPlayerId === player.player.id) continue;
       if (state.currentSecond < player.controlAttemptLockUntil) continue;
       const distance = state.ball.state === BallState.IN_FLIGHT
         ? this.distanceToSegment(player.position, state.ball.previousPosition, state.ball.position)

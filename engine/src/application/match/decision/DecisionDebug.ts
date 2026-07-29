@@ -3,6 +3,7 @@ import { UtilityReason } from "./UtilityReason";
 import { UtilityComponents } from "./UtilityScore";
 import { Decision } from "./Decision";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import type { TacticalObjective } from "./TacticalObjective";
 
 export interface DecisionDebugEntry {
   readonly tick: number;
@@ -11,6 +12,7 @@ export interface DecisionDebugEntry {
   readonly playerName: string;
   readonly decisionType: DecisionType | string;
   readonly utility: number;
+  readonly objective: TacticalObjective;
   readonly targetId?: string;
   readonly reasons: readonly UtilityReason[];
   readonly components?: UtilityComponents;
@@ -92,6 +94,7 @@ export class DecisionDebug {
       playerName: (player.player as { name?: string }).name ?? player.player.id,
       decisionType: decision.type,
       utility: decision.utility,
+      objective: decision.objective,
       targetId: decision.targetId,
       reasons,
       components: decision.components,
@@ -119,6 +122,7 @@ export class DecisionDebug {
     const lines: string[] = [
       `Player ${entry.playerName} (${entry.playerId})`,
       `Decision: ${typeName}${targetSuffix}`,
+      `Objective: ${entry.objective}`,
       `Utility: ${entry.utility.toFixed(1)}`,
     ];
 

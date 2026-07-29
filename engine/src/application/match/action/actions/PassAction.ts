@@ -5,6 +5,7 @@ import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
+import { Milliseconds, PlayerId, TeamId, type PassAttemptedEvent } from "../../../../domain";
 
 const MAX_PASS_SPEED = 28;
 const MIN_PASS_SPEED = 8;
@@ -49,12 +50,28 @@ export class PassAction {
       startedAtSecond: matchSecond,
       realForwardGain,
     };
+    this.prepareOneTwo(player, target, team.attackingDirection, origin, destination, matchSecond, match.pitch.length, match.pitch.width);
+    const passKind = decision.type === DecisionType.CROSS ? "CROSS" as const
+      : decision.type === DecisionType.GK_DISTRIBUTE ? "GOALKEEPER_DISTRIBUTION" as const
+      : "PASS" as const;
+    const event: PassAttemptedEvent = {
+      id: `pass-${player.player.id}-${matchSecond.toFixed(2)}`,
+      type: "PASS_ATTEMPTED",
+      timestamp: (matchSecond * 1000) as Milliseconds,
+      period: matchSecond < 45 * 60 ? "FIRST_HALF" : "SECOND_HALF",
+      teamId: team.team.id as TeamId,
+      playerId: player.player.id as PlayerId,
+      receiverId: target.player.id as PlayerId,
+      originX: origin.x, originY: origin.y,
+      targetX: destination.x, targetY: destination.y,
+      passKind,
+    };
 
     return {
       actorId: player.player.id,
       type: decision.type,
       success: true,
-      events: [],
+      events: [event],
       meta: {
         passRealForwardGain: realForwardGain,
         passReceiverId: target.player.id,
@@ -79,6 +96,33 @@ export class PassAction {
       hasExplicitEffect: isCross,
       intendedReceiverId: target.player.id,
     });
+  }
+
+  private prepareOneTwo(
+    passer:PlayerMatchState,
+    receiver:PlayerMatchState,
+    direction:1|-1,
+    origin:Vector2,
+    destination:Vector2,
+    second:number,
+    pitchLength:number,
+    pitchWidth:number,
+  ):void {
+    const distance=origin.distanceTo(destination);
+    const forwardGain=(destination.x-origin.x)*direction;
+    if(distance<6||distance>20||forwardGain<1||forwardGain>16)return;
+    const runTarget=new Vector2(
+      Math.max(1,Math.min(pitchLength-1,passer.position.x+direction*Math.min(10,5+forwardGain*.35))),
+      Math.max(1,Math.min(pitchWidth-1,passer.position.y+(receiver.position.y-passer.position.y)*.35)),
+    );
+    passer.oneTwoPartnerId=receiver.player.id;
+    passer.oneTwoAvailableUntil=second+3.2;
+    passer.oneTwoRunTarget=runTarget;
+    receiver.oneTwoReturnTargetId=passer.player.id;
+    receiver.oneTwoAvailableUntil=second+3.2;
+    passer.tacticalResponsibility="ONE_TWO_RUN";
+    passer.responsibilityUntil=second+3.2;
+    passer.setTarget(runTarget);
   }
 
   /** Aim at a bounded meeting point instead of the receiver's stale position. */

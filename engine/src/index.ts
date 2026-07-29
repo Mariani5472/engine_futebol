@@ -26,6 +26,12 @@ export type {
   BallSnapshot,
 } from "./application/match/engine/MatchSession";
 export { MatchInitializer } from "./application/match/engine/MatchInitializer";
+export { RestartSystem } from "./application/match/engine/RestartSystem";
+export { GoalkeeperSystem } from "./application/match/goalkeeper/GoalkeeperSystem";
+export { MatchEventStore } from "./application/match/analytics/MatchEventStore";
+export type { StoredMatchEvent, PossessionInterval, MatchTimelineEntry, EventDerivedTeamReport, EventDerivedPlayerReport, EventDerivedMatchReport } from "./application/match/analytics/MatchEventStore";
+export { GoalReplayRecorder } from "./application/match/replay/GoalReplayRecorder";
+export type { GoalReplay, ReplayFrame } from "./application/match/replay/GoalReplayRecorder";
 export type { SimulationConfig } from "./application/match/engine/SimulationConfig";
 export { BrowserAnimationScheduler, FixedTimestepLoop } from "./application/match/runtime";
 export type {
@@ -35,6 +41,7 @@ export type {
 } from "./application/match/runtime";
 export { RoleBehaviourRegistry } from "./application/match/tactical/roles/RoleBehaviourRegistry";
 export type { RoleBehaviour, RoleBehaviourResolver, RoleTargetContext } from "./application/match/tactical/roles/RoleBehaviour";
+export { TacticalObjective, objectiveForDecision } from "./application/match/decision/TacticalObjective";
 
 // Metrics (Phase 9)
 export type { MatchMetrics } from "./application/match/metrics/MatchMetrics";
@@ -47,6 +54,8 @@ export type { BallTeleportViolation } from "./application/match/diagnostics/Ball
 export type { PassResolutionRecord, PendingPass, PossessionAcquisitionRecord, PossessionAcquisitionReason } from "./core/movement/BallMatchState";
 export { OffensiveFunnelCollector } from "./application/match/diagnostics/OffensiveFunnelCollector";
 export { CollectiveCoordinationSystem } from "./application/match/tactical/CollectiveCoordinationSystem";
+export { PossessionPredictionSystem } from "./application/match/tactical/PossessionPredictionSystem";
+export type { PossessionPrediction, TeamPossessionState } from "./core/movement/PossessionPrediction";
 export type { MatchOffensiveFunnel, TeamOffensiveFunnel, OffensiveFailureReason, GoalContext } from "./application/match/diagnostics/OffensiveFunnelCollector";
 
 // Calibration (Phase 10)
@@ -94,6 +103,8 @@ export type {
   PeriodStartedEvent, PeriodEndedEvent, MatchPeriod, ShotResult, CardType
 } from "./domain/match-events";
 export { createAttributeValue, createVector2 } from "./domain/common";
+export { createGoalFrame } from "./domain/shooting";
+export type { ShotExecution, ShotType, ShotLifecycle, ShotFinalOutcome, GoalFrame } from "./domain/shooting";
 
 // Core simulation state
 export { MatchState } from "./core/movement/MatchState";
@@ -103,6 +114,7 @@ export { TeamMatchState } from "./core/movement/TeamMatchState";
 
 // Geometry
 export { Vector2 } from "./core/geometry/Vector2";
+export { Vector3 } from "./core/geometry/Vector3";
 
 // Random
 export { SeededRandom } from "./core/random/SeededRandom";

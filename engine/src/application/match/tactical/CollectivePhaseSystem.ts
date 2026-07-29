@@ -51,6 +51,15 @@ export class CollectivePhaseSystem {
       return state.home.players.includes(state.ball.owner) ? state.home : state.away;
     }
 
+    const predictedHome = state.home.possessionPrediction.likelyTeamId === state.home.team.id
+      && state.home.possessionPrediction.confidence >= .65;
+    const predictedAway = state.away.possessionPrediction.likelyTeamId === state.away.team.id
+      && state.away.possessionPrediction.confidence >= .65;
+    if (predictedHome !== predictedAway) {
+      this.looseBallSince = null;
+      return predictedHome ? state.home : state.away;
+    }
+
     const passerId = state.ball.pendingPass?.passerId;
     const intendedReceiverId = state.ball.intendedReceiverId;
     const playerId = passerId ?? intendedReceiverId;

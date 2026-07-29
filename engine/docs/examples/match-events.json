@@ -1,0 +1,10 @@
+{
+  "matchId": "seed-77",
+  "events": [
+    { "id": "seed-77:41", "matchId": "seed-77", "timestamp": 812.4, "matchMinute": 13, "type": "PASS_ATTEMPTED", "teamId": "home", "playerId": "home-8", "secondaryPlayerId": "home-9", "position": { "x": 72.1, "y": 32.8 }, "metadata": { "intendedReceiverId": "home-9" } },
+    { "id": "seed-77:42", "matchId": "seed-77", "timestamp": 813.1, "matchMinute": 13, "type": "PASS_COMPLETED", "teamId": "home", "playerId": "home-9", "secondaryPlayerId": "home-8", "position": { "x": 86.4, "y": 34.2 }, "metadata": {} },
+    { "id": "seed-77:43", "matchId": "seed-77", "timestamp": 813.65, "matchMinute": 13, "type": "SHOT_STARTED", "teamId": "home", "playerId": "home-9", "position": { "x": 88.0, "y": 34.0 }, "metadata": { "shotType": "PLACED", "speed": 24.8, "target": { "x": 105, "y": 31.4, "z": 1.1 } } },
+    { "id": "seed-77:44", "matchId": "seed-77", "timestamp": 814.32, "matchMinute": 13, "type": "GOAL", "teamId": "home", "playerId": "home-9", "position": { "x": 105.12, "y": 31.5 }, "metadata": { "shotId": "shot-43" } }
+  ]
+}
+

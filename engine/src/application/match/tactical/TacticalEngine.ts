@@ -36,6 +36,14 @@ export class TacticalEngine {
       const player = team.players[i];
 
       if (player.hasBall) continue;
+      if (player.oneTwoRunTarget && state.currentSecond <= player.oneTwoAvailableUntil) {
+        player.setTarget(player.oneTwoRunTarget);
+        continue;
+      }
+      if (player.oneTwoRunTarget && state.currentSecond > player.oneTwoAvailableUntil) {
+        player.oneTwoRunTarget=null;
+        player.oneTwoPartnerId=null;
+      }
       if (state.ball.motion && state.ball.intendedReceiverId === player.player.id) {
         player.setTarget(state.ball.motion.target);
         continue;

@@ -10,6 +10,8 @@ export interface BallKickMotion {
   readonly curve?: number;
   readonly hasExplicitEffect?: boolean;
   readonly intendedReceiverId?: string | null;
+  readonly startHeight?: number;
+  readonly targetHeight?: number;
 }
 
 /** Creates engine-owned visual physics from the exact action origin/target. */
@@ -25,6 +27,8 @@ export class BallMotionPlanner {
       curve: kick.hasExplicitEffect ? (kick.curve ?? 0) : 0,
       hasExplicitEffect: kick.hasExplicitEffect === true,
       intendedReceiverId: kick.intendedReceiverId ?? null,
+      startHeight: Math.max(0, kick.startHeight ?? 0),
+      targetHeight: Math.max(0, kick.targetHeight ?? 0),
     });
   }
 }

@@ -1,4 +1,4 @@
-import type { MatchSnapshot } from "../simulation/types";
+import type { GoalReplay, MatchSnapshot } from "../simulation/types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:3000`;
 
@@ -23,7 +23,7 @@ export function subscribeToMatch(
   id: string,
   handlers: {
     onSnapshot: (snapshot: MatchSnapshot) => void;
-    onSpeedChanged: (speed: 1 | 2 | 4 | 8) => void;
+    onSpeedChanged: (speed: 1 | 2 | 4 | 8 | 50) => void;
   },
 ): WebSocket {
   const url = new URL(API_URL);
@@ -45,10 +45,16 @@ export function subscribeToMatch(
       status: wire.status === "FINISHED" ? "PAUSED" : wire.status,
       homePhase: wire.homePhase,
       awayPhase: wire.awayPhase,
+      homePossessionState:wire.homePossessionState,
+      awayPossessionState:wire.awayPossessionState,
+      possessionPrediction:wire.possessionPrediction,
       phase: wire.phase,
       score: wire.score,
       events: wire.events,
       diagnostics: wire.diagnostics,
+      timeline: wire.timeline,
+      replayGoalIds: wire.replayGoalIds,
+      analytics: wire.analytics,
       players: wire.players.map((player: any) => ({
         id: player.id,
         number: Number(player.id.match(/(\d+)$/)?.[1] ?? 0),
@@ -67,6 +73,11 @@ export function subscribeToMatch(
         role: player.role,
         tacticalResponsibility: player.tacticalResponsibility,
         occupiedChannel: player.occupiedChannel,
+        goalkeeperState: player.goalkeeperState,
+        goalkeeperInterceptionTarget: player.goalkeeperInterceptionTarget ? {
+          x: player.goalkeeperInterceptionTarget.x / wire.pitch.length * 100,
+          y: player.goalkeeperInterceptionTarget.y / wire.pitch.width * 100,
+        } : null,
       })),
       ball: {
         x: wire.ball.position.x / wire.pitch.length * 100,
@@ -78,6 +89,7 @@ export function subscribeToMatch(
           x: wire.ball.logicalPosition.x / wire.pitch.length * 100,
           y: wire.ball.logicalPosition.y / wire.pitch.width * 100,
         },
+        activeShot: wire.ball.activeShot,
       },
       tacticalDiagnostics: wire.tacticalDiagnostics,
       tacticalDebug: {
@@ -101,11 +113,17 @@ export async function controlMatch(id: string, action: "pause" | "resume"): Prom
   if (!response.ok) throw new Error(`Could not ${action} match: ${response.status}`);
 }
 
-export async function setMatchSpeed(id: string, speed: 1 | 2 | 4 | 8): Promise<void> {
+export async function setMatchSpeed(id: string, speed: 1 | 2 | 4 | 8 | 50): Promise<void> {
   const response = await fetch(`${API_URL}/matches/${id}/speed`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ speed }),
   });
   if (!response.ok) throw new Error(`Could not set match speed: ${response.status}`);
+}
+
+export async function getGoalReplay(id: string, goalEventId: string): Promise<GoalReplay> {
+  const response = await fetch(`${API_URL}/matches/${id}/replays/${goalEventId}`);
+  if (!response.ok) throw new Error(`Could not load replay: ${response.status}`);
+  return response.json() as Promise<GoalReplay>;
 }

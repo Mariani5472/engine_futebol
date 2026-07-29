@@ -1,6 +1,7 @@
 export * from "./common";
 export * from "./player";
 export * from "./team";
+export * from "./shooting";
 export * from "./tactics";
 export * from "./pitch";
 export * from "./ball";

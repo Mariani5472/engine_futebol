@@ -58,6 +58,16 @@ describe("authoritative pass flow", () => {
     expect(match.ball.motion!.target.distanceTo(oldPosition)).toBeLessThanOrEqual(5.5);
   });
 
+  it("keeps the passer moving and offers an organic one-two return", () => {
+    const { passer, receiver, ctx } = buildContext();
+    new PassAction().execute(ctx);
+
+    expect(passer.oneTwoPartnerId).toBe(receiver.player.id);
+    expect(passer.oneTwoRunTarget?.x).toBeGreaterThan(passer.position.x);
+    expect(receiver.oneTwoReturnTargetId).toBe(passer.player.id);
+    expect(passer.tacticalResponsibility).toBe("ONE_TWO_RUN");
+  });
+
   it("keeps logical and visual ball positions identical throughout flight", () => {
     const { match, ctx } = buildContext();
     new PassAction().execute(ctx);

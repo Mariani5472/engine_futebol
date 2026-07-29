@@ -39,8 +39,8 @@ export function Pitch({ previous, current, alpha, layers }: PitchProps) {
       const old=previous.players.find(candidate=>candidate.id===player.id)??player;
       const point=interpolatePoint(old,player,alpha);
       const underPressure=!player.hasBall&&Math.hypot(player.x-ball.x,player.y-ball.y)<12;
-      return <div className={`player ${player.team==="HOME"?"player-home":"player-away"} ${selectedId===player.id?"player-selected":""} ${owner?.id===player.id?"player-carrier":""}`} key={player.id} style={{left:`${point.x}%`,top:`${point.y}%`}} onClick={()=>setSelectedId(selectedId===player.id?null:player.id)} title={`${player.role??"Jogador"} ${player.number}${player.tacticalResponsibility?` · ${player.tacticalResponsibility}`:""}`}>
-        {layers.influence&&<i className="influence-area"/>}{layers.pressure&&underPressure&&<i className="pressure-area"/>}{player.hasBall&&<i className="possession-ring"/>}<span>{player.number}</span>{layers.roles&&<small className="role-label">{formatRole(player.tacticalResponsibility??player.role)}</small>}
+      return <div className={`player ${player.team==="HOME"?"player-home":"player-away"} ${selectedId===player.id?"player-selected":""} ${owner?.id===player.id?"player-carrier":""}`} key={player.id} style={{left:`${point.x}%`,top:`${point.y}%`}} onClick={()=>setSelectedId(selectedId===player.id?null:player.id)} title={`${player.role??"Jogador"} ${player.number}${player.goalkeeperState?` · ${player.goalkeeperState}`:player.tacticalResponsibility?` · ${player.tacticalResponsibility}`:""}`}>
+        {layers.influence&&<i className="influence-area"/>}{layers.pressure&&underPressure&&<i className="pressure-area"/>}{player.hasBall&&<i className="possession-ring"/>}<span>{player.number}</span>{layers.roles&&<small className="role-label">{formatRole(player.goalkeeperState??player.tacticalResponsibility??player.role)}</small>}
       </div>;
     })}
     <div className="ball" data-motion={current.ball.motionKind ?? "NONE"} style={{left:`${ball.x}%`,top:`${ball.y}%`,transform:`translate(-50%, calc(-50% - ${ballHeight * 3}px))`}}/>

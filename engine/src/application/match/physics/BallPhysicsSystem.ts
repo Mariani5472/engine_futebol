@@ -1,14 +1,27 @@
 import { Vector2 } from "../../../core/geometry/Vector2";
 import { BallMatchState, BallState } from "../../../core/movement/BallMatchState";
 import { MatchState } from "../../../core/movement/MatchState";
-import { Milliseconds, TeamId, type MatchEvent } from "../../../domain";
+import {
+  Milliseconds, PlayerId, TeamId, PLAYER_COLLISION_RADIUS,
+  type BallDeflectionEvent, type GoalEvent, type GoalkeeperSaveEvent,
+  type MatchEvent, type ReboundEvent, type ShotExecution, type ShotOutcomeEvent,
+} from "../../../domain";
 import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
+import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import { BallMotionPlanner } from "./BallMotionPlanner";
+import { RestartSystem } from "../engine/RestartSystem";
 
 const GROUND_FRICTION = 0.82;
 const BOUNCE_RESTITUTION = 0.55;
 const GRAVITY = 9.81;
 const GROUND_THRESHOLD = 0.05;
 const MIN_SPEED = 0.1;
+const GOALKEEPER_BODY_REACH = .78;
+
+interface ShotInteractionResult {
+  readonly events: MatchEvent[];
+  readonly stopPhysics: boolean;
+}
 
 export class BallPhysicsSystem {
 
@@ -39,13 +52,20 @@ export class BallPhysicsSystem {
 
     // Owner pointer without CONTROLLED — clear stale owner so contests work.
     if (ball.motion) {
+      const previousHeight = ball.height;
       this.updateAuthoritativeMotion(ball, deltaTime);
+      const interaction = this.resolveShotInteractions(state, ball.previousPosition, previousHeight);
+      if (interaction.stopPhysics) {
+        ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
+        this.syncVisual(ball);
+        return interaction.events;
+      }
       const restartEvents = this.resolveOutOfPlay(state);
-      if (restartEvents) return restartEvents;
+      if (restartEvents) return [...interaction.events, ...restartEvents];
       this.clampToPitch(ball, state);
       ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
       this.syncVisual(ball);
-      return [];
+      return interaction.events;
     }
 
     if (ball.owner && ball.state !== BallState.CONTROLLED) {
@@ -111,24 +131,8 @@ export class BallPhysicsSystem {
       };
     }
 
-    const goalkeeperRestart = event.type === "GOAL_KICK";
-    const candidates = goalkeeperRestart
-      ? awarded.players.filter(player => player.currentRole.includes("GOALKEEPER"))
-      : awarded.players.filter(player => !player.currentRole.includes("GOALKEEPER"));
-    const taker = (candidates.length ? candidates : awarded.players)
-      .slice().sort((a, b) => a.position.distanceTo(restartPosition) - b.position.distanceTo(restartPosition))[0];
-
-    for (const player of [...state.home.players, ...state.away.players]) player.hasBall = false;
-    ball.resolvePendingPass(taker.player.id, state.currentSecond);
-    taker.position = restartPosition;
-    taker.velocity = Vector2.zero();
-    taker.targetPosition = restartPosition;
-    ball.position = restartPosition;
-    ball.previousPosition = restartPosition;
-    ball.velocity = Vector2.zero();
-    ball.height = 0;
-    ball.acquirePossession(taker, "RESTART", state.currentSecond);
-    ball.state = BallState.CONTROLLED;
+    ball.resolvePendingPass("OUT_OF_PLAY", state.currentSecond);
+    new RestartSystem().setup(state, event.type, awarded, restartPosition, state.currentSecond);
     ball.lastPhysicsDisplacement = 0;
     this.syncVisual(ball);
     return [event];
@@ -156,13 +160,323 @@ export class BallPhysicsSystem {
     }
     ball.position = position;
     ball.velocity = position.subtract(previousPosition).divide(Math.max(.001, deltaTime));
-    ball.height = motion.peakHeight * 4 * time * (1 - time);
+    ball.height = motion.startHeight * (1 - time)
+      + motion.targetHeight * time
+      + motion.peakHeight * 4 * time * (1 - time);
     if (time >= 1) {
       ball.position = motion.target;
-      ball.height = 0;
+      ball.height = motion.targetHeight;
       ball.motion = null;
       ball.state = BallState.FREE;
     }
+  }
+
+  private resolveShotInteractions(
+    state: MatchState,
+    previousPosition: Vector2,
+    previousHeight: number,
+  ): ShotInteractionResult {
+    const shot = state.ball.activeShot;
+    if (!shot || shot.lifecycle === "RESOLVED") return { events: [], stopPhysics: false };
+    const currentPosition = state.ball.position;
+    const currentHeight = state.ball.height;
+
+    const defender = this.findDefenderContact(state, shot, previousPosition, currentPosition, previousHeight, currentHeight);
+    if (defender) return this.resolveDefenderBlock(state, shot, defender.player, defender.point, defender.height);
+
+    const goalkeeper = this.goalkeeper(state, shot);
+    if (goalkeeper) {
+      const contact = this.segmentContact(previousPosition, currentPosition, goalkeeper.position);
+      const contactHeight = previousHeight + (currentHeight - previousHeight) * contact.t;
+      const aerialReach = goalkeeper.player.attributes.goalkeeping.aerialReach / 20;
+      const horizontalReach = GOALKEEPER_BODY_REACH + aerialReach * .42;
+      const verticalReach = 1.45 + aerialReach * .95;
+      const reacted = state.currentSecond + 1e-9 >= goalkeeper.goalkeeperReactionUntil
+        && goalkeeper.goalkeeperState !== "SET";
+      if (reacted && contact.distance <= horizontalReach && contactHeight <= verticalReach) {
+        return this.resolveGoalkeeperContact(state, shot, goalkeeper, contact.point, contactHeight);
+      }
+    }
+
+    const direction = Math.sign(shot.initialVelocity.x);
+    const framePlane = shot.goalFrame.goalLineX;
+    if (this.crossedPlane(previousPosition.x, currentPosition.x, framePlane, direction)) {
+      const frameDeltaX = currentPosition.x - previousPosition.x;
+      const frameT = Math.max(0, Math.min(1, Math.abs(frameDeltaX) <= 1e-9 ? 0 : (framePlane - previousPosition.x) / frameDeltaX));
+      const frameY = previousPosition.y + (currentPosition.y - previousPosition.y) * frameT;
+      const frameHeight = previousHeight + (currentHeight - previousHeight) * frameT;
+      const frameInteraction = this.resolveGoalPlane(state, shot, new Vector2(framePlane, frameY), frameHeight, false);
+      if (frameInteraction.events.length || frameInteraction.stopPhysics) return frameInteraction;
+    }
+
+    const goalPlane = shot.goalFrame.goalLineX + direction * shot.goalFrame.ballRadius;
+    if (!this.crossedPlane(previousPosition.x, currentPosition.x, goalPlane, direction)) {
+      return { events: [], stopPhysics: false };
+    }
+    const deltaX = currentPosition.x - previousPosition.x;
+    const t = Math.max(0, Math.min(1, Math.abs(deltaX) <= 1e-9 ? 0 : (goalPlane - previousPosition.x) / deltaX));
+    const crossingY = previousPosition.y + (currentPosition.y - previousPosition.y) * t;
+    const crossingHeight = previousHeight + (currentHeight - previousHeight) * t;
+    return this.resolveGoalPlane(state, shot, new Vector2(goalPlane, crossingY), crossingHeight, true);
+  }
+
+  private findDefenderContact(
+    state: MatchState,
+    shot: ShotExecution,
+    from: Vector2,
+    to: Vector2,
+    fromHeight: number,
+    toHeight: number,
+  ): { player: PlayerMatchState; point: Vector2; height: number; t: number } | null {
+    const defending = shot.defendingTeamId === state.home.team.id ? state.home : state.away;
+    let best: { player: PlayerMatchState; point: Vector2; height: number; t: number } | null = null;
+    for (const player of defending.players) {
+      if (player.player.id === shot.goalkeeperId) continue;
+      const contact = this.segmentContact(from, to, player.position);
+      const height = fromHeight + (toHeight - fromHeight) * contact.t;
+      // Physical contact volume is body radius + ball radius. The former
+      // +0.24 envelope turned near misses into blocks and collapsed the shot
+      // funnel before the goal/goalkeeper interaction.
+      if (contact.distance > PLAYER_COLLISION_RADIUS + shot.goalFrame.ballRadius || height > 1.85) continue;
+      if (!best || contact.t < best.t) best = { player, point: contact.point, height, t: contact.t };
+    }
+    return best;
+  }
+
+  private resolveDefenderBlock(
+    state: MatchState,
+    shot: ShotExecution,
+    defender: PlayerMatchState,
+    point: Vector2,
+    height: number,
+  ): ShotInteractionResult {
+    shot.lifecycle = "RESOLVED";
+    shot.outcome = "BLOCKED";
+    shot.lastInteractionPlayerId = defender.player.id;
+    shot.deflectionCount++;
+    state.ball.noteTouch(defender.player.id);
+    const attackDirection = Math.sign(shot.initialVelocity.x) || 1;
+    const side = point.y <= state.pitch.width / 2 ? -1 : 1;
+    const target = point.add(new Vector2(-attackDirection * 5, side * 4));
+    const oldTarget = state.ball.motion?.target ?? point;
+    BallMotionPlanner.start(state.ball, {
+      kind: "DEFLECTION", origin: point, target, speed: Math.max(7, state.ball.velocity.magnitude() * .42),
+      startHeight: height, targetHeight: 0, peakHeight: Math.min(.5, height * .25),
+    });
+    state.ball.activeShot = null;
+    const outcome = this.shotOutcomeEvent(state, shot, "SHOT_BLOCKED", point, height, "BLOCKED");
+    const deflection = this.deflectionEvent(state, shot, defender.player.id, point, height, oldTarget, target);
+    const rebound = this.reboundEvent(state, shot, defender.player.id, point, "DEFENDER");
+    return { events: [outcome, deflection, rebound], stopPhysics: false };
+  }
+
+  private resolveGoalkeeperContact(
+    state: MatchState,
+    shot: ShotExecution,
+    goalkeeper: PlayerMatchState,
+    point: Vector2,
+    height: number,
+  ): ShotInteractionResult {
+    const handling = goalkeeper.player.attributes.goalkeeping.handling / 20;
+    const speed = state.ball.velocity.magnitude();
+    const caught = handling >= .62 && speed <= 25 && height <= 1.75
+      && goalkeeper.position.distanceTo(point) <= 1.05;
+    shot.lifecycle = "RESOLVED";
+    shot.outcome = caught ? "SAVED_CAUGHT" : "SAVED_PARRIED";
+    shot.lastInteractionPlayerId = goalkeeper.player.id;
+    state.ball.noteTouch(goalkeeper.player.id);
+    const onTarget = this.shotOutcomeEvent(state, shot, "SHOT_ON_TARGET", point, height, "SAVED");
+    const save: GoalkeeperSaveEvent = {
+      id: `${shot.id}-save`, type: "GOALKEEPER_SAVE", shotId: shot.id,
+      timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
+      teamId: shot.defendingTeamId as TeamId,
+      goalkeeperId: goalkeeper.player.id as PlayerId,
+      shooterId: shot.shooterId as PlayerId,
+      caught, interceptionX: point.x, interceptionY: point.y, interceptionHeight: height,
+    };
+
+    if (caught) {
+      for (const player of [...state.home.players, ...state.away.players]) player.hasBall = false;
+      goalkeeper.position = point;
+      goalkeeper.targetPosition = point;
+      goalkeeper.velocity = Vector2.zero();
+      goalkeeper.hasBall = true;
+      goalkeeper.goalkeeperState = "CATCHING";
+      state.ball.position = point;
+      state.ball.height = 0;
+      state.ball.velocity = Vector2.zero();
+      state.ball.motion = null;
+      state.ball.activeShot = null;
+      state.ball.acquirePossession(goalkeeper, "GOALKEEPER_SAVE", state.currentSecond);
+      state.ball.state = BallState.CONTROLLED;
+      return { events: [onTarget, save], stopPhysics: true };
+    }
+
+    goalkeeper.goalkeeperState = "PARRYING";
+    shot.deflectionCount++;
+    const attackDirection = Math.sign(shot.initialVelocity.x) || 1;
+    const side = point.y <= state.pitch.width / 2 ? -1 : 1;
+    const target = point.add(new Vector2(-attackDirection * 5.5, side * 6));
+    const oldTarget = state.ball.motion?.target ?? point;
+    BallMotionPlanner.start(state.ball, {
+      kind: "DEFLECTION", origin: point, target, speed: Math.max(8, speed * .38),
+      startHeight: height, targetHeight: 0, peakHeight: .35,
+    });
+    state.ball.activeShot = null;
+    const deflection = this.deflectionEvent(state, shot, goalkeeper.player.id, point, height, oldTarget, target);
+    const rebound = this.reboundEvent(state, shot, goalkeeper.player.id, point, "GOALKEEPER");
+    return { events: [onTarget, save, deflection, rebound], stopPhysics: false };
+  }
+
+  private resolveGoalPlane(
+    state: MatchState,
+    shot: ShotExecution,
+    point: Vector2,
+    height: number,
+    awardGoal: boolean,
+  ): ShotInteractionResult {
+    const frame = shot.goalFrame;
+    const postDistance = Math.min(Math.abs(point.y - frame.leftY), Math.abs(point.y - frame.rightY));
+    const withinWidth = point.y > frame.leftY + frame.ballRadius && point.y < frame.rightY - frame.ballRadius;
+    const withinHeight = height >= frame.bottomZ && height < frame.topZ - frame.ballRadius;
+    const hitsPost = postDistance <= frame.ballRadius * 1.45 && height <= frame.topZ;
+    const hitsCrossbar = withinWidth && Math.abs(height - frame.topZ) <= frame.ballRadius * 1.45;
+
+    if (hitsPost || hitsCrossbar) {
+      shot.lifecycle = "RESOLVED";
+      shot.outcome = hitsPost ? "POST" : "CROSSBAR";
+      const attackDirection = Math.sign(shot.initialVelocity.x) || 1;
+      const side = point.y <= state.pitch.width / 2 ? -1 : 1;
+      const target = point.add(new Vector2(-attackDirection * 7, hitsPost ? -side * 3 : side * 1.5));
+      const oldTarget = state.ball.motion?.target ?? point;
+      BallMotionPlanner.start(state.ball, {
+        kind: "DEFLECTION", origin: point, target, speed: Math.max(8, state.ball.velocity.magnitude() * .5),
+        startHeight: Math.max(0, height - .08), targetHeight: 0, peakHeight: hitsCrossbar ? .8 : .35,
+      });
+      state.ball.activeShot = null;
+      const woodwork = this.shotOutcomeEvent(state, shot, "WOODWORK", point, height, shot.outcome);
+      const deflection = this.deflectionEvent(state, shot, null, point, height, oldTarget, target);
+      const rebound = this.reboundEvent(state, shot, shot.shooterId, point, "WOODWORK");
+      return { events: [woodwork, deflection, rebound], stopPhysics: false };
+    }
+
+    if (!withinWidth || !withinHeight) {
+      shot.lifecycle = "RESOLVED";
+      shot.outcome = "OFF_TARGET";
+      state.ball.activeShot = null;
+      return {
+        events: [this.shotOutcomeEvent(state, shot, "SHOT_OFF_TARGET", point, height, "OFF_TARGET")],
+        stopPhysics: false,
+      };
+    }
+
+    if (!awardGoal) return { events: [], stopPhysics: false };
+
+    shot.lifecycle = "RESOLVED";
+    shot.outcome = "GOAL";
+    const scoring = shot.teamId === state.home.team.id ? state.home : state.away;
+    scoring.score++;
+    scoring.resetPossessionShotCount();
+    const conceding = scoring === state.home ? state.away : state.home;
+    conceding.resetPossessionShotCount();
+    state.ball.position = point;
+    state.ball.velocity = Vector2.zero();
+    state.ball.height = Math.max(0, height);
+    state.ball.motion = null;
+    state.ball.activeShot = null;
+    state.ball.state = BallState.FREE;
+    const goalId = `goal-${shot.shooterId}-${state.currentSecond.toFixed(2)}`;
+    const lastPass=state.ball.lastCompletedPass;
+    const assistId=lastPass
+      && lastPass.receiverId===shot.shooterId
+      && lastPass.passerId!==shot.shooterId
+      && state.currentSecond-lastPass.completedAtSecond<=10
+        ? lastPass.passerId as PlayerId
+        : null;
+    state.pendingGoalRestart = {
+      concedingTeamId: conceding.team.id,
+      executeAt: state.currentSecond + 2.5,
+      goalEventId: goalId,
+    };
+    const onTarget = this.shotOutcomeEvent(state, shot, "SHOT_ON_TARGET", point, height, "GOAL");
+    const goal: GoalEvent = {
+      id: goalId, type: "GOAL", timestamp: (state.currentSecond * 1000) as Milliseconds,
+      period: this.period(state), teamId: shot.teamId as TeamId,
+      scorerId: shot.shooterId as PlayerId, assistId,
+    };
+    return { events: [onTarget, goal], stopPhysics: true };
+  }
+
+  private shotOutcomeEvent(
+    state: MatchState,
+    shot: ShotExecution,
+    type: ShotOutcomeEvent["type"],
+    point: Vector2,
+    height: number,
+    outcome: string,
+  ): ShotOutcomeEvent {
+    return {
+      id: `${shot.id}-${type.toLowerCase()}`, type, shotId: shot.id,
+      timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
+      teamId: shot.teamId as TeamId, playerId: shot.shooterId as PlayerId,
+      positionX: point.x, positionY: point.y, height, outcome,
+    };
+  }
+
+  private deflectionEvent(
+    state: MatchState,
+    shot: ShotExecution,
+    deflectorId: string | null,
+    point: Vector2,
+    height: number,
+    previousTarget: Vector2,
+    newTarget: Vector2,
+  ): BallDeflectionEvent {
+    return {
+      id: `${shot.id}-deflection-${shot.deflectionCount}`, type: "BALL_DEFLECTION", shotId: shot.id,
+      timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
+      deflectorId: deflectorId as PlayerId | null,
+      contactX: point.x, contactY: point.y, contactHeight: height,
+      previousTargetX: previousTarget.x, previousTargetY: previousTarget.y,
+      newTargetX: newTarget.x, newTargetY: newTarget.y,
+    };
+  }
+
+  private reboundEvent(
+    state: MatchState,
+    shot: ShotExecution,
+    playerId: string,
+    point: Vector2,
+    source: ReboundEvent["source"],
+  ): ReboundEvent {
+    return {
+      id: `${shot.id}-rebound-${source.toLowerCase()}`, type: "REBOUND", shotId: shot.id,
+      timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
+      teamId: shot.teamId as TeamId, playerId: playerId as PlayerId,
+      positionX: point.x, positionY: point.y, source,
+    };
+  }
+
+  private goalkeeper(state: MatchState, shot: ShotExecution): PlayerMatchState | null {
+    if (!shot.goalkeeperId) return null;
+    return [...state.home.players, ...state.away.players]
+      .find(player => player.player.id === shot.goalkeeperId) ?? null;
+  }
+
+  private segmentContact(from: Vector2, to: Vector2, point: Vector2): { point: Vector2; distance: number; t: number } {
+    const segment = to.subtract(from);
+    const lengthSquared = segment.dot(segment);
+    const t = lengthSquared <= 1e-9 ? 0 : Math.max(0, Math.min(1, point.subtract(from).dot(segment) / lengthSquared));
+    const closest = from.add(segment.multiply(t));
+    return { point: closest, distance: closest.distanceTo(point), t };
+  }
+
+  private crossedPlane(fromX: number, toX: number, planeX: number, direction: number): boolean {
+    return direction >= 0 ? fromX < planeX && toX >= planeX : fromX > planeX && toX <= planeX;
+  }
+
+  private period(state: MatchState): "FIRST_HALF" | "SECOND_HALF" {
+    return state.currentSecond < 45 * 60 ? "FIRST_HALF" : "SECOND_HALF";
   }
 
   private syncVisual(ball: BallMatchState): void {

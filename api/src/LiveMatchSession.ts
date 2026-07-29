@@ -1,5 +1,6 @@
 import type { WebSocket } from "ws";
 import { MatchSession, type MatchSnapshot } from "../../engine/src/application/match/engine/MatchSession.js";
+import type { GoalReplay } from "../../engine/src/application/match/replay/GoalReplayRecorder.js";
 import { createMatchConfig } from "./createMatchConfig.js";
 
 const STEP_SECONDS = 0.05;
@@ -31,6 +32,7 @@ export class LiveMatchSession {
   }
   public current(): NetworkMatchSnapshot { const snapshot=this.session.snapshot(); return {...snapshot,type:"snapshot",matchId:this.id,status:this.session.isFinished()?"FINISHED":this.session.isPaused()?"PAUSED":"RUNNING",speed:this.session.getSpeed(),pitch:{length:105,width:68}}; }
   public dispose(): void { clearInterval(this.timer); this.clients.forEach(client=>client.close()); }
+  public goalReplay(goalEventId: string): GoalReplay | null { return this.session.goalReplay(goalEventId); }
   private tick(): void {
     if(!this.session.isPaused()&&!this.session.isFinished()) for(let i=0;i<this.session.getSpeed()&&!this.session.isFinished();i++) this.session.update(STEP_SECONDS);
     this.broadcast(this.current());

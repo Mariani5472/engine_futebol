@@ -1,5 +1,6 @@
 import { Vector2 } from "../geometry/Vector2";
 import { PlayerMatchState } from "./PlayerMatchState";
+import type { ShotExecution } from "../../domain/shooting";
 
 export enum BallState {
   CONTROLLED,
@@ -19,10 +20,12 @@ export interface BallMotion {
   readonly curve: number;
   readonly hasExplicitEffect: boolean;
   readonly intendedReceiverId: string | null;
+  readonly startHeight: number;
+  readonly targetHeight: number;
   elapsed: number;
 }
 
-export type PossessionAcquisitionReason = "PASS_RESOLUTION" | "INTENDED_RECEPTION" | "INTERCEPTION" | "PHYSICAL_CLAIM" | "FALLBACK_CLAIM" | "EMERGENCY_RECLAIM" | "TACKLE" | "GOALKEEPER_SAVE" | "RESTART" | "DRIBBLE_RECOVERY";
+export type PossessionAcquisitionReason = "PASS_RESOLUTION" | "INTENDED_RECEPTION" | "INTERCEPTION" | "PHYSICAL_CLAIM" | "TACKLE" | "GOALKEEPER_SAVE" | "RESTART" | "DRIBBLE_RECOVERY";
 export interface PossessionAcquisitionRecord {
   readonly type: "POSSESSION_CHANGED";
   readonly matchSecond: number;
@@ -52,6 +55,12 @@ export interface PassResolutionRecord {
   readonly realForwardGain: number;
 }
 
+export interface LastCompletedPass {
+  readonly passerId:string;
+  readonly receiverId:string;
+  readonly completedAtSecond:number;
+}
+
 export class BallMatchState {
 
   public visualPosition: Vector2;
@@ -63,7 +72,12 @@ export class BallMatchState {
   public lastPhysicsDisplacement = 0;
   public controlOffset: Vector2 = Vector2.zero();
   public pendingPass: PendingPass | null = null;
+  /** Spatial shot currently being resolved by ball physics. */
+  public activeShot: ShotExecution | null = null;
+  /** A restart taker cannot touch again before another player. */
+  public restrictedTouchPlayerId: string | null = null;
   public lastTouchedPlayerId: string | null;
+  public lastCompletedPass:LastCompletedPass|null=null;
   private possessionAcquisitions: PossessionAcquisitionRecord[] = [];
   private passResolutions: PassResolutionRecord[] = [];
 
@@ -87,10 +101,10 @@ export class BallMatchState {
     this.position = motion.origin;
     this.previousPosition = motion.origin;
     this.velocity = motion.target.subtract(motion.origin).divide(Math.max(.01, motion.duration));
-    this.height = 0;
+    this.height = motion.startHeight;
     this.state = BallState.IN_FLIGHT;
     this.visualPosition = motion.origin;
-    this.visualHeight = 0;
+    this.visualHeight = motion.startHeight;
     this.visualVelocity = motion.target.subtract(motion.origin).divide(Math.max(.01, motion.duration));
   }
 
@@ -105,6 +119,9 @@ export class BallMatchState {
       });
     }
     this.owner = player;
+    if (this.restrictedTouchPlayerId && this.restrictedTouchPlayerId !== player.player.id) {
+      this.restrictedTouchPlayerId = null;
+    }
     this.lastTouchedPlayerId = player.player.id;
     this.controlOffset = this.position.subtract(player.position);
     this.intendedReceiverId = null;
@@ -137,6 +154,9 @@ export class BallMatchState {
       success: controllingPlayerId === pending.intendedReceiverId,
       realForwardGain: pending.realForwardGain,
     });
+    if (controllingPlayerId === pending.intendedReceiverId) {
+      this.lastCompletedPass={passerId:pending.passerId,receiverId:controllingPlayerId,completedAtSecond:matchSecond};
+    }
     this.pendingPass = null;
   }
 

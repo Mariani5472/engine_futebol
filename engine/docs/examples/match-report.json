@@ -1,0 +1,8 @@
+{
+  "matchId": "seed-77",
+  "teams": {
+    "home": { "possessionSeconds": 2874.4, "possessionPercent": 53.23, "passesAttempted": 412, "passesCompleted": 347, "passAccuracy": 84.22, "carries": 96, "shots": 14, "shotsOnTarget": 6, "goals": 2, "goalkeeperSaves": 3, "rebounds": 2, "corners": 5, "throwIns": 17, "goalKicks": 7, "fouls": 12, "yellowCards": 2, "redCards": 0, "distanceTravelled": 103421, "actionsByZone": { "OWN_THIRD": 198, "MIDDLE_THIRD": 251, "FINAL_THIRD": 91 } },
+    "away": { "possessionSeconds": 2525.6, "possessionPercent": 46.77, "passesAttempted": 365, "passesCompleted": 296, "passAccuracy": 81.1, "carries": 82, "shots": 10, "shotsOnTarget": 4, "goals": 1, "goalkeeperSaves": 4, "rebounds": 1, "corners": 3, "throwIns": 15, "goalKicks": 9, "fouls": 14, "yellowCards": 3, "redCards": 0, "distanceTravelled": 101882, "actionsByZone": { "OWN_THIRD": 184, "MIDDLE_THIRD": 218, "FINAL_THIRD": 70 } }
+  }
+}
+
