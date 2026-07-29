@@ -53,17 +53,21 @@ describe("TacticalEngine", () => {
     expect(engine.isBallInAttackingHalf(state, state.home)).toBe(false);
   });
 
-  it("keeps traditional goalkeepers inside their own ten-metre zone", () => {
+  it("keeps traditional goalkeepers underneath the posts while defending", () => {
     const state = new MatchInitializer().initialize(buildSimulationConfig(1)).state;
-    state.home.collectivePhase = "FINAL_THIRD";
-    state.away.collectivePhase = "FINAL_THIRD";
+    state.home.collectivePhase = "DEFENSIVE_BLOCK";
+    state.away.collectivePhase = "DEFENSIVE_BLOCK";
+    const awayOwner = state.away.players.find(player => player.currentRole === "STRIKER")!;
+    state.ball.owner = awayOwner;
+    state.home.players.forEach(player => player.hasBall = false);
+    awayOwner.hasBall = true;
     state.ball.position = new Vector2(90, 34);
     engine.update(state);
 
     const homeGoalkeeper = state.home.players.find(player => player.currentRole === "GOALKEEPER")!;
     const awayGoalkeeper = state.away.players.find(player => player.currentRole === "GOALKEEPER")!;
-    expect(homeGoalkeeper.targetPosition.x).toBeLessThanOrEqual(10);
-    expect(105 - awayGoalkeeper.targetPosition.x).toBeLessThanOrEqual(10);
+    expect(homeGoalkeeper.targetPosition.x).toBeLessThanOrEqual(4);
+    expect(105 - awayGoalkeeper.targetPosition.x).toBeLessThanOrEqual(4);
   });
 
   it("does not target attackers onto the end line", () => {

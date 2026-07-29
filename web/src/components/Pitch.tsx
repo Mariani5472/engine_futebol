@@ -26,7 +26,7 @@ export function Pitch({ previous, current, alpha, layers }: PitchProps) {
   const ballHeight = (previous.ball.height ?? 0) + ((current.ball.height ?? 0) - (previous.ball.height ?? 0)) * alpha;
   const owner = current.players.find(player => player.id === current.tacticalDebug?.carrierId) ?? current.players.find(player => player.hasBall);
   const passOptions = new Set(current.tacticalDebug?.passOptionIds ?? []);
-  return <div className="pitch-shell"><div className="pitch" aria-label="Campo de futebol 2D">
+  return <div className="pitch-shell"><div className="pitch-stage"><div className="pitch" aria-label="Campo de futebol 2D">
     <div className="halfway"/><div className="center-circle"/><div className="center-dot"/>
     <div className="box box-left"/><div className="box box-right"/><div className="goal goal-left"/><div className="goal goal-right"/>
     <svg className="pitch-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -45,7 +45,7 @@ export function Pitch({ previous, current, alpha, layers }: PitchProps) {
     })}
     <div className="ball" data-motion={current.ball.motionKind ?? "NONE"} style={{left:`${ball.x}%`,top:`${ball.y}%`,transform:`translate(-50%, calc(-50% - ${ballHeight * 3}px))`}}/>
     {layers.logicalBall&&current.ball.logicalPosition&&<div className="logical-ball" style={{left:`${current.ball.logicalPosition.x}%`,top:`${current.ball.logicalPosition.y}%`}} title="Posição lógica da bola"/>}
-  </div></div>;
+  </div></div></div>;
 }
 
 function SectorLine({sectors,className}:{sectors:{defence:{x:number;y:number}|null;midfield:{x:number;y:number}|null;attack:{x:number;y:number}|null};className:string}) {

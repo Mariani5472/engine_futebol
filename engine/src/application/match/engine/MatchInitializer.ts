@@ -6,6 +6,7 @@ import { TeamMatchState } from "../../../core/movement/TeamMatchState";
 import { Pitch, Player, Tactic, TacticalShapeAssignment, Team } from "../../../domain";
 import { PlayerAwareness } from "../awareness/memory/PlayerAwareness";
 import { SimulationConfig } from "./SimulationConfig";
+import { KickoffSystem } from "./KickoffSystem";
 
 export interface InitializedMatch {
   readonly state: MatchState;
@@ -59,6 +60,8 @@ export class MatchInitializer {
       homeState,
       awayState
     );
+
+    new KickoffSystem().setup(state, homeState, 0);
 
     const awarenessMap = new Map<string, PlayerAwareness>();
     for (const p of [...homeState.players, ...awayState.players]) {

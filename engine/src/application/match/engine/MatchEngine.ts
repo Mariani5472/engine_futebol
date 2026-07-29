@@ -39,6 +39,7 @@ import { MatchMetricsCollector } from "../metrics/MatchMetricsCollector";
 import { MatchMetrics } from "../metrics/MatchMetrics";
 import { AttackFunnelCollector } from "../diagnostics/AttackFunnelCollector";
 import { MatchInitializer } from "./MatchInitializer";
+import { KickoffSystem } from "./KickoffSystem";
 import { SimulationConfig } from "./SimulationConfig";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
 import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
@@ -138,6 +139,7 @@ export class MatchEngine {
     const tacticalEngine = new TacticalEngine();
     const collectivePhaseSystem = new CollectivePhaseSystem();
     const collectiveCoordination = new CollectiveCoordinationSystem();
+    const kickoffSystem = new KickoffSystem();
     const teamBehaviour = new TeamBehaviourSystem();
     const movementSystem = new MovementSystem();
     const possessionSystem = new PossessionSystem(rng, new ReachCalculator());
@@ -170,6 +172,7 @@ export class MatchEngine {
         allEvents.push(secondHalfStarted);
         frameEvents.push(secondHalfStarted);
         this.swapAttackingDirections(state);
+        kickoffSystem.setup(state, state.away, state.currentSecond);
       }
 
       const beforeBallPosition = state.ball.position;
@@ -179,7 +182,7 @@ export class MatchEngine {
         perceptionSystem, cognitiveSystem, worldAwarenessSystem,
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
-        collectivePhaseSystem, collectiveCoordination, teamBehaviour, movementSystem, possessionSystem,
+        collectivePhaseSystem, collectiveCoordination, kickoffSystem, teamBehaviour, movementSystem, possessionSystem,
         tick, period, metrics, offensiveFunnel, attackFunnel
       );
 
@@ -288,6 +291,7 @@ export class MatchEngine {
     tacticalEngine: TacticalEngine,
     collectivePhaseSystem: CollectivePhaseSystem,
     collectiveCoordination: CollectiveCoordinationSystem,
+    kickoffSystem: KickoffSystem,
     teamBehaviour: TeamBehaviourSystem,
     movementSystem: MovementSystem,
     possessionSystem: PossessionSystem,
@@ -299,6 +303,7 @@ export class MatchEngine {
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
     const players = this.allPlayers(state);
+    const kickoffWaiting = kickoffSystem.update(state);
 
     for (const player of players) {
       recoverIdleActionState(player, deltaTime);
@@ -365,6 +370,7 @@ export class MatchEngine {
     }
 
     for (const player of players) {
+      if (kickoffWaiting) continue;
       if (player.isActionBusy()) continue;
       if (state.currentSecond + 1e-9 < player.nextDecisionAt) continue;
 
@@ -433,11 +439,16 @@ export class MatchEngine {
     tacticalEngine.update(state);
     teamBehaviour.update(state);
     collectiveCoordination.update(state);
+    kickoffSystem.enforceWaitingPositions(state);
     movementSystem.update(state, deltaTime);
+    // Movement targets can be recalculated during the preparation window. Clamp
+    // once more before publishing the frame so no opponent enters the circle.
+    kickoffSystem.enforceWaitingPositions(state);
     // The authoritative ball follows the player's position from this same tick,
     // avoiding a one-frame correction on the next update.
     events.push(...ballPhysics.update(state, deltaTime));
     possessionSystem.update(state);
+    kickoffSystem.update(state);
     this.syncPossessionSide(state);
     collectivePhaseSystem.update(state, events);
 

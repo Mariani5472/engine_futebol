@@ -289,9 +289,13 @@ export class TacticalEngine {
     let minimum = 2;
     let maximum = state.pitch.length - 2;
 
-    if (role === "GOALKEEPER" || role === "DIRECT_GOALKEEPER") {
+    const defensivePhase = team.collectivePhase === "DEFENSIVE_BLOCK" || team.collectivePhase === "DEFENSIVE_TRANSITION";
+    if (role === "GOALKEEPER") {
       minimum = 2.5;
-      maximum = 10;
+      maximum = defensivePhase ? 4 : 8;
+    } else if (role === "DIRECT_GOALKEEPER") {
+      minimum = 2.5;
+      maximum = defensivePhase ? 5 : 10;
     } else if (role.includes("GOALKEEPER")) {
       minimum = 3;
       maximum = 24;

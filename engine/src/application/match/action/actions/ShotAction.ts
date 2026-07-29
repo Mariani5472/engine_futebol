@@ -15,6 +15,7 @@ import { DecisionType } from "../../decision/DecisionType";
 import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
 import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
+import { KickoffSystem } from "../../engine/KickoffSystem";
 
 /** Team-wide shot cooldown — primary volume control with 1/possession. */
 const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
@@ -191,29 +192,7 @@ export class ShotAction {
 
     const conceding = isHome ? match.away : match.home;
     conceding.resetPossessionShotCount();
-    const kickoffPlayer =
-      conceding.players.find((p) => p.currentRole !== "GOALKEEPER") ??
-      conceding.players[0];
-
-    for (const p of [...match.home.players, ...match.away.players]) {
-      p.hasBall = false;
-    }
-
-    const centre = new Vector2(match.pitch.length / 2, match.pitch.width / 2);
-    // A restart explicitly places the ball before assigning its taker, so the
-    // acquisition record reflects real co-location instead of the old shot spot.
-    match.ball.position = centre;
-    match.ball.velocity = Vector2.zero();
-    match.ball.height = 0;
-    if (kickoffPlayer) {
-      kickoffPlayer.position = centre;
-      kickoffPlayer.hasBall = true;
-      match.ball.acquirePossession(kickoffPlayer, "RESTART", matchSecond);
-      match.ball.state = BallState.CONTROLLED;
-    } else {
-      match.ball.owner = null;
-      match.ball.state = BallState.FREE;
-    }
+    new KickoffSystem().setup(match, conceding, matchSecond);
 
     const shotEvent: ShotEvent = {
       id: shotId,

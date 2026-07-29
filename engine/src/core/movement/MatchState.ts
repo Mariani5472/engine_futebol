@@ -2,6 +2,14 @@ import { Pitch } from "../../domain";
 import { BallMatchState } from "./BallMatchState";
 import { TeamMatchState } from "./TeamMatchState";
 
+export interface KickoffMatchState {
+  readonly teamId: string;
+  readonly takerId: string;
+  readonly receiverId: string;
+  readonly executeAt: number;
+  launched: boolean;
+}
+
 export class MatchState {
 
   constructor(
@@ -11,7 +19,8 @@ export class MatchState {
     public readonly pitch: Pitch,
     public currentSecond: number = 0,
     public attackingTeam: TeamMatchState,
-    public defendingTeam: TeamMatchState
+    public defendingTeam: TeamMatchState,
+    public kickoff: KickoffMatchState | null = null,
   ) {}
 
 }
