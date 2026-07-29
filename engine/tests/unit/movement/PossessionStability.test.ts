@@ -10,6 +10,9 @@ describe("Possession stability", () => {
   it("reclaims orphan CONTROLLED ball (owner null)", () => {
     const match = buildMinimalMatchState();
     const near = match.home.players[0];
+    for (const player of [...match.home.players, ...match.away.players]) {
+      player.position = new Vector2(0, 0);
+    }
     near.position = new Vector2(52, 34);
     near.hasBall = false;
 
@@ -23,7 +26,7 @@ describe("Possession stability", () => {
     expect(match.ball.state).toBe(BallState.FREE);
 
     const possession = new PossessionSystem(new SeededRandom(1), new ReachCalculator());
-    possession.update(match);
+    for (let attempt = 0; attempt < 20 && !match.ball.owner; attempt++) possession.update(match);
 
     expect(match.ball.owner).not.toBeNull();
     expect(match.ball.state).toBe(BallState.CONTROLLED);
@@ -53,6 +56,9 @@ describe("Possession stability", () => {
   it("claims FREE ball when a player is in reach", () => {
     const match = buildMinimalMatchState();
     const p = match.home.players[0];
+    for (const player of [...match.home.players, ...match.away.players]) {
+      player.position = new Vector2(0, 0);
+    }
     p.position = new Vector2(40, 20);
     p.hasBall = false;
 
@@ -62,7 +68,7 @@ describe("Possession stability", () => {
     match.ball.velocity = Vector2.zero();
 
     const possession = new PossessionSystem(new SeededRandom(3), new ReachCalculator());
-    possession.update(match);
+    for (let attempt = 0; attempt < 20 && !match.ball.owner; attempt++) possession.update(match);
 
     expect(match.ball.owner).toBe(p);
     expect(p.hasBall).toBe(true);

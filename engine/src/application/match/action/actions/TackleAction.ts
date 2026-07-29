@@ -98,7 +98,8 @@ export class TackleAction {
       };
     }
 
-    if (success) {
+    const physicalContact = player.position.distanceTo(match.ball.position) <= 1.5;
+    if (success && physicalContact) {
       if (ballOwner.activePipeline?.isBusy()) {
         ballOwner.activePipeline.interrupt("TACKLE", matchSecond);
       } else {
@@ -107,15 +108,14 @@ export class TackleAction {
 
       ballOwner.hasBall = false;
       player.hasBall = true;
-      match.ball.owner = player;
+      match.ball.acquirePossession(player, "TACKLE", matchSecond);
       match.ball.state = BallState.CONTROLLED;
-      match.ball.position = player.position;
     }
 
     return {
       actorId: player.player.id,
       type: DecisionType.TACKLE,
-      success,
+      success: success && physicalContact,
       events,
     };
   }

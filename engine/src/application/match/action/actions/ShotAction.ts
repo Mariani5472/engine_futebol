@@ -158,19 +158,15 @@ export class ShotAction {
       }
 
       if (gk) {
-        gk.hasBall = true;
-        match.ball.owner = gk;
-        match.ball.position = gk.position;
-        match.ball.state = BallState.CONTROLLED;
-        match.ball.velocity = Vector2.zero();
-        match.ball.height = 0;
+        gk.hasBall = false;
+        match.ball.owner = null;
       } else {
         match.ball.position = goalCenter;
         match.ball.state = BallState.FREE;
         match.ball.velocity = Vector2.zero();
         match.ball.owner = null;
       }
-      this.startShotMotion(context, origin, gk?.position ?? goalCenter, aimPoint);
+      this.startShotMotion(context, origin, gk?.position ?? goalCenter, aimPoint, gk?.player.id ?? null);
 
       attacking.resetPossessionShotCount();
 
@@ -203,19 +199,20 @@ export class ShotAction {
     }
 
     const centre = new Vector2(match.pitch.length / 2, match.pitch.width / 2);
+    // A restart explicitly places the ball before assigning its taker, so the
+    // acquisition record reflects real co-location instead of the old shot spot.
+    match.ball.position = centre;
+    match.ball.velocity = Vector2.zero();
+    match.ball.height = 0;
     if (kickoffPlayer) {
       kickoffPlayer.position = centre;
       kickoffPlayer.hasBall = true;
-      match.ball.owner = kickoffPlayer;
+      match.ball.acquirePossession(kickoffPlayer, "RESTART", matchSecond);
       match.ball.state = BallState.CONTROLLED;
     } else {
       match.ball.owner = null;
       match.ball.state = BallState.FREE;
     }
-    match.ball.position = centre;
-    match.ball.velocity = Vector2.zero();
-    match.ball.height = 0;
-    this.startShotMotion(context, origin, goalCenter, aimPoint);
 
     const shotEvent: ShotEvent = {
       id: shotId,
@@ -247,7 +244,7 @@ export class ShotAction {
     };
   }
 
-  private startShotMotion(context: ActionContext, origin: Vector2, target: Vector2, aimPoint: Vector2): void {
+  private startShotMotion(context: ActionContext, origin: Vector2, target: Vector2, aimPoint: Vector2, intendedReceiverId: string | null = null): void {
     const technique = context.player.player.attributes.technical.technique / 20;
     const flair = context.player.player.attributes.mental.flair / 20;
     const hasExplicitEffect = technique >= .8 && flair >= .75;
@@ -260,6 +257,7 @@ export class ShotAction {
       peakHeight: 1.2 + technique * 1.4,
       curve: hasExplicitEffect ? side * (1 + technique) : 0,
       hasExplicitEffect,
+      intendedReceiverId,
     });
   }
 

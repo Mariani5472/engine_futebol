@@ -29,10 +29,6 @@ export class ClearanceAction {
       Math.max(0, Math.min(match.pitch.width, player.position.y + lateral)),
     );
 
-    match.ball.position = land;
-    match.ball.velocity = Vector2.zero();
-    match.ball.height = 0;
-    match.ball.state = BallState.FREE;
     BallMotionPlanner.start(match.ball, {
       kind: "CLEARANCE", origin, target: land, speed: 24, peakHeight: 6,
       curve: 0, hasExplicitEffect: false,

@@ -1,7 +1,7 @@
 import { BallState } from "../../../core/movement/BallMatchState";
 import type { MatchEvent, MatchPeriod } from "../../../domain";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
-import { MatchEngine, type IncrementalMatchFrame, type MatchResult } from "./MatchEngine";
+import { MatchEngine, type IncrementalMatchFrame, type MatchResult, type MatchDiagnosticEvent } from "./MatchEngine";
 import type { SimulationConfig } from "./SimulationConfig";
 import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 
@@ -26,6 +26,7 @@ export interface PlayerSnapshot {
 
 export interface BallSnapshot {
   readonly position: SnapshotVector;
+  readonly logicalPosition: SnapshotVector;
   readonly velocity: SnapshotVector;
   readonly height: number;
   readonly state: string;
@@ -34,6 +35,7 @@ export interface BallSnapshot {
 }
 
 export interface MatchSnapshot {
+  readonly seed: number;
   readonly sequence: number;
   readonly matchSecond: number;
   readonly phase: MatchPeriod | "FINISHED";
@@ -51,6 +53,7 @@ export interface MatchSnapshot {
     readonly homeSectors: SectorCentroids;
     readonly awaySectors: SectorCentroids;
   };
+  readonly diagnostics: readonly MatchDiagnosticEvent[];
 }
 
 export interface SectorCentroids {
@@ -133,6 +136,7 @@ export class MatchSession {
       tacticalAnchorPosition: { x: player.tacticalAnchorPosition.x, y: player.tacticalAnchorPosition.y },
     });
     return {
+      seed: this.config.seed,
       sequence: frame.sequence,
       matchSecond: state.currentSecond,
       phase: this.finalResult ? "FINISHED" : frame.period,
@@ -148,6 +152,7 @@ export class MatchSession {
       ],
       ball: {
         position: { x: state.ball.visualPosition.x, y: state.ball.visualPosition.y },
+        logicalPosition: { x: state.ball.position.x, y: state.ball.position.y },
         velocity: { x: state.ball.visualVelocity.x, y: state.ball.visualVelocity.y },
         height: state.ball.visualHeight,
         state: BallState[state.ball.state],
@@ -165,6 +170,7 @@ export class MatchSession {
         homeSectors: sectorCentroids(state.home.players),
         awaySectors: sectorCentroids(state.away.players),
       },
+      diagnostics: frame.diagnostics,
     };
   }
 }

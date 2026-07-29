@@ -42,6 +42,9 @@ export type { TeamMatchMetrics } from "./application/match/metrics/TeamMatchMetr
 export { MatchMetricsCollector } from "./application/match/metrics/MatchMetricsCollector";
 export { TacticalDiagnosticsCollector } from "./application/match/diagnostics/TacticalDiagnosticsCollector";
 export type { MatchTacticalDiagnostics, TeamTacticalDiagnostics, AverageRolePosition } from "./application/match/diagnostics/TacticalDiagnosticsCollector";
+export { BallTeleportDetector } from "./application/match/diagnostics/BallTeleportDetector";
+export type { BallTeleportViolation } from "./application/match/diagnostics/BallTeleportDetector";
+export type { PassResolutionRecord, PendingPass, PossessionAcquisitionRecord, PossessionAcquisitionReason } from "./core/movement/BallMatchState";
 
 // Calibration (Phase 10)
 export {

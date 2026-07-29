@@ -9,6 +9,7 @@ export interface BallKickMotion {
   readonly peakHeight?: number;
   readonly curve?: number;
   readonly hasExplicitEffect?: boolean;
+  readonly intendedReceiverId?: string | null;
 }
 
 /** Creates engine-owned visual physics from the exact action origin/target. */
@@ -23,6 +24,7 @@ export class BallMotionPlanner {
       peakHeight: Math.max(0, kick.peakHeight ?? 0),
       curve: kick.hasExplicitEffect ? (kick.curve ?? 0) : 0,
       hasExplicitEffect: kick.hasExplicitEffect === true,
+      intendedReceiverId: kick.intendedReceiverId ?? null,
     });
   }
 }

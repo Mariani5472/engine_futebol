@@ -41,6 +41,8 @@ import { MatchInitializer } from "./MatchInitializer";
 import { SimulationConfig } from "./SimulationConfig";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
 import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
+import { BallTeleportDetector, type BallTeleportViolation } from "../diagnostics/BallTeleportDetector";
+import type { PassResolutionRecord, PossessionAcquisitionRecord } from "../../../core/movement/BallMatchState";
 
 const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
@@ -59,7 +61,10 @@ export interface MatchResult {
   readonly matchDurationSeconds: number;
   readonly seed: number;
   readonly metrics: MatchMetrics;
+  readonly diagnostics: readonly MatchDiagnosticEvent[];
 }
+
+export type MatchDiagnosticEvent = PossessionAcquisitionRecord | PassResolutionRecord | BallTeleportViolation;
 
 export interface IncrementalMatchFrame {
   readonly sequence: number;
@@ -68,6 +73,7 @@ export interface IncrementalMatchFrame {
   readonly events: readonly MatchEvent[];
   readonly finalResult?: MatchResult;
   readonly tacticalDiagnostics: MatchTacticalDiagnostics;
+  readonly diagnostics: readonly MatchDiagnosticEvent[];
 }
 
 export class MatchEngine {
@@ -131,12 +137,14 @@ export class MatchEngine {
     const movementSystem = new MovementSystem();
     const possessionSystem = new PossessionSystem(rng, new ReachCalculator());
     const metrics = new MatchMetricsCollector();
+    const teleportDetector = new BallTeleportDetector();
 
     const { state, awarenessMap } = this.initializer.initialize(config);
     metrics.bindTeams(state.home.team.id, state.away.team.id);
 
     let period: MatchPeriod = "FIRST_HALF";
     const allEvents: MatchEvent[] = [];
+    const allDiagnostics: MatchDiagnosticEvent[] = [];
     let homeShots = 0;
     let awayShots = 0;
     let tick = 0;
@@ -158,6 +166,8 @@ export class MatchEngine {
         this.swapAttackingDirections(state);
       }
 
+      const beforeBallPosition = state.ball.position;
+      const beforeBallSpeed = state.ball.velocity.magnitude();
       const tickEvents = this.runTick(
         state, awarenessMap, rng, deltaTime,
         perceptionSystem, cognitiveSystem, worldAwarenessSystem,
@@ -185,6 +195,17 @@ export class MatchEngine {
         matchDuration,
         (tick + 1) * deltaTime,
       );
+      const acquisitions = state.ball.drainPossessionAcquisitions();
+      const passResolutions = state.ball.drainPassResolutions();
+      const teleports = teleportDetector.inspectTick({
+        seed: config.seed, matchSecond: state.currentSecond, deltaTime,
+        before: beforeBallPosition, after: state.ball.position,
+        beforeSpeed: beforeBallSpeed, afterSpeed: state.ball.velocity.magnitude(),
+        physicsDisplacement: state.ball.lastPhysicsDisplacement,
+        acquisitions, isRestart: tickEvents.some(event => event.type === "GOAL"),
+      });
+      const tickDiagnostics: MatchDiagnosticEvent[] = [...acquisitions, ...passResolutions, ...teleports];
+      allDiagnostics.push(...tickDiagnostics);
       tick++;
 
       if (state.currentSecond >= matchDuration) {
@@ -202,8 +223,9 @@ export class MatchEngine {
           matchDurationSeconds: state.currentSecond,
           seed: config.seed,
           metrics: metrics.finalize(),
+          diagnostics: allDiagnostics,
         };
-        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot() };
+        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics };
         return finalResult;
       }
 
@@ -213,6 +235,7 @@ export class MatchEngine {
         state,
         events: frameEvents,
         tacticalDiagnostics: metrics.tacticalSnapshot(),
+        diagnostics: tickDiagnostics,
       };
     }
 
@@ -231,6 +254,7 @@ export class MatchEngine {
       matchDurationSeconds: state.currentSecond,
       seed: config.seed,
       metrics: finalMetrics,
+      diagnostics: allDiagnostics,
     };
   }
 
@@ -388,10 +412,12 @@ export class MatchEngine {
       }
     }
 
-    ballPhysics.update(state, deltaTime);
     tacticalEngine.update(state);
     teamBehaviour.update(state);
     movementSystem.update(state, deltaTime);
+    // The authoritative ball follows the player's position from this same tick,
+    // avoiding a one-frame correction on the next update.
+    ballPhysics.update(state, deltaTime);
     possessionSystem.update(state);
     this.syncPossessionSide(state);
     collectivePhaseSystem.update(state, events);

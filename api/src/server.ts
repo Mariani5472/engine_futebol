@@ -12,10 +12,12 @@ await app.register(websocket);
 
 app.get("/health", async () => ({ status: "ok", matches: matches.size }));
 
-app.post("/matches", async (_request, reply) => {
-  const match = new LiveMatchSession(randomUUID());
+app.post<{ Body?: { seed?: number } }>("/matches", async (request, reply) => {
+  const requestedSeed = request.body?.seed ?? 1;
+  if (!Number.isInteger(requestedSeed) || requestedSeed < 1) return reply.code(400).send({ message: "Seed must be a positive integer" });
+  const match = new LiveMatchSession(randomUUID(), requestedSeed);
   matches.set(match.id, match);
-  return reply.code(201).send({ id: match.id, status: "RUNNING", websocketPath: `/matches/${match.id}/stream` });
+  return reply.code(201).send({ id: match.id, seed: requestedSeed, status: "RUNNING", websocketPath: `/matches/${match.id}/stream` });
 });
 
 app.get<{ Params: { id: string } }>("/matches/:id", async (request, reply) => {

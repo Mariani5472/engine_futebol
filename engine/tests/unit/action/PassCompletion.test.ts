@@ -1,85 +1,128 @@
 import { Vector2 } from "../../../src/core/geometry/Vector2";
 import { BallState } from "../../../src/core/movement/BallMatchState";
+import { PossessionSystem } from "../../../src/core/movement/PossessionSystem";
+import { ReachCalculator } from "../../../src/core/movement/ReachCalculator";
 import { PassAction } from "../../../src/application/match/action/actions/PassAction";
 import { Decision } from "../../../src/application/match/decision/Decision";
 import { DecisionType } from "../../../src/application/match/decision/DecisionType";
+import { BallPhysicsSystem } from "../../../src/application/match/physics/BallPhysicsSystem";
 import { SeededRandom } from "../../../src/core/random/SeededRandom";
 import { buildMinimalMatchState } from "../../helpers/builders";
 import { ActionContext } from "../../../src/application/match/action/ActionContext";
 
-describe("PassAction completion", () => {
-  function buildContext(seed: number) {
+describe("authoritative pass flow", () => {
+  function buildContext(seed = 1) {
     const match = buildMinimalMatchState();
     const passer = match.home.players[0];
     const receiver = match.home.players[1];
-
     passer.position = new Vector2(50, 34);
     receiver.position = new Vector2(65, 40);
     passer.hasBall = true;
-    receiver.hasBall = false;
     match.ball.owner = passer;
     match.ball.state = BallState.CONTROLLED;
     match.ball.position = passer.position;
-
     const decision = new Decision(DecisionType.PASS, 80, receiver.player.id);
     const ctx: ActionContext = {
-      player: passer,
-      decision,
-      match,
-      pitch: match.pitch,
-      random: new SeededRandom(seed),
-      tick: 1,
-      deltaTime: 0.5,
-      teamSide: "HOME",
-      attackingDirection: 1,
-      matchSecond: 10,
+      player: passer, decision, match, pitch: match.pitch,
+      random: new SeededRandom(seed), tick: 1, deltaTime: .05,
+      teamSide: "HOME", attackingDirection: 1, matchSecond: 10,
     };
-
     return { match, passer, receiver, ctx };
   }
 
-  it("successful pass gives CONTROLLED ownership to the receiver", () => {
-    // SeededRandom sequence: force success by trying several seeds
-    let delivered = false;
-    for (let seed = 1; seed <= 40; seed++) {
-      const { match, passer, receiver, ctx } = buildContext(seed);
-      const result = new PassAction().execute(ctx);
-      if (!result.success) continue;
+  it("launches the ball without instantly transferring ownership", () => {
+    const { match, passer, receiver, ctx } = buildContext();
+    const origin = match.ball.position;
+    const result = new PassAction().execute(ctx);
 
-      expect(passer.hasBall).toBe(false);
-      expect(receiver.hasBall).toBe(true);
-      expect(match.ball.owner).toBe(receiver);
-      expect(match.ball.state).toBe(BallState.CONTROLLED);
-      expect(match.ball.position.distanceTo(receiver.position)).toBeLessThan(0.01);
-      expect(match.ball.motion?.kind).toBe("GROUND_PASS");
-      expect(match.ball.motion?.origin.distanceTo(passer.position)).toBeLessThan(0.01);
-      expect(match.ball.motion?.target.distanceTo(receiver.position)).toBeLessThan(0.01);
-      expect(match.ball.motion?.hasExplicitEffect).toBe(false);
-      delivered = true;
-      break;
-    }
-    expect(delivered).toBe(true);
+    expect(result.success).toBe(true); // the kick was executed, reception is pending
+    expect(passer.hasBall).toBe(false);
+    expect(receiver.hasBall).toBe(false);
+    expect(match.ball.owner).toBeNull();
+    expect(match.ball.state).toBe(BallState.IN_FLIGHT);
+    expect(match.ball.position).toEqual(origin);
+    expect(match.ball.intendedReceiverId).toBe(receiver.player.id);
+    expect(match.ball.pendingPass?.intendedReceiverId).toBe(receiver.player.id);
+    expect(match.ball.drainPossessionAcquisitions()).toHaveLength(0);
   });
 
-  it("failed pass leaves a FREE contestable ball", () => {
-    let failed = false;
-    for (let seed = 1; seed <= 80; seed++) {
-      const { match, passer, receiver, ctx } = buildContext(seed);
-      // Force failure by zeroing attributes? use many seeds instead
-      const result = new PassAction().execute(ctx);
-      if (result.success) continue;
+  it("keeps logical and visual ball positions identical throughout flight", () => {
+    const { match, ctx } = buildContext();
+    new PassAction().execute(ctx);
+    const physics = new BallPhysicsSystem();
+    for (let i = 0; i < 200 && match.ball.motion; i++) {
+      physics.update(match, .05);
+      expect(match.ball.visualPosition.distanceTo(match.ball.position)).toBeLessThan(1e-9);
+    }
+    expect(match.ball.motion).toBeNull();
+    expect(match.ball.state).toBe(BallState.FREE);
+  });
 
-      expect(passer.hasBall).toBe(false);
-      expect(match.ball.owner).toBeNull();
-      expect(match.ball.state).toBe(BallState.FREE);
-      expect(receiver.hasBall).toBe(false);
-      failed = true;
-      break;
+  it("resolves pass success only when the intended receiver controls it", () => {
+    let controlled = false;
+    for (let seed = 1; seed <= 30 && !controlled; seed++) {
+      const { match, receiver, ctx } = buildContext(seed);
+      new PassAction().execute(ctx);
+      match.ball.motion = null;
+      match.ball.state = BallState.FREE;
+      match.ball.position = receiver.position.add(new Vector2(.5, 0));
+      match.ball.velocity = Vector2.zero();
+      new PossessionSystem(new SeededRandom(seed), new ReachCalculator()).update(match);
+      if (match.ball.owner !== receiver) continue;
+      const resolution = match.ball.drainPassResolutions()[0];
+      expect(resolution).toMatchObject({
+        type: "PASS_RESOLVED", success: true,
+        controllingPlayerId: receiver.player.id,
+      });
+      expect(match.ball.position.distanceTo(receiver.position)).toBeCloseTo(.5);
+      controlled = true;
     }
-    // With high success floor (~0.35+), failure may be rare — soft check
-    if (!failed) {
-      // All succeeded: still valid given boosted completion rate
-      expect(true).toBe(true);
+    expect(controlled).toBe(true);
+  });
+
+  it("does not claim a stopped ball outside the physical control radius", () => {
+    const { match, receiver } = buildContext();
+    for (const player of [...match.home.players, ...match.away.players]) {
+      player.position = new Vector2(0, 0);
+      player.hasBall = false;
     }
+    receiver.position = new Vector2(11.16, 10);
+    match.ball.release();
+    match.ball.motion = null;
+    match.ball.state = BallState.FREE;
+    match.ball.position = new Vector2(10, 10);
+    match.ball.velocity = Vector2.zero();
+    const before = match.ball.position;
+    new PossessionSystem(new SeededRandom(1), new ReachCalculator()).update(match);
+    expect(match.ball.owner).toBeNull();
+    expect(match.ball.position).toEqual(before);
+  });
+
+  it("allows an opponent to intercept the segment crossed during a tick", () => {
+    let intercepted = false;
+    for (let seed = 1; seed <= 30 && !intercepted; seed++) {
+      const { match, passer, receiver, ctx } = buildContext(seed);
+      for (const player of [...match.home.players, ...match.away.players]) {
+        if (player !== passer && player !== receiver) player.position = new Vector2(0, 0);
+      }
+      passer.position = new Vector2(10, 34);
+      receiver.position = new Vector2(30, 34);
+      match.ball.position = passer.position;
+      const interceptor = match.away.players[0];
+      interceptor.position = new Vector2(16, 34);
+      new PassAction().execute(ctx);
+      new BallPhysicsSystem().update(match, .5);
+      new PossessionSystem(new SeededRandom(seed), new ReachCalculator()).update(match);
+      if (match.ball.owner !== interceptor) continue;
+      const acquisition = match.ball.drainPossessionAcquisitions()[0];
+      expect(acquisition).toMatchObject({
+        playerId: interceptor.player.id,
+        reason: "INTERCEPTION",
+      });
+      expect(acquisition.distanceToBall).toBeLessThan(.001);
+      expect(match.ball.drainPassResolutions()[0]?.success).toBe(false);
+      intercepted = true;
+    }
+    expect(intercepted).toBe(true);
   });
 });

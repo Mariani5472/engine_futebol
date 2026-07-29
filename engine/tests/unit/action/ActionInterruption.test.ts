@@ -87,6 +87,9 @@ describe("Action interruption — concurrent action and physical state", () => {
         owner: ballOwner,
         state: "CONTROLLED",
         position: ballOwner.position,
+        acquirePossession(player: PlayerMatchState) {
+          this.owner = player;
+        },
       },
       home: { players: [tackler] },
       away: { players: [ballOwner] },

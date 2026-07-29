@@ -33,8 +33,7 @@ export class DribbleAction {
     // Keep CONTROLLED ownership glued during dribble.
     if (match.ball.owner === player || player.hasBall) {
       player.hasBall = true;
-      match.ball.owner = player;
-      match.ball.position = player.position;
+      match.ball.acquirePossession(player, "DRIBBLE_RECOVERY", context.matchSecond);
     }
 
     return {

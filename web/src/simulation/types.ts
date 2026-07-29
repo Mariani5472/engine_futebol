@@ -3,6 +3,13 @@ export interface BallPoint extends Point {
   readonly height?: number;
   readonly motionKind?: string | null;
   readonly hasExplicitEffect?: boolean;
+  readonly logicalPosition?: Point;
+}
+export interface MatchFeedEvent {
+  readonly type:string; readonly id?:string; readonly timestamp?:number; readonly matchSecond?:number;
+  readonly teamId?:string; readonly playerId?:string; readonly result?:string;
+  readonly distanceToBall?:number; readonly ballSpeed?:number; readonly reason?:string;
+  readonly previousAction?:string|null; readonly distance?:number; readonly allowedDistance?:number;
 }
 export interface PlayerSnapshot extends Point {
   readonly id: string;
@@ -26,6 +33,7 @@ export interface TeamTacticalDiagnostics {
 }
 export interface SectorCentroids { readonly defence:Point|null; readonly midfield:Point|null; readonly attack:Point|null }
 export interface MatchSnapshot {
+  readonly seed?:number;
   readonly type?: "snapshot";
   readonly matchId?: string;
   readonly sequence?: number;
@@ -36,6 +44,9 @@ export interface MatchSnapshot {
   readonly phase: "READY" | "KICKOFF_PASS" | "RECEIVED" | "OPEN_PLAY" | "FIRST_HALF" | "SECOND_HALF" | "FINISHED";
   readonly players: readonly PlayerSnapshot[];
   readonly ball: BallPoint;
+  readonly score?:{readonly homeGoals:number;readonly awayGoals:number};
+  readonly events?:readonly MatchFeedEvent[];
+  readonly diagnostics?:readonly MatchFeedEvent[];
   readonly tacticalDiagnostics?: { readonly home:TeamTacticalDiagnostics; readonly away:TeamTacticalDiagnostics };
   readonly tacticalDebug?: { readonly carrierId:string|null; readonly passOptionIds:readonly string[]; readonly homeSectors:SectorCentroids; readonly awaySectors:SectorCentroids };
 }

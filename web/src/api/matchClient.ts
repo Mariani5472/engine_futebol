@@ -3,8 +3,8 @@ import type { MatchSnapshot } from "../simulation/types";
 const API_URL = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:3000`;
 let matchPromise: Promise<{ id: string }> | null = null;
 
-export function getOrCreateMatch(): Promise<{ id: string }> {
-  matchPromise ??= fetch(`${API_URL}/matches`, { method: "POST" }).then(async (response) => {
+export function getOrCreateMatch(seed = 1): Promise<{ id: string }> {
+  matchPromise ??= fetch(`${API_URL}/matches`, { method: "POST", headers:{"content-type":"application/json"}, body:JSON.stringify({seed}) }).then(async (response) => {
     if (!response.ok) throw new Error(`Could not create match: ${response.status}`);
     return response.json() as Promise<{ id: string }>;
   });
@@ -30,6 +30,7 @@ export function subscribeToMatch(
     }
     handlers.onSnapshot({
       type: "snapshot",
+      seed: wire.seed,
       matchId: wire.matchId,
       sequence: wire.sequence,
       time: wire.matchSecond,
@@ -37,6 +38,9 @@ export function subscribeToMatch(
       homePhase: wire.homePhase,
       awayPhase: wire.awayPhase,
       phase: wire.phase,
+      score: wire.score,
+      events: wire.events,
+      diagnostics: wire.diagnostics,
       players: wire.players.map((player: any) => ({
         id: player.id,
         number: Number(player.id.match(/(\d+)$/)?.[1] ?? 0),
@@ -60,6 +64,10 @@ export function subscribeToMatch(
         height: wire.ball.height,
         motionKind: wire.ball.motion?.kind ?? null,
         hasExplicitEffect: wire.ball.motion?.hasExplicitEffect ?? false,
+        logicalPosition: {
+          x: wire.ball.logicalPosition.x / wire.pitch.length * 100,
+          y: wire.ball.logicalPosition.y / wire.pitch.width * 100,
+        },
       },
       tacticalDiagnostics: wire.tacticalDiagnostics,
       tacticalDebug: {

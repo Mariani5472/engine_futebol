@@ -22,6 +22,18 @@ export class TacticalEngine {
   public update(state: MatchState): void {
     this.updateTeam(state, state.home);
     this.updateTeam(state, state.away);
+    this.assignLooseBallChasers(state);
+  }
+
+  /** Players must physically reach a loose ball; this never grants ownership. */
+  private assignLooseBallChasers(state: MatchState): void {
+    if (state.ball.owner || state.ball.motion) return;
+    for (const team of [state.home, state.away]) {
+      const chaser = team.players
+        .filter(player => !player.hasBall)
+        .sort((a, b) => a.position.distanceTo(state.ball.position) - b.position.distanceTo(state.ball.position))[0];
+      chaser?.setTarget(state.ball.position);
+    }
   }
 
   private updateTeam(
@@ -36,6 +48,10 @@ export class TacticalEngine {
       const player = team.players[i];
 
       if (player.hasBall) continue;
+      if (state.ball.motion && state.ball.intendedReceiverId === player.player.id) {
+        player.setTarget(state.ball.motion.target);
+        continue;
+      }
 
       const assignment = assignments[i] ?? assignments[assignments.length - 1];
       if (!assignment) continue;

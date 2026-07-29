@@ -12,7 +12,7 @@ export class BallPhysicsSystem {
 
   public update(state: MatchState, deltaTime: number): void {
     const ball = state.ball;
-    this.updateVisualMotion(ball, deltaTime);
+    ball.previousPosition = ball.position;
 
     // Orphan controlled state — never leave the ball stuck without an owner.
     if (ball.state === BallState.CONTROLLED && !ball.owner) {
@@ -20,8 +20,14 @@ export class BallPhysicsSystem {
     }
 
     if (ball.owner !== null && ball.state === BallState.CONTROLLED) {
-      ball.position = ball.owner.position;
-      ball.velocity = ball.owner.velocity;
+      const desired = ball.owner.position.add(ball.controlOffset);
+      ball.position = desired;
+      this.clampToPitch(ball, state);
+      ball.velocity = desired.subtract(ball.previousPosition).divide(Math.max(.001, deltaTime));
+      ball.controlOffset = ball.controlOffset.multiply(Math.exp(-6 * deltaTime));
+      ball.height = 0;
+      ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
+      this.syncVisual(ball);
       // Keep hasBall flag consistent if something cleared it.
       if (!ball.owner.hasBall) {
         ball.owner.hasBall = true;
@@ -30,6 +36,14 @@ export class BallPhysicsSystem {
     }
 
     // Owner pointer without CONTROLLED — clear stale owner so contests work.
+    if (ball.motion) {
+      this.updateAuthoritativeMotion(ball, deltaTime);
+      this.clampToPitch(ball, state);
+      ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
+      this.syncVisual(ball);
+      return;
+    }
+
     if (ball.owner && ball.state !== BallState.CONTROLLED) {
       ball.owner.hasBall = false;
       (ball as { owner: null }).owner = null;
@@ -40,17 +54,14 @@ export class BallPhysicsSystem {
     this.applyMovement(ball, deltaTime);
     this.clampToPitch(ball, state);
     this.checkRestState(ball);
+    ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
+    this.syncVisual(ball);
   }
 
-  private updateVisualMotion(ball: BallMatchState, deltaTime: number): void {
+  private updateAuthoritativeMotion(ball: BallMatchState, deltaTime: number): void {
     const motion = ball.motion;
-    if (!motion) {
-      ball.visualPosition = ball.position;
-      ball.visualHeight = ball.height;
-      ball.visualVelocity = ball.velocity;
-      return;
-    }
-    const previousVisualPosition = ball.visualPosition;
+    if (!motion) return;
+    const previousPosition = ball.position;
     motion.elapsed = Math.min(motion.duration, motion.elapsed + deltaTime);
     const time = motion.duration <= 0 ? 1 : motion.elapsed / motion.duration;
     const progress = motion.kind === "GROUND_PASS" ? 1 - Math.pow(1 - time, 1.35) : time;
@@ -60,15 +71,21 @@ export class BallPhysicsSystem {
       const perpendicular = new Vector2(-direct.y, direct.x).normalize();
       position = position.add(perpendicular.multiply(4 * motion.curve * progress * (1 - progress)));
     }
-    ball.visualPosition = position;
-    ball.visualVelocity = position.subtract(previousVisualPosition).divide(Math.max(.001, deltaTime));
-    ball.visualHeight = motion.peakHeight * 4 * time * (1 - time);
+    ball.position = position;
+    ball.velocity = position.subtract(previousPosition).divide(Math.max(.001, deltaTime));
+    ball.height = motion.peakHeight * 4 * time * (1 - time);
     if (time >= 1) {
-      ball.visualPosition = motion.target;
-      ball.visualHeight = 0;
-      ball.visualVelocity = Vector2.zero();
+      ball.position = motion.target;
+      ball.height = 0;
       ball.motion = null;
+      ball.state = BallState.FREE;
     }
+  }
+
+  private syncVisual(ball: BallMatchState): void {
+    ball.visualPosition = ball.position;
+    ball.visualHeight = ball.height;
+    ball.visualVelocity = ball.velocity;
   }
 
   private applyGravity(ball: BallMatchState, deltaTime: number): void {

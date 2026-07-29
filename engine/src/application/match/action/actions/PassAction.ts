@@ -8,7 +8,6 @@ import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 
 const MAX_PASS_SPEED = 28;
 const MIN_PASS_SPEED = 8;
-const FAIL_NOISE_RADIANS = 0.6;
 
 export class PassAction {
 
@@ -26,38 +25,29 @@ export class PassAction {
     }
 
     const team = match.home.players.includes(player) ? match.home : match.away;
-    const origin = player.position;
+    const origin = match.ball.position;
     const dir = team.attackingDirection;
     const realForwardGain = (target.position.x - player.position.x) * dir;
 
-    const successProb = this.calculateSuccessProb(context, player, target);
-    const success = random.nextFloat(0, 1) < successProb;
-
-    player.hasBall = false;
-
-    if (success) {
-      this.deliverToReceiver(match, player, target);
-      this.startMotion(context, origin, target.position, target);
-      team.noteProgressivePass(matchSecond, realForwardGain);
-      return {
-        actorId: player.player.id,
-        type: decision.type,
-        success: true,
-        events: [],
-        // Diagnostic payload consumed by AttackFunnel when present.
-        meta: {
-          passRealForwardGain: realForwardGain,
-          passReceiverId: target.player.id,
-        },
-      } as ActionResult;
-    }
-
-    this.releaseFailedPass(context, player, target, random, origin);
+    const accuracy = this.calculateSuccessProb(context, player, target);
+    const distance = origin.distanceTo(target.position);
+    const errorRadius = Math.pow(1 - accuracy, 2) * Math.min(6, distance * .15);
+    const errorAngle = random.nextFloat(-Math.PI, Math.PI);
+    const errorDistance = random.nextFloat(0, errorRadius);
+    const destination = target.position.add(Vector2.fromAngle(errorAngle).multiply(errorDistance));
+    for (const teammate of [...match.home.players, ...match.away.players]) teammate.hasBall = false;
+    this.startMotion(context, origin, destination, target);
+    match.ball.pendingPass = {
+      passerId: player.player.id,
+      intendedReceiverId: target.player.id,
+      startedAtSecond: matchSecond,
+      realForwardGain,
+    };
 
     return {
       actorId: player.player.id,
       type: decision.type,
-      success: false,
+      success: true,
       events: [],
       meta: {
         passRealForwardGain: realForwardGain,
@@ -66,71 +56,7 @@ export class PassAction {
     } as ActionResult;
   }
 
-  private deliverToReceiver(
-    match: ActionContext["match"],
-    passer: PlayerMatchState,
-    target: PlayerMatchState,
-  ): void {
-    for (const p of [...match.home.players, ...match.away.players]) {
-      p.hasBall = false;
-    }
-
-    target.hasBall = true;
-    match.ball.owner = target;
-    match.ball.state = BallState.CONTROLLED;
-    match.ball.position = target.position;
-    match.ball.velocity = Vector2.zero();
-    (match.ball as { height: number }).height = 0;
-
-    target.lastActionType = DecisionType.RECEIVE;
-    void passer;
-  }
-
-  private releaseFailedPass(
-    context: ActionContext,
-    passer: PlayerMatchState,
-    target: PlayerMatchState,
-    random: ActionContext["random"],
-    origin: Vector2,
-  ): void {
-    const match = context.match;
-    const distance = passer.position.distanceTo(target.position);
-    const power = this.calculatePower(distance);
-
-    let direction = target.position.subtract(passer.position).normalize();
-    const noiseAngle = random.nextFloat(-FAIL_NOISE_RADIANS, FAIL_NOISE_RADIANS);
-    direction = direction.rotate(noiseAngle);
-
-    const landFraction = random.nextFloat(0.45, 0.85);
-    const landPos = passer.position.add(
-      target.position.subtract(passer.position).multiply(landFraction),
-    );
-    const jitter = new Vector2(
-      random.nextFloat(-3, 3),
-      random.nextFloat(-3, 3),
-    );
-    const finalPos = new Vector2(
-      Math.max(0, Math.min(match.pitch.length, landPos.x + jitter.x)),
-      Math.max(0, Math.min(match.pitch.width, landPos.y + jitter.y)),
-    );
-
-    match.ball.owner = null;
-    match.ball.state = BallState.FREE;
-    match.ball.position = finalPos;
-    match.ball.velocity = direction.multiply(power * 0.25);
-    (match.ball as { height: number }).height = 0;
-    BallMotionPlanner.start(match.ball, {
-      kind: context.decision.type === DecisionType.CROSS ? "CROSS" : "GROUND_PASS",
-      origin,
-      target: finalPos,
-      speed: power,
-      peakHeight: context.decision.type === DecisionType.CROSS ? 3.5 : 0,
-      curve: context.decision.type === DecisionType.CROSS ? this.crossCurve(context, origin) : 0,
-      hasExplicitEffect: context.decision.type === DecisionType.CROSS,
-    });
-  }
-
-  private startMotion(context: ActionContext, origin: Vector2, destination: Vector2, _target: PlayerMatchState): void {
+  private startMotion(context: ActionContext, origin: Vector2, destination: Vector2, target: PlayerMatchState): void {
     const distance = origin.distanceTo(destination);
     const power = this.calculatePower(distance);
     const isCross = context.decision.type === DecisionType.CROSS;
@@ -145,6 +71,7 @@ export class PassAction {
       peakHeight: isCross ? 4.5 : directGoalkeeperKick ? 5.5 : 0,
       curve: isCross ? this.crossCurve(context, origin) : 0,
       hasExplicitEffect: isCross,
+      intendedReceiverId: target.player.id,
     });
   }
 

@@ -10,6 +10,7 @@ export interface PitchLayers {
   readonly anchors: boolean;
   readonly sectorLines: boolean;
   readonly roles: boolean;
+  readonly logicalBall: boolean;
 }
 
 interface PitchProps {
@@ -43,6 +44,7 @@ export function Pitch({ previous, current, alpha, layers }: PitchProps) {
       </div>;
     })}
     <div className="ball" data-motion={current.ball.motionKind ?? "NONE"} style={{left:`${ball.x}%`,top:`${ball.y}%`,transform:`translate(-50%, calc(-50% - ${ballHeight * 3}px))`}}/>
+    {layers.logicalBall&&current.ball.logicalPosition&&<div className="logical-ball" style={{left:`${current.ball.logicalPosition.x}%`,top:`${current.ball.logicalPosition.y}%`}} title="Posição lógica da bola"/>}
   </div></div>;
 }
 

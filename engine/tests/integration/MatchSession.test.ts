@@ -49,6 +49,15 @@ describe("MatchSession", () => {
     expect(session.snapshot().sequence).toBe(before + 1);
   });
 
+  it("publishes seed, score and both logical and visual ball positions", () => {
+    const session = MatchSession.create(config(5));
+    const snapshot = session.snapshot();
+    expect(snapshot.seed).toBe(17);
+    expect(snapshot.score).toEqual({ homeGoals: 0, awayGoals: 0 });
+    expect(snapshot.ball.logicalPosition).toBeDefined();
+    expect(snapshot.ball.position).toBeDefined();
+  });
+
   it("speed metadata does not change deterministic engine results", () => {
     const matchConfig = config(2 * 60, 2);
     const normal = MatchSession.create(matchConfig);

@@ -17,7 +17,7 @@ export class LiveMatchSession {
   private readonly clients = new Set<WebSocket>();
   private readonly timer: NodeJS.Timeout;
 
-  constructor(public readonly id: string, seed = 1) {
+  constructor(public readonly id: string, public readonly seed = 1) {
     this.session = MatchSession.create(createMatchConfig(id, seed));
     this.timer = setInterval(() => this.tick(), STEP_SECONDS * 1000);
   }

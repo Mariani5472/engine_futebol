@@ -2,25 +2,16 @@ import { MatchState } from "./MatchState";
 import { PlayerMatchState } from "./PlayerMatchState";
 import { PossessionCandidate } from "../../domain";
 import { ReachCalculator } from "./ReachCalculator";
-import { BallState } from "./BallMatchState";
+import { BallState, type PossessionAcquisitionReason } from "./BallMatchState";
 import { Random } from "../random/Random";
+import { Vector2 } from "../geometry/Vector2";
+import { DecisionType } from "../../application/match/decision/DecisionType";
 
-/** Primary contest radius around a free ball. */
-const CLAIM_RADIUS = 7;
-
-/**
- * If nobody is inside CLAIM_RADIUS, still hand the ball to the nearest player
- * within this secondary radius so FREE balls after shots/failed passes do not
- * sit unowned for hundreds of ticks (ownership collapse ~0.5%).
- */
-const FALLBACK_CLAIM_RADIUS = 16;
-
-const SLOW_BALL_SPEED = 3;
-const EMERGENCY_RECLAIM_AFTER_SECONDS = 6;
+const GROUND_CONTROL_RADIUS = 1.15;
+const INTERCEPTION_RADIUS = 1.25;
+const MAX_CONTROL_HEIGHT = 1.5;
 
 export class PossessionSystem {
-
-  private freeBallSinceSecond: number | null = null;
 
   constructor(
     private readonly random: Random,
@@ -31,10 +22,7 @@ export class PossessionSystem {
     const ball = state.ball;
 
     if (ball.state === BallState.CONTROLLED && ball.owner) {
-      this.freeBallSinceSecond = null;
       this.syncOwnerFlags(state, ball.owner);
-      ball.position = ball.owner.position;
-      ball.velocity = ball.owner.velocity;
       return;
     }
 
@@ -42,43 +30,10 @@ export class PossessionSystem {
       ball.state = BallState.FREE;
     }
 
-    if (
-      ball.state === BallState.IN_FLIGHT &&
-      ball.velocity.magnitude() < SLOW_BALL_SPEED &&
-      (ball.height ?? 0) < 1.5
-    ) {
-      ball.state = BallState.FREE;
-      ball.height = 0;
-    }
-
-    if (ball.state === BallState.FREE && this.freeBallSinceSecond === null) {
-      this.freeBallSinceSecond = state.currentSecond;
-    }
-
-    // Only contest FREE (or slow) balls.
-    if (ball.state === BallState.IN_FLIGHT && ball.velocity.magnitude() > SLOW_BALL_SPEED) {
-      return;
-    }
-
-    let candidates = this.getCandidates(state, CLAIM_RADIUS);
-
-    // Fallback: never leave a stationary/slow FREE ball without an owner.
-    if (candidates.length === 0 && ball.state === BallState.FREE) {
-      candidates = this.getCandidates(state, FALLBACK_CLAIM_RADIUS);
-    }
-
-    if (candidates.length === 0 && ball.state === BallState.FREE) {
-      // Emergency fallback only after the ball has remained unclaimed.
-      const freeForSeconds =
-        state.currentSecond - (this.freeBallSinceSecond ?? state.currentSecond);
-      if (freeForSeconds < EMERGENCY_RECLAIM_AFTER_SECONDS) return;
-
-      const nearest = this.nearestPlayer(state);
-      if (nearest) {
-        this.givePossession(state, nearest);
-      }
-      return;
-    }
+    if (ball.height > MAX_CONTROL_HEIGHT) return;
+    const intendedReceiverId = ball.intendedReceiverId;
+    const radius = ball.state === BallState.IN_FLIGHT ? INTERCEPTION_RADIUS : GROUND_CONTROL_RADIUS;
+    const candidates = this.getCandidates(state, radius);
 
     if (candidates.length === 0) return;
 
@@ -89,18 +44,29 @@ export class PossessionSystem {
         ? candidates[0].player
         : this.resolveDuel(candidates[0], candidates[1]);
 
-    this.givePossession(state, winner);
+    if (ball.state === BallState.IN_FLIGHT) {
+      ball.position = this.closestPointOnSegment(winner.position, ball.previousPosition, ball.position);
+    }
+
+    if (!this.controlsBall(winner, state, intendedReceiverId === winner.player.id)) {
+      this.deflectAfterFailedControl(state);
+      return;
+    }
+    const reason: PossessionAcquisitionReason = intendedReceiverId === winner.player.id
+      ? "INTENDED_RECEPTION"
+      : ball.state === BallState.IN_FLIGHT ? "INTERCEPTION" : "PHYSICAL_CLAIM";
+    this.givePossession(state, winner, reason);
   }
 
-  private givePossession(state: MatchState, player: PlayerMatchState): void {
-    this.freeBallSinceSecond = null;
+  private givePossession(state: MatchState, player: PlayerMatchState, reason: PossessionAcquisitionReason): void {
     this.syncOwnerFlags(state, player);
 
-    state.ball.owner = player;
+    state.ball.resolvePendingPass(player.player.id, state.currentSecond);
+    state.ball.acquirePossession(player, reason, state.currentSecond);
     state.ball.state = BallState.CONTROLLED;
-    state.ball.position = player.position;
-    state.ball.velocity = player.velocity;
+    state.ball.velocity = state.ball.velocity.multiply(.2);
     state.ball.height = 0;
+    player.lastActionType = DecisionType.RECEIVE;
   }
 
   private syncOwnerFlags(state: MatchState, owner: PlayerMatchState): void {
@@ -115,19 +81,11 @@ export class PossessionSystem {
   ): PossessionCandidate[] {
     const players = [...state.home.players, ...state.away.players];
     const candidates: PossessionCandidate[] = [];
-    const ballSpeed = state.ball.velocity.magnitude();
-
     for (const player of players) {
-      const distance = player.position.distanceTo(state.ball.position);
+      const distance = state.ball.state === BallState.IN_FLIGHT
+        ? this.distanceToSegment(player.position, state.ball.previousPosition, state.ball.position)
+        : player.position.distanceTo(state.ball.position);
       const reach = this.reachCalculator.calculateReachTime(player, state.ball);
-
-      if (
-        state.ball.state === BallState.IN_FLIGHT &&
-        ballSpeed > SLOW_BALL_SPEED &&
-        distance > 2.5
-      ) {
-        continue;
-      }
 
       if (distance > radius) continue;
 
@@ -144,20 +102,37 @@ export class PossessionSystem {
     return candidates;
   }
 
-  private nearestPlayer(state: MatchState): PlayerMatchState | null {
-    const players = [...state.home.players, ...state.away.players];
-    if (players.length === 0) return null;
+  private controlsBall(player: PlayerMatchState, state: MatchState, intended: boolean): boolean {
+    const a = player.player.attributes;
+    const speedPenalty = Math.min(.45, state.ball.velocity.magnitude() * .012);
+    const heightPenalty = state.ball.height * .12;
+    const quality = a.technical.firstTouch / 20 * .32 + a.mental.composure / 20 * .18 + a.mental.anticipation / 20 * .12;
+    const probability = Math.max(.12, Math.min(.96, .28 + quality + (intended ? .12 : 0) - speedPenalty - heightPenalty));
+    return this.random.nextFloat(0, 1) < probability;
+  }
 
-    let best = players[0];
-    let bestDist = best.position.distanceTo(state.ball.position);
-    for (let i = 1; i < players.length; i++) {
-      const d = players[i].position.distanceTo(state.ball.position);
-      if (d < bestDist) {
-        best = players[i];
-        bestDist = d;
-      }
-    }
-    return best;
+  private deflectAfterFailedControl(state: MatchState): void {
+    const ball = state.ball;
+    const speed = Math.max(2, ball.velocity.magnitude() * .35);
+    const direction = ball.velocity.magnitude() > .01 ? ball.velocity.normalize() : new Vector2(1, 0);
+    ball.release();
+    ball.motion = null;
+    ball.intendedReceiverId = null;
+    ball.state = BallState.DEFLECTED;
+    ball.velocity = direction.rotate(this.random.nextFloat(-.45, .45)).multiply(speed);
+    ball.height = Math.min(.5, ball.height * .3);
+  }
+
+  private distanceToSegment(point: Vector2, start: Vector2, end: Vector2): number {
+    return point.distanceTo(this.closestPointOnSegment(point, start, end));
+  }
+
+  private closestPointOnSegment(point: Vector2, start: Vector2, end: Vector2): Vector2 {
+    const segment = end.subtract(start);
+    const lengthSquared = segment.dot(segment);
+    if (lengthSquared === 0) return end;
+    const t = Math.max(0, Math.min(1, point.subtract(start).dot(segment) / lengthSquared));
+    return start.add(segment.multiply(t));
   }
 
   private calculateControlScore(
