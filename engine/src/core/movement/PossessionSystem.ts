@@ -49,6 +49,7 @@ export class PossessionSystem {
     }
 
     if (!this.controlsBall(winner, state, intendedReceiverId === winner.player.id)) {
+      winner.controlAttemptLockUntil = state.currentSecond + .65;
       this.deflectAfterFailedControl(state);
       return;
     }
@@ -63,6 +64,7 @@ export class PossessionSystem {
 
     state.ball.resolvePendingPass(player.player.id, state.currentSecond);
     state.ball.acquirePossession(player, reason, state.currentSecond);
+    player.actionLockUntil = Math.max(player.actionLockUntil, state.currentSecond + .3);
     state.ball.state = BallState.CONTROLLED;
     state.ball.velocity = state.ball.velocity.multiply(.2);
     state.ball.height = 0;
@@ -82,6 +84,7 @@ export class PossessionSystem {
     const players = [...state.home.players, ...state.away.players];
     const candidates: PossessionCandidate[] = [];
     for (const player of players) {
+      if (state.currentSecond < player.controlAttemptLockUntil) continue;
       const distance = state.ball.state === BallState.IN_FLIGHT
         ? this.distanceToSegment(player.position, state.ball.previousPosition, state.ball.position)
         : player.position.distanceTo(state.ball.position);

@@ -207,6 +207,7 @@ describe("Evaluator behavior relationships", () => {
   it("gives a prepared target a higher tackle opportunity than the same target standing idle", () => {
     const attacker = match.home.players[0];
     const defender = match.away.players[0];
+    defender.position = attacker.position.add(new Vector2(1.4, 0));
     const evaluator = new TackleEvaluator();
 
     const idleScore = decisionScore(

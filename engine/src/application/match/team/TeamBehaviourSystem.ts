@@ -103,7 +103,12 @@ export class TeamBehaviourSystem {
       const side = ballCarrier.position.y < centreY ? -1 : 1;
       const direction = team.tactic.outOfPossession.showDirection;
       const yOffset = direction === "INSIDE" ? side * 2 : direction === "OUTSIDE" ? side * -2 : 0;
-      presser.setTarget(new Vector2(ballCarrier.position.x, ballCarrier.position.y + yOffset));
+      const approach = presser.position.subtract(ballCarrier.position).normalize();
+      const standOff = approach.magnitude() > 0 ? approach.multiply(1.35) : new Vector2(-team.attackingDirection * 1.35, 0);
+      presser.setTarget(new Vector2(
+        ballCarrier.position.x + standOff.x,
+        ballCarrier.position.y + standOff.y + yOffset,
+      ));
     }
 
   }

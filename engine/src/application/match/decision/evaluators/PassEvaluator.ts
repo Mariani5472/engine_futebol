@@ -66,7 +66,20 @@ export class PassEvaluator implements ActionEvaluator {
       context.player.currentRole,
     );
 
-    const distanceScore = Math.max(0, 20 - lane.distance * 0.4);
+    // Very short passes inside a crowd perpetuate local pinball. Reward useful
+    // separation (roughly 8-24m) and strongly discourage sub-4m recycling.
+    const distanceScore = lane.distance < 4
+      ? -22 + lane.distance * 2
+      : lane.distance < 8
+        ? (lane.distance - 4) * 4
+        : lane.distance <= 24
+          ? 18
+          : Math.max(0, 18 - (lane.distance - 24) * .65);
+    const nearbyOpponents = world.opponents.filter(opponent => opponent.position.distanceTo(lane.targetPosition) < 3).length;
+    const nearbyTeammates = world.teammates.filter(teammate =>
+      teammate.player.id !== lane.targetId && teammate.position.distanceTo(lane.targetPosition) < 2,
+    ).length;
+    const receiverCongestion = nearbyOpponents * -8 + nearbyTeammates * -4;
     const progressBonus = Math.max(-20, Math.min(55, lane.forwardProgress * 1.6));
     const certaintyBonus = lane.certainty * 6;
     const clearanceBonus = lane.clear ? 12 : -6;
@@ -109,6 +122,7 @@ export class PassEvaluator implements ActionEvaluator {
       progressBonus +
       certaintyBonus +
       clearanceBonus +
+      receiverCongestion +
       antiStagnation;
 
     const progressiveFloor =

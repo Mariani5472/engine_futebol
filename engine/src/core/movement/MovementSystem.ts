@@ -9,8 +9,46 @@ export class MovementSystem {
     deltaTime: number
   ): void {
     this.movePlayers(state, deltaTime);
+    this.separatePlayers(state, deltaTime);
 
     // this.moveBall(state, deltaTime);
+  }
+
+  private separatePlayers(state: MatchState, deltaTime: number): void {
+    const players = [...state.home.players, ...state.away.players];
+    const minimumDistance = 1.05;
+    // Resolve body overlap within the current frame. Capping each player to
+    // half the personal-space diameter avoids visible large corrections.
+    const maxCorrection = .525;
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        const first = players[i];
+        const second = players[j];
+        const delta = second.position.subtract(first.position);
+        const distance = delta.magnitude();
+        if (distance >= minimumDistance) continue;
+        const direction = distance > .001
+          ? delta.divide(distance)
+          : Vector2.fromAngle(this.stablePairAngle(first.player.id, second.player.id));
+        const correction = Math.min(maxCorrection, (minimumDistance - distance) / 2);
+        first.position = this.clampPlayer(first.position.subtract(direction.multiply(correction)), state);
+        second.position = this.clampPlayer(second.position.add(direction.multiply(correction)), state);
+      }
+    }
+  }
+
+  private stablePairAngle(firstId: string, secondId: string): number {
+    const key = firstId < secondId ? `${firstId}:${secondId}` : `${secondId}:${firstId}`;
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
+    return (Math.abs(hash) % 360) * Math.PI / 180;
+  }
+
+  private clampPlayer(position: Vector2, state: MatchState): Vector2 {
+    return new Vector2(
+      Math.max(0, Math.min(state.pitch.length, position.x)),
+      Math.max(0, Math.min(state.pitch.width, position.y)),
+    );
   }
 
   private movePlayers(

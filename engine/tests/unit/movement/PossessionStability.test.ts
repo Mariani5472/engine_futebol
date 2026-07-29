@@ -26,7 +26,10 @@ describe("Possession stability", () => {
     expect(match.ball.state).toBe(BallState.FREE);
 
     const possession = new PossessionSystem(new SeededRandom(1), new ReachCalculator());
-    for (let attempt = 0; attempt < 20 && !match.ball.owner; attempt++) possession.update(match);
+    for (let attempt = 0; attempt < 20 && !match.ball.owner; attempt++) {
+      match.currentSecond = attempt * .7;
+      possession.update(match);
+    }
 
     expect(match.ball.owner).not.toBeNull();
     expect(match.ball.state).toBe(BallState.CONTROLLED);
@@ -68,7 +71,10 @@ describe("Possession stability", () => {
     match.ball.velocity = Vector2.zero();
 
     const possession = new PossessionSystem(new SeededRandom(3), new ReachCalculator());
-    for (let attempt = 0; attempt < 20 && !match.ball.owner; attempt++) possession.update(match);
+    for (let attempt = 0; attempt < 20 && !match.ball.owner; attempt++) {
+      match.currentSecond = attempt * .7;
+      possession.update(match);
+    }
 
     expect(match.ball.owner).toBe(p);
     expect(p.hasBall).toBe(true);

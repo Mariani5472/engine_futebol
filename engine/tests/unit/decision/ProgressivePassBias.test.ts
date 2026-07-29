@@ -63,4 +63,28 @@ describe("Progressive pass bias", () => {
     expect(aheadU).toBeGreaterThan(lateralU);
     expect(aheadU).toBeGreaterThan(0);
   });
+
+  it("prefers an open medium option over a crowded two-metre pass", () => {
+    const match = buildMinimalMatchState();
+    const carrier = match.home.players[0];
+    const close = match.home.players[1];
+    const open = buildPlayerMatchState({ position: new Vector2(58, 46), role: "MIDFIELDER" });
+    match.home.players.push(open);
+    carrier.position = new Vector2(55, 34);
+    close.position = new Vector2(57, 34);
+    carrier.hasBall = true;
+    carrier.facingDirection = new Vector2(1, 0);
+    match.ball.owner = carrier;
+    match.ball.state = BallState.CONTROLLED;
+    match.ball.position = carrier.position;
+    match.away.players[0].position = new Vector2(57, 35);
+
+    const awareness = PlayerAwareness.create(carrier.player.id);
+    awareness.teammates.set(close.player.id, PlayerMemory.create(close.player.id, close.position, 0));
+    awareness.teammates.set(open.player.id, PlayerMemory.create(open.player.id, open.position, 0));
+    const world = new WorldAwarenessSystem().build(match, carrier, awareness);
+    const decisions = new PassEvaluator().evaluate(new DecisionContext(match, carrier, awareness, 0, .05, world));
+    const utility = new Map(decisions.map(decision => [decision.targetId, decision.utility]));
+    expect(utility.get(open.player.id) ?? 0).toBeGreaterThan(utility.get(close.player.id) ?? 0);
+  });
 });

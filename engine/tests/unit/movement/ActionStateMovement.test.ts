@@ -158,6 +158,22 @@ describe("MovementSystem + ActionExecution physical state", () => {
 
     expect(player.position.x).toBeGreaterThan(0);
   });
+
+  it("gradually separates overlapping players instead of keeping a permanent cluster", () => {
+    const first = createPlayer("home-1");
+    const second = createPlayer("away-1");
+    first.position = new Vector2(50, 34);
+    second.position = new Vector2(50, 34);
+    first.targetPosition = first.position;
+    second.targetPosition = second.position;
+    const state = {
+      home: { players: [first] }, away: { players: [second] },
+      pitch: { length: 105, width: 68 },
+    };
+    const movement = new MovementSystem();
+    for (let tick = 0; tick < 12; tick++) movement.update(state as never, .05);
+    expect(first.position.distanceTo(second.position)).toBeGreaterThan(1);
+  });
 });
 
 describe("ActionExecution interruption during PREPARING", () => {

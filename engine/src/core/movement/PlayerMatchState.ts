@@ -14,6 +14,8 @@ export class PlayerMatchState {
   public nextDecisionAt = 0;
   /** Absolute match time when this player may attempt another tackle/foul. */
   public tackleLockUntil = 0;
+  /** Prevents the same player retrying a failed first touch every simulation tick. */
+  public controlAttemptLockUntil = 0;
 
   constructor(
     public readonly player: Player,
