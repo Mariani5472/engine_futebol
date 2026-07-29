@@ -7,6 +7,7 @@ import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnostic
 import type { MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollector";
 import type { EventDerivedMatchReport, MatchTimelineEntry } from "../analytics/MatchEventStore";
 import type { GoalReplay } from "../replay/GoalReplayRecorder";
+import type { DecisionDebugEntry } from "../decision/DecisionDebug";
 
 export interface SnapshotVector {
   readonly x: number;
@@ -31,6 +32,8 @@ export interface PlayerSnapshot {
   readonly occupiedChannel: string | null;
   readonly goalkeeperState: string | null;
   readonly goalkeeperInterceptionTarget: SnapshotVector | null;
+  readonly goalkeeperInterceptionHeight: number | null;
+  readonly animationState:string;
 }
 
 export interface BallSnapshot {
@@ -88,6 +91,7 @@ export interface MatchSnapshot {
   readonly timeline: readonly MatchTimelineEntry[];
   readonly replayGoalIds: readonly string[];
   readonly analytics: EventDerivedMatchReport | null;
+  readonly decisionTrace:readonly DecisionDebugEntry[];
 }
 
 export interface SectorCentroids {
@@ -117,7 +121,13 @@ export class MatchSession {
   }
 
   public update(deltaSeconds = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds): MatchSnapshot {
-    if (this.paused || this.finalResult) return this.snapshot();
+    this.advance(deltaSeconds);
+    return this.snapshot();
+  }
+
+  /** Advances fixed-step simulation without materializing a network snapshot. */
+  public advance(deltaSeconds = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds): void {
+    if (this.paused || this.finalResult) return;
     const expected = this.config.tickDeltaSeconds
       ?? ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
     if (Math.abs(deltaSeconds - expected) > 1e-9) {
@@ -129,7 +139,6 @@ export class MatchSession {
       this.latestFrame = step.value;
       this.finalResult = step.value.finalResult ?? null;
     }
-    return this.snapshot();
   }
 
   public pause(): void { this.paused = true; }
@@ -142,6 +151,11 @@ export class MatchSession {
   public getSpeed(): MatchSpeed { return this.speed; }
   public isFinished(): boolean { return this.finalResult !== null; }
   public result(): MatchResult | null { return this.finalResult; }
+  public archive():Pick<MatchResult,"seed"|"matchDurationSeconds"|"eventStore"|"analytics"|"timeline"|"goalReplays">|null {
+    if(!this.finalResult)return null;
+    const {seed,matchDurationSeconds,eventStore,analytics,timeline,goalReplays}=this.finalResult;
+    return {seed,matchDurationSeconds,eventStore,analytics,timeline,goalReplays};
+  }
   public goalReplay(goalEventId: string): GoalReplay | null {
     return this.latestFrame?.goalReplays.find(replay => replay.goalEventId === goalEventId)
       ?? this.finalResult?.goalReplays.find(replay => replay.goalEventId === goalEventId)
@@ -181,6 +195,15 @@ export class MatchSession {
       goalkeeperInterceptionTarget: player.goalkeeperInterceptionTarget
         ? { x: player.goalkeeperInterceptionTarget.x, y: player.goalkeeperInterceptionTarget.y }
         : null,
+      goalkeeperInterceptionHeight: player.currentRole.includes("GOALKEEPER")
+        ? player.goalkeeperInterceptionHeight
+        : null,
+      animationState:frame.events.some(event=>event.type==="GOAL"&&event.scorerId===player.player.id)
+        ? "CELEBRATING"
+        : state.pendingGoalRestart ? "RESTART_PREPARATION"
+        : player.currentRole.includes("GOALKEEPER") ? player.goalkeeperState
+        : player.activeAction ? `${String(player.activeAction.type)}_${String(player.activeAction.phase)}`
+        : player.velocity.magnitude()>.2 ? "RUNNING" : "IDLE",
     });
     return {
       seed: this.config.seed,
@@ -234,6 +257,7 @@ export class MatchSession {
       timeline: frame.timeline,
       replayGoalIds: frame.goalReplays.map(replay => replay.goalEventId),
       analytics: this.finalResult?.analytics ?? null,
+      decisionTrace:frame.decisionTrace,
     };
   }
 }

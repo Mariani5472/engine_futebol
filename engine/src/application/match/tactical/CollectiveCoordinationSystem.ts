@@ -137,6 +137,9 @@ export class CollectiveCoordinationSystem {
     const runner = options.filter(player => player !== support && !this.isDefender(player))
       .sort((a, b) => this.progress(state, team, b.position.x) - this.progress(state, team, a.position.x))[0];
     if (!support || !runner) return;
+    support.thirdManOriginId = owner.player.id;
+    support.thirdManNextTargetId = runner.player.id;
+    support.thirdManAvailableUntil = state.currentSecond + 2.4;
     const ownerToSupport = support.position.subtract(owner.position);
     const supportSide = ownerToSupport.y >= 0 ? 1 : -1;
     const supportTarget = owner.position.add(new Vector2(-team.attackingDirection * 4, supportSide * 7));
@@ -215,7 +218,15 @@ export class CollectiveCoordinationSystem {
   private label(player: PlayerMatchState, responsibility: string, state: MatchState, seconds: number): void {
     player.tacticalResponsibility = responsibility; player.responsibilityUntil = state.currentSecond + seconds;
   }
-  private clearExpired(state: MatchState): void { for (const player of [...state.home.players, ...state.away.players]) if (state.currentSecond >= player.responsibilityUntil) player.tacticalResponsibility = null; }
+  private clearExpired(state: MatchState): void {
+    for (const player of [...state.home.players, ...state.away.players]) {
+      if (state.currentSecond >= player.responsibilityUntil) player.tacticalResponsibility = null;
+      if (state.currentSecond >= player.thirdManAvailableUntil) {
+        player.thirdManOriginId = null;
+        player.thirdManNextTargetId = null;
+      }
+    }
+  }
   private progress(state: MatchState, team: TeamMatchState, x: number): number { return team.attackingDirection === 1 ? x : state.pitch.length - x; }
   private toPitchX(state: MatchState, team: TeamMatchState, progress: number): number { return team.attackingDirection === 1 ? progress : state.pitch.length - progress; }
   private teamOfPlayerId(state: MatchState, playerId: string | null | undefined): TeamMatchState | null {

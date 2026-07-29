@@ -30,10 +30,10 @@ describe("GoalkeeperSystem", () => {
     attacker.hasBall = true;
     state.ball.owner = attacker;
     state.ball.position = attacker.position;
-    goalkeeper.position = new Vector2(3, 34);
+    goalkeeper.position = new Vector2(8.5, 34);
     new GoalkeeperSystem().update(state);
     if (goalkeeper.player.attributes.goalkeeping.rushingOut / 20 >= .58) {
-      expect(goalkeeper.goalkeeperState).toBe("RUSHING_OUT");
+      expect(["RUSHING_OUT","SMOTHERING"]).toContain(goalkeeper.goalkeeperState);
       expect(goalkeeper.targetPosition).toEqual(attacker.position);
     } else {
       expect(goalkeeper.goalkeeperState).not.toBe("RUSHING_OUT");
@@ -48,12 +48,14 @@ describe("GoalkeeperSystem", () => {
     const shot: ShotExecution = {
       id: "gk-shot", shooterId: shooter.player.id, teamId: state.home.team.id,
       defendingTeamId: state.away.team.id, goalkeeperId: goalkeeper.player.id,
+      goalkeeperInitialPosition:goalkeeper.position,
       origin: new Vector3(95, 34, .18), intendedTarget: target, actualTarget: target,
       initialVelocity: new Vector3(30, 0, 0), speed: 30, shotType: "PLACED", footUsed: "RIGHT",
       expectedArrivalTime: .4, executionQuality: .8, pressureLevel: 0,
       bodyPosture: "BALANCED", balance: 1, contactQuality: .8, curve: 0, startedAt: 0,
       goalFrame: createGoalFrame(105, 34, 7.32, 2.44), lifecycle: "IN_FLIGHT",
       outcome: null, deflectionCount: 0, lastInteractionPlayerId: null,
+      goalkeeperDecision:null,goalkeeperReactionTime:null,
     };
     state.ball.activeShot = shot;
     new GoalkeeperSystem().update(state);
@@ -64,5 +66,17 @@ describe("GoalkeeperSystem", () => {
     state.currentSecond = goalkeeper.goalkeeperReactionUntil;
     new GoalkeeperSystem().update(state);
     expect(["DIVING", "CATCHING"]).toContain(goalkeeper.goalkeeperState);
+    expect(shot.goalkeeperDecision).toBe(goalkeeper.goalkeeperState);
+    expect(shot.goalkeeperReactionTime).toBeGreaterThan(0);
+  });
+
+  it("uses a timed recovery state after committing to a save",()=>{
+    const state=initialize();
+    const goalkeeper=state.home.players.find(player=>player.currentRole.includes("GOALKEEPER"))!;
+    goalkeeper.goalkeeperState="PARRYING";goalkeeper.goalkeeperStateUntil=1;state.currentSecond=.5;
+    new GoalkeeperSystem().update(state);
+    expect(goalkeeper.goalkeeperState).toBe("RECOVERING");
+    state.currentSecond=1.1;new GoalkeeperSystem().update(state);
+    expect(goalkeeper.goalkeeperState).toBe("POSITIONING");
   });
 });

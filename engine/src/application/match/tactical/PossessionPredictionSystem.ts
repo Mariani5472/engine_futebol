@@ -52,10 +52,13 @@ export class PossessionPredictionSystem {
     const defending = passingTeam === state.home ? state.away : state.home;
     const target = state.ball.motion.target;
     const ballEta = Math.max(0, state.ball.motion.duration - state.ball.motion.elapsed);
-    const receiverEta = this.arrivalSeconds(intended, target);
-    const defenderEtas = defending.players.map(player => [player.player.id, this.arrivalSeconds(player, target)] as const);
+    const receiverEta = this.controlEta(intended, target, state, ballEta, true);
+    const defenderEtas = defending.players.map(player => [
+      player.player.id,
+      this.controlEta(player, target, state, ballEta, false),
+    ] as const);
     const closestDefender = defenderEtas.slice().sort((a,b)=>a[1]-b[1])[0];
-    const receiverControlEta = Math.max(ballEta, receiverEta);
+    const receiverControlEta = receiverEta;
     const margin = (closestDefender?.[1] ?? 99) - receiverControlEta;
     const confidence = clamp(.5 + margin / 3, .05, .97);
     const likelyTurnover = margin < -.15;
@@ -110,6 +113,43 @@ export class PossessionPredictionSystem {
     const accelerationDistance=initial*accelerationTime+.5*acceleration*accelerationTime*accelerationTime;
     if(distance<=accelerationDistance)return (-initial+Math.sqrt(initial*initial+2*acceleration*distance))/acceleration;
     return accelerationTime+(distance-accelerationDistance)/topSpeed;
+  }
+
+  /** ETA includes travel, body orientation, aerial reach and first-touch setup. */
+  private controlEta(
+    player: PlayerMatchState,
+    target: Vector2,
+    state: MatchState,
+    ballEta: number,
+    intended: boolean,
+  ): number {
+    const arrival = this.arrivalSeconds(player, target);
+    const motion = state.ball.motion;
+    const incoming = motion
+      ? motion.origin.subtract(motion.target).normalize()
+      : state.ball.velocity.multiply(-1).normalize();
+    const facing = player.facingDirection.magnitude() > .01
+      ? player.facingDirection.normalize()
+      : incoming;
+    const orientation = clamp((facing.dot(incoming) + 1) / 2, 0, 1);
+    const attributes = player.player.attributes;
+    const firstTouch = Number(attributes.technical.firstTouch ?? 10) / 20;
+    const composure = Number(attributes.mental.composure ?? 10) / 20;
+    const anticipation = Number(attributes.mental.anticipation ?? 10) / 20;
+    const targetHeight = motion?.targetHeight ?? state.ball.height;
+    const aerialKind = motion?.kind === "AERIAL_PASS" || motion?.kind === "CROSS" || targetHeight > .8;
+    const aerialAbility = player.currentRole.includes("GOALKEEPER")
+      ? Number(attributes.goalkeeping.aerialReach ?? 10) / 20
+      : (Number(attributes.physical.jumpingReach ?? 10) + Number(attributes.technical.heading ?? 10)) / 40;
+    const aerialPenalty = aerialKind
+      ? Math.max(0, targetHeight - (.8 + aerialAbility * 1.7)) * .32 + (1 - aerialAbility) * .18
+      : 0;
+    const ballSpeed = motion ? motion.target.subtract(motion.origin).magnitude() / Math.max(.01, motion.duration) : state.ball.velocity.magnitude();
+    const touchQuality = firstTouch * .5 + composure * .2 + anticipation * .2 + orientation * .1;
+    const speedPenalty = Math.max(0, ballSpeed - 8) / 30 * (1 - touchQuality) * .7;
+    const orientationPenalty = (1 - orientation) * (intended ? .18 : .28);
+    const firstTouchDelay = (1 - touchQuality) * (intended ? .34 : .46);
+    return Math.max(ballEta, arrival) + aerialPenalty + speedPenalty + orientationPenalty + firstTouchDelay;
   }
 
   private player(state:MatchState,id:string):PlayerMatchState|null {

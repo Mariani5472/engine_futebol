@@ -4,6 +4,7 @@ import type { MatchState, RestartType } from "../../../core/movement/MatchState"
 import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
 import { BallMotionPlanner } from "../physics/BallMotionPlanner";
+import { KickoffSystem } from "./KickoffSystem";
 
 const PREPARATION_SECONDS = .75;
 const CORNER_DISTANCE = 9.15;
@@ -11,6 +12,12 @@ const THROW_IN_DISTANCE = 2;
 
 /** One authoritative rules engine for throw-ins, corners and goal kicks. */
 export class RestartSystem {
+  private readonly kickoff = new KickoffSystem();
+
+  public setupKickoff(state: MatchState, team: TeamMatchState, matchSecond: number): void {
+    this.kickoff.setup(state, team, matchSecond);
+  }
+
   public setup(
     state: MatchState,
     type: RestartType,
@@ -57,6 +64,10 @@ export class RestartSystem {
 
   /** True while regular decisions must remain locked. */
   public update(state: MatchState): boolean {
+    return this.kickoff.update(state) || this.updateSetPiece(state);
+  }
+
+  private updateSetPiece(state: MatchState): boolean {
     const restart = state.restart;
     if (!restart) return false;
     const taker = this.player(state, restart.takerId);
@@ -91,6 +102,7 @@ export class RestartSystem {
   }
 
   public enforceWaitingPositions(state: MatchState): void {
+    this.kickoff.enforceWaitingPositions(state);
     const restart = state.restart;
     if (!restart || restart.launched) return;
     const awarded = this.team(state, restart.teamId);

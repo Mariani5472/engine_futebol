@@ -3,7 +3,7 @@ export const ENGINE_CALIBRATION_PARAMETERS = {
   /** Official simulation timestep: 20 updates per simulated second. */
   officialTickSeconds: 0.05,
   shot: {
-    cooldownSeconds: 125,
+    cooldownSeconds: 110,
     cornerFromMissRate: 0.58,
     cornerFromParryRate: 0.30,
     goalkeeperSaveBonus: 0.15,
@@ -11,21 +11,44 @@ export const ENGINE_CALIBRATION_PARAMETERS = {
     goalkeeperSaveCap: 0.90,
     onTargetProbabilityScale: 1.18,
     onTargetProbabilityCap: 0.75,
-    utilityScale: 0.75,
+    utilityScale: 0.82,
     boxFlatBoost: 42,
     maxPerPossession: 1,
     maxDistanceMeters: 22,
     closeRangeMeters: 14,
     minimumWindowOutsideCloseRange: 0.70,
+    /** Spatial execution parameters; these shape outcomes, never pick them. */
+    aimLateralBaseMeters: 0.75,
+    aimTechniqueScaleMeters: 0.75,
+    aimQualityScaleMeters: 0.45,
+    placedErrorMeters: 1.65,
+    powerErrorMeters: 2.55,
+    chipErrorMeters: 1.80,
+    lateralErrorMultiplier: 6.00,
+    heightErrorMultiplier: 1.60,
+    goalkeeperBodyReachMeters: 2.45,
+    goalkeeperAerialReachScaleMeters: 0.70,
+    goalkeeperCatchSpeedMetersPerSecond: 34,
+    goalkeeperReactionBaseSeconds: 0.32,
+    goalkeeperReactionReflexScaleSeconds: 0.16,
+    goalkeeperReactionAnticipationScaleSeconds: 0.07,
+    goalkeeperReactionConcentrationScaleSeconds: 0.04,
+    goalkeeperMinimumReactionSeconds: 0.08,
   },
   discipline: {
-    baseFoulChance: 0.045,
+    baseFoulChance: 0.13,
     foulDangerFloor: 0.34,
     directRedDanger: 0.97,
     directRedChance: 0.006,
-    baseYellowChance: 0.50,
-    maxYellowChance: 0.45,
-    repeatBookingFactor: 0.013,
+    baseYellowChance: 0.22,
+    maxYellowChance: 0.32,
+    repeatBookingFactor: 0.05,
+  },
+  assists: {
+    maxPassAgeSeconds: 8,
+    allowDefenderDeflection: true,
+    allowGoalkeeperParry: true,
+    allowWoodworkRebound: true,
   },
   metrics: { xGScale: 0.80 },
 } as const;
@@ -60,16 +83,16 @@ export function suggestAdjustments(key: string, observed: number, target: number
   switch (key) {
     case "goals":
       return high
-        ? ["increase gkSaveCap / gkSaveFloor", "decrease shotOnTargetCap", "decrease shotUtilityScale"]
-        : ["decrease gkSaveCap", "increase shotOnTargetCap", "increase shotUtilityScale"];
+        ? ["reduce spatial finishing precision", "increase goalkeeper reaction/reach", "decrease shot utility only if volume is also high"]
+        : ["inspect unresolved spatial shots", "reduce goalkeeper reaction/reach", "increase shot utility only if volume is also low"];
     case "shots":
       return high
         ? ["decrease shotUtilityScale", "increase pass/hold utilities near box"]
         : ["increase shotUtilityScale", "decrease long-range shot penalty"];
     case "shotsOnTarget":
       return high
-        ? ["decrease shotOnTargetCap", "increase pressure penalty on finishing"]
-        : ["increase shotOnTargetCap", "decrease pressure penalty on finishing"];
+        ? ["increase spatial execution error", "increase pressure penalty on finishing"]
+        : ["reduce spatial execution error", "inspect defender block envelope"];
     case "fouls":
     case "yellowCards":
     case "redCards": {

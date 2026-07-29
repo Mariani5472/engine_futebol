@@ -94,6 +94,22 @@ export interface ShotOutcomeEvent extends BaseMatchEvent {
   readonly outcome: string;
 }
 
+export interface ShotResolvedEvent extends BaseMatchEvent {
+  readonly type:"SHOT_RESOLVED";
+  readonly shotId:string;
+  readonly teamId:TeamId;
+  readonly playerId:PlayerId;
+  readonly originX:number; readonly originY:number;
+  readonly intendedTargetY:number; readonly intendedTargetZ:number;
+  readonly actualTargetY:number; readonly actualTargetZ:number;
+  readonly initialSpeed:number; readonly executionError:number;
+  readonly goalkeeperId:PlayerId|null;
+  readonly goalkeeperInitialX:number|null; readonly goalkeeperInitialY:number|null;
+  readonly goalkeeperDecision:string|null; readonly goalkeeperReactionTime:number|null;
+  readonly interceptionX:number|null; readonly interceptionY:number|null; readonly interceptionHeight:number|null;
+  readonly finalOutcome:string;
+}
+
 export interface GoalkeeperSaveEvent extends BaseMatchEvent {
   readonly type: "GOALKEEPER_SAVE";
   readonly shotId: string;
@@ -158,7 +174,49 @@ export interface CarryStartedEvent extends BaseMatchEvent {
   readonly originY: number;
   readonly targetX: number;
   readonly targetY: number;
+  readonly desiredSpeed: number;
+  readonly controlMode: "CLOSE" | "NORMAL" | "SPRINT";
   readonly purpose: "PROGRESS" | "ESCAPE_PRESSURE" | "CREATE_ANGLE" | "ATTACK_SPACE" | "PROTECT_POSSESSION";
+}
+
+export interface CarryEndedEvent extends BaseMatchEvent {
+  readonly type: "CARRY_ENDED";
+  readonly teamId: TeamId;
+  readonly playerId: PlayerId;
+  readonly originX: number;
+  readonly originY: number;
+  readonly positionX: number;
+  readonly positionY: number;
+  readonly reason: "TARGET_REACHED" | "ACTION_CHANGED" | "POSSESSION_LOST";
+}
+
+export interface PossessionChangedEvent extends BaseMatchEvent {
+  readonly type: "POSSESSION_CHANGED";
+  readonly teamId: TeamId;
+  readonly playerId: PlayerId;
+  readonly previousPlayerId: PlayerId | null;
+  readonly reason: string;
+  readonly positionX: number;
+  readonly positionY: number;
+  readonly ballSpeed: number;
+}
+
+export interface TackleEvent extends BaseMatchEvent {
+  readonly type: "TACKLE";
+  readonly teamId: TeamId;
+  readonly playerId: PlayerId;
+  readonly opponentId: PlayerId;
+  readonly successful: boolean;
+}
+
+/** Optional competition events are part of the normalized contract even when a
+ * particular match configuration has no substitutions, VAR or penalties. */
+export interface NamedMatchEvent extends BaseMatchEvent {
+  readonly type: "OFFSIDE" | "SUBSTITUTION" | "PENALTY" | "GOAL_DISALLOWED";
+  readonly teamId: TeamId;
+  readonly playerId?: PlayerId;
+  readonly secondaryPlayerId?: PlayerId;
+  readonly reason?: string;
 }
 
 export interface ThrowInEvent extends BaseMatchEvent {
@@ -178,12 +236,17 @@ export type MatchEvent =
   | ShotStartedEvent
   | ShotTakenEvent
   | ShotOutcomeEvent
+  | ShotResolvedEvent
   | GoalkeeperSaveEvent
   | ReboundEvent
   | BallDeflectionEvent
   | PassAttemptedEvent
   | PassCompletedEvent
   | CarryStartedEvent
+  | CarryEndedEvent
+  | PossessionChangedEvent
+  | TackleEvent
+  | NamedMatchEvent
   | CardEvent
   | GoalEvent
   | CornerEvent

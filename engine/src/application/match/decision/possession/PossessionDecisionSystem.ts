@@ -14,12 +14,14 @@ import { FieldThirdResolver } from "../../../../core/pitch/FieldThirdResolver";
 import { ActionReadiness } from "../evaluators/ActionReadiness";
 import { applyRoleDecisionModifier } from "../RoleDecisionModifier";
 import { applyTacticalInstructionDecisionModifier } from "../TacticalInstructionDecisionModifier";
+import { ExpectedValueModel } from "../ExpectedValueModel";
 
 export class PossessionDecisionSystem {
   private readonly fieldThirdResolver: FieldThirdResolver;
   private readonly personalityModifier: PersonalityModifier;
   private readonly riskCalculator: RiskCalculator;
   private readonly debug: DecisionDebug;
+  private readonly expectedValue = new ExpectedValueModel();
 
   constructor(
     private readonly evaluators: ActionEvaluator[],
@@ -54,13 +56,13 @@ export class PossessionDecisionSystem {
       });
 
       return {
-        decision: applyTacticalInstructionDecisionModifier(applyRoleDecisionModifier(new Decision(
+        decision: this.expectedValue.apply(applyTacticalInstructionDecisionModifier(applyRoleDecisionModifier(new Decision(
           decision.type,
           decision.utility + bias.utilityModifier,
           decision.targetId,
           decision.reasons,
           decision.components,
-        ), context), context),
+        ), context), context), context),
         riskToleranceModifier: bias.riskToleranceModifier,
       };
     });
@@ -100,10 +102,15 @@ export class PossessionDecisionSystem {
 
     const best = this.selector.select(evaluated);
 
-    this.debug.record(context.player, best.decision, {
-      tick: context.currentTick,
-      matchSecond: context.currentTick * context.deltaTime,
+    for(const item of evaluated) this.debug.record(context.player,item.decision,{
+      tick:context.currentTick,matchSecond:context.match.currentSecond,
+      selected:item===best,rejectionReasons:item===best?[]:["LOWER_EXPECTED_UTILITY_AFTER_RISK"],
     });
+    for(const candidate of biasedCandidates.map(item=>item.decision).filter(item=>!valid.includes(item))) {
+      this.debug.record(context.player,candidate,{
+        tick:context.currentTick,matchSecond:context.match.currentSecond,selected:false,rejectionReasons:["ILLEGAL_OR_CONTEXT_FILTERED"],
+      });
+    }
 
     return best.decision;
   }

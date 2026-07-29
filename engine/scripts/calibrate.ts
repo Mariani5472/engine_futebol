@@ -11,6 +11,8 @@
 import {
   CalibrationRunner,
   ENGINE_CALIBRATION_PARAMETERS,
+  averageShotOutcomes,
+  calibrationDistribution,
   suggestAdjustments,
 } from "../src/application/match/calibration";
 import { buildSimulationConfig } from "../tests/helpers/builders";
@@ -48,6 +50,32 @@ function main(): void {
   });
 
   console.log("\n" + result.formatted);
+
+  const outcomes = averageShotOutcomes(result.samples);
+  const percentage = (value: number): string => outcomes.total > 0
+    ? `${(value / outcomes.total * 100).toFixed(1)}%`
+    : "0.0%";
+  console.log("\nSpatial shot outcomes (average per match / share):");
+  for (const [label, value] of [
+    ["Blocked", outcomes.blocked],
+    ["Off target", outcomes.offTarget],
+    ["Woodwork", outcomes.woodwork],
+    ["Saved (caught)", outcomes.savedCaught],
+    ["Saved (parried)", outcomes.savedParried],
+    ["Goals", outcomes.goals],
+    ["Unresolved", outcomes.unresolved],
+  ] as const) {
+    console.log(`  ${label.padEnd(18)} ${value.toFixed(2).padStart(6)}  ${percentage(value).padStart(6)}`);
+  }
+  for (const sample of result.samples.filter(sample => sample.unresolvedShotIds.length > 0)) {
+    console.log(`  Unresolved seed ${sample.seed}: ${sample.unresolvedShotIds.join(", ")}`);
+  }
+
+  const distribution = calibrationDistribution(result.samples);
+  console.log("\nDistribution diagnostics:");
+  console.log(`  Goals p10 / median / p90  ${distribution.goalsP10.toFixed(1)} / ${distribution.goalsMedian.toFixed(1)} / ${distribution.goalsP90.toFixed(1)}`);
+  console.log(`  Zero-goal match rate       ${(distribution.zeroGoalMatchRate * 100).toFixed(1)}%`);
+  console.log(`  Median shots / on target   ${distribution.shotsMedian.toFixed(1)} / ${distribution.shotsOnTargetMedian.toFixed(1)}`);
 
   const misses = result.report.comparisons.filter((c) => !c.withinTolerance);
   if (misses.length > 0) {

@@ -32,6 +32,8 @@ export { MatchEventStore } from "./application/match/analytics/MatchEventStore";
 export type { StoredMatchEvent, PossessionInterval, MatchTimelineEntry, EventDerivedTeamReport, EventDerivedPlayerReport, EventDerivedMatchReport } from "./application/match/analytics/MatchEventStore";
 export { GoalReplayRecorder } from "./application/match/replay/GoalReplayRecorder";
 export type { GoalReplay, ReplayFrame } from "./application/match/replay/GoalReplayRecorder";
+export { AssistPolicy } from "./application/match/analytics/AssistPolicy";
+export type { AssistPolicyConfig, AssistIntervention } from "./application/match/analytics/AssistPolicy";
 export type { SimulationConfig } from "./application/match/engine/SimulationConfig";
 export { BrowserAnimationScheduler, FixedTimestepLoop } from "./application/match/runtime";
 export type {
@@ -55,6 +57,8 @@ export type { PassResolutionRecord, PendingPass, PossessionAcquisitionRecord, Po
 export { OffensiveFunnelCollector } from "./application/match/diagnostics/OffensiveFunnelCollector";
 export { CollectiveCoordinationSystem } from "./application/match/tactical/CollectiveCoordinationSystem";
 export { PossessionPredictionSystem } from "./application/match/tactical/PossessionPredictionSystem";
+export { ExpectedValueModel } from "./application/match/decision/ExpectedValueModel";
+export type { DecisionExpectedValue } from "./application/match/decision/ExpectedValueModel";
 export type { PossessionPrediction, TeamPossessionState } from "./core/movement/PossessionPrediction";
 export type { MatchOffensiveFunnel, TeamOffensiveFunnel, OffensiveFailureReason, GoalContext } from "./application/match/diagnostics/OffensiveFunnelCollector";
 

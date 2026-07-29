@@ -3,12 +3,15 @@ import type { MatchEvent } from "../../../domain";
 
 export interface ReplayFrame {
   readonly timestamp: number;
-  readonly ball: { readonly x: number; readonly y: number; readonly height: number };
+  readonly ball: { readonly x: number; readonly y: number; readonly height: number; readonly velocityX:number; readonly velocityY:number; readonly motionKind:string|null };
   readonly players: readonly {
     readonly id: string; readonly teamId: string; readonly x: number; readonly y: number;
-    readonly facingX: number; readonly facingY: number; readonly action: string | null;
+    readonly velocityX:number; readonly velocityY:number; readonly facingX: number; readonly facingY: number;
+    readonly bodyState:string; readonly goalkeeperState:string|null; readonly targetX:number; readonly targetY:number;
+    readonly action: string | null;
   }[];
   readonly events: readonly string[];
+  readonly camera:{readonly centerX:number;readonly centerY:number;readonly zoom:number};
 }
 
 export interface GoalReplay {
@@ -55,20 +58,24 @@ export class GoalReplayRecorder {
   private frame(state: MatchState, events: readonly MatchEvent[]): ReplayFrame {
     return {
       timestamp: state.currentSecond,
-      ball: { x: state.ball.position.x, y: state.ball.position.y, height: state.ball.height },
+      ball: { x: state.ball.position.x, y: state.ball.position.y, height: state.ball.height,
+        velocityX:state.ball.velocity.x,velocityY:state.ball.velocity.y,motionKind:state.ball.motion?.kind??null },
       players: [
         ...state.home.players.map(player => ({
           id: player.player.id, teamId: state.home.team.id, x: player.position.x, y: player.position.y,
-          facingX: player.facingDirection.x, facingY: player.facingDirection.y,
+          velocityX:player.velocity.x,velocityY:player.velocity.y,facingX: player.facingDirection.x, facingY: player.facingDirection.y,
+          bodyState:player.bodyState,goalkeeperState:player.goalkeeperState,targetX:player.targetPosition.x,targetY:player.targetPosition.y,
           action: player.activeAction ? String(player.activeAction.type) : null,
         })),
         ...state.away.players.map(player => ({
           id: player.player.id, teamId: state.away.team.id, x: player.position.x, y: player.position.y,
-          facingX: player.facingDirection.x, facingY: player.facingDirection.y,
+          velocityX:player.velocity.x,velocityY:player.velocity.y,facingX: player.facingDirection.x, facingY: player.facingDirection.y,
+          bodyState:player.bodyState,goalkeeperState:player.goalkeeperState,targetX:player.targetPosition.x,targetY:player.targetPosition.y,
           action: player.activeAction ? String(player.activeAction.type) : null,
         })),
       ],
       events: events.map(event => event.id),
+      camera:{centerX:state.ball.position.x,centerY:state.ball.position.y,zoom:1.35},
     };
   }
 }

@@ -45,6 +45,23 @@ export class PassEvaluator implements ActionEvaluator {
           TACTICAL:(score.components.TACTICAL??0)+32,
         });
       }
+      const targetPlayer = team.players.find(player => player.player.id === lane.targetId);
+      const combinationActive = context.match.currentSecond <= context.player.thirdManAvailableUntil;
+      if (combinationActive && context.player.thirdManNextTargetId === lane.targetId && lane.clear) {
+        score = UtilityScore.fromComponents({
+          ...score.components,
+          TACTICAL: (score.components.TACTICAL ?? 0) + 28,
+          FUTURE_POSSESSION_VALUE: 10,
+        });
+      } else if (targetPlayer?.thirdManOriginId === context.player.player.id
+        && context.match.currentSecond <= targetPlayer.thirdManAvailableUntil
+        && lane.clear) {
+        score = UtilityScore.fromComponents({
+          ...score.components,
+          TACTICAL: (score.components.TACTICAL ?? 0) + 12,
+          FUTURE_POSSESSION_VALUE: 6,
+        });
+      }
       if (score.total <= 0) continue;
       decisions.push(
         new Decision(

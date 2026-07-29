@@ -26,7 +26,8 @@ export function Pitch({ previous, current, alpha, layers }: PitchProps) {
   const ballHeight = (previous.ball.height ?? 0) + ((current.ball.height ?? 0) - (previous.ball.height ?? 0)) * alpha;
   const owner = current.players.find(player => player.id === current.tacticalDebug?.carrierId) ?? current.players.find(player => player.hasBall);
   const passOptions = new Set(current.tacticalDebug?.passOptionIds ?? []);
-  return <div className="pitch-shell"><div className="pitch-stage"><div className="pitch" aria-label="Campo de futebol 2D">
+  const camera=current.replayCamera;
+  return <div className="pitch-shell"><div className="pitch-stage"><div className="pitch" aria-label="Campo de futebol 2D" style={camera?{transformOrigin:`${camera.centerX}% ${camera.centerY}%`,transform:`scale(${camera.zoom})`}:undefined}>
     <div className="halfway"/><div className="center-circle"/><div className="center-dot"/>
     <div className="box box-left"/><div className="box box-right"/><div className="goal goal-left"/><div className="goal goal-right"/>
     <svg className="pitch-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

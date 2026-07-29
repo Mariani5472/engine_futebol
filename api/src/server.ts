@@ -25,6 +25,13 @@ app.get<{ Params: { id: string } }>("/matches/:id", async (request, reply) => {
   return match ? match.current() : reply.code(404).send({ message: "Match not found" });
 });
 
+app.get<{ Params: { id: string } }>("/matches/:id/report", async (request, reply) => {
+  const match=matches.get(request.params.id);
+  if(!match)return reply.code(404).send({message:"Match not found"});
+  const archive=match.archive();
+  return archive??reply.code(409).send({message:"Match is still running"});
+});
+
 app.get<{ Params: { id: string; goalEventId: string } }>("/matches/:id/replays/:goalEventId", async (request, reply) => {
   const match = matches.get(request.params.id);
   if (!match) return reply.code(404).send({ message: "Match not found" });

@@ -1,22 +1,26 @@
 import { Vector2 } from "../../../core/geometry/Vector2";
+import { Vector3 } from "../../../core/geometry/Vector3";
 import { BallMatchState, BallState } from "../../../core/movement/BallMatchState";
 import { MatchState } from "../../../core/movement/MatchState";
 import {
   Milliseconds, PlayerId, TeamId, PLAYER_COLLISION_RADIUS,
   type BallDeflectionEvent, type GoalEvent, type GoalkeeperSaveEvent,
-  type MatchEvent, type ReboundEvent, type ShotExecution, type ShotOutcomeEvent,
+  type CarryEndedEvent, type MatchEvent, type ReboundEvent, type ShotExecution, type ShotOutcomeEvent, type ShotResolvedEvent,
 } from "../../../domain";
 import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
 import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { BallMotionPlanner } from "./BallMotionPlanner";
 import { RestartSystem } from "../engine/RestartSystem";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
+import { AssistPolicy } from "../analytics/AssistPolicy";
 
 const GROUND_FRICTION = 0.82;
 const BOUNCE_RESTITUTION = 0.55;
 const GRAVITY = 9.81;
 const GROUND_THRESHOLD = 0.05;
 const MIN_SPEED = 0.1;
-const GOALKEEPER_BODY_REACH = .78;
+const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
+const ASSIST_POLICY = new AssistPolicy(ENGINE_CALIBRATION_PARAMETERS.assists);
 
 interface ShotInteractionResult {
   readonly events: MatchEvent[];
@@ -35,6 +39,7 @@ export class BallPhysicsSystem {
     }
 
     if (ball.owner !== null && ball.state === BallState.CONTROLLED) {
+      const carrier = ball.owner;
       const desired = ball.owner.position.add(ball.controlOffset);
       ball.position = desired;
       this.clampToPitch(ball, state);
@@ -46,6 +51,19 @@ export class BallPhysicsSystem {
       // Keep hasBall flag consistent if something cleared it.
       if (!ball.owner.hasBall) {
         ball.owner.hasBall = true;
+      }
+      if (carrier.activeCarry && carrier.position.distanceTo(carrier.activeCarry.destination) <= .35) {
+        const carry = carrier.activeCarry;
+        carrier.activeCarry = null;
+        const team = state.home.players.includes(carrier) ? state.home : state.away;
+        const event: CarryEndedEvent = {
+          id:`carry-end-${carrier.player.id}-${state.currentSecond.toFixed(2)}`, type:"CARRY_ENDED",
+          timestamp:(state.currentSecond*1000) as Milliseconds, period:this.period(state),
+          teamId:team.team.id as TeamId, playerId:carrier.player.id as PlayerId,
+          originX:carry.origin.x, originY:carry.origin.y, positionX:carrier.position.x, positionY:carrier.position.y,
+          reason:"TARGET_REACHED",
+        };
+        return [event];
       }
       return [];
     }
@@ -62,6 +80,11 @@ export class BallPhysicsSystem {
       }
       const restartEvents = this.resolveOutOfPlay(state);
       if (restartEvents) return [...interaction.events, ...restartEvents];
+      if(!ball.motion&&ball.activeShot?.lifecycle==="DEFLECTED") {
+        const deflected=ball.activeShot;
+        deflected.lifecycle="RESOLVED";deflected.outcome="BLOCKED";ball.activeShot=null;
+        interaction.events.push(this.shotResolvedEvent(state,deflected,ball.position,ball.height));
+      }
       this.clampToPitch(ball, state);
       ball.lastPhysicsDisplacement = ball.previousPosition.distanceTo(ball.position);
       this.syncVisual(ball);
@@ -92,6 +115,23 @@ export class BallPhysicsSystem {
     const top = ball.position.y <= 0 && ball.velocity.y < 0;
     const bottom = ball.position.y >= state.pitch.width && ball.velocity.y > 0;
     if (!left && !right && !top && !bottom) return null;
+
+    const interruptedShot = ball.activeShot;
+    const shotEvents: MatchEvent[] = [];
+    if (interruptedShot && interruptedShot.lifecycle !== "RESOLVED") {
+      interruptedShot.lifecycle = "RESOLVED";
+      interruptedShot.outcome = "OFF_TARGET";
+      shotEvents.push(this.shotOutcomeEvent(
+        state,
+        interruptedShot,
+        "SHOT_OFF_TARGET",
+        ball.position,
+        ball.height,
+        "OUT_BEFORE_GOAL_LINE",
+      ));
+      shotEvents.push(this.shotResolvedEvent(state,interruptedShot,ball.position,ball.height));
+      ball.activeShot = null;
+    }
 
     const lastTouchTeam = this.teamOfPlayer(state, ball.lastTouchedPlayerId);
     const period = state.currentSecond < 45 * 60 ? "FIRST_HALF" as const : "SECOND_HALF" as const;
@@ -135,7 +175,7 @@ export class BallPhysicsSystem {
     new RestartSystem().setup(state, event.type, awarded, restartPosition, state.currentSecond);
     ball.lastPhysicsDisplacement = 0;
     this.syncVisual(ball);
-    return [event];
+    return [...shotEvents, event];
   }
 
   private teamOfPlayer(state: MatchState, playerId: string | null): TeamMatchState | null {
@@ -185,12 +225,24 @@ export class BallPhysicsSystem {
     if (defender) return this.resolveDefenderBlock(state, shot, defender.player, defender.point, defender.height);
 
     const goalkeeper = this.goalkeeper(state, shot);
-    if (goalkeeper) {
+    if (goalkeeper && this.trajectoryTargetsGoal(shot)) {
       const contact = this.segmentContact(previousPosition, currentPosition, goalkeeper.position);
       const contactHeight = previousHeight + (currentHeight - previousHeight) * contact.t;
       const aerialReach = goalkeeper.player.attributes.goalkeeping.aerialReach / 20;
-      const horizontalReach = GOALKEEPER_BODY_REACH + aerialReach * .42;
-      const verticalReach = 1.45 + aerialReach * .95;
+      const jump = Number(goalkeeper.player.attributes.physical.jumpingReach ?? 10) / 20;
+      const reactionElapsed=Math.max(0,state.currentSecond-goalkeeper.goalkeeperReactionUntil);
+      // Reaction delay already prevents impossible early contact. Once the
+      // keeper has reacted, standing reach is immediately available and the
+      // remaining ten percent grows with the dive instead of shrinking the
+      // previously calibrated body envelope.
+      const commitment=.9+.1*Math.max(0,Math.min(1,reactionElapsed/.45));
+      const jumpArc=jump*(.18+Math.sin(Math.PI*Math.min(1,reactionElapsed/.7))*.24);
+      const diveBonus = goalkeeper.goalkeeperState === "DIVING" ? .24*commitment : 0;
+      const horizontalReach = SHOT_CALIBRATION.goalkeeperBodyReachMeters
+        + aerialReach * SHOT_CALIBRATION.goalkeeperAerialReachScaleMeters*commitment
+        + diveBonus;
+      const verticalReach = 1.35 + aerialReach * .9 + jumpArc
+        + (goalkeeper.goalkeeperState === "DIVING" ? .12 : 0);
       const reacted = state.currentSecond + 1e-9 >= goalkeeper.goalkeeperReactionUntil
         && goalkeeper.goalkeeperState !== "SET";
       if (reacted && contact.distance <= horizontalReach && contactHeight <= verticalReach) {
@@ -232,12 +284,18 @@ export class BallPhysicsSystem {
     let best: { player: PlayerMatchState; point: Vector2; height: number; t: number } | null = null;
     for (const player of defending.players) {
       if (player.player.id === shot.goalkeeperId) continue;
+      if (player.player.id === shot.lastInteractionPlayerId) continue;
       const contact = this.segmentContact(from, to, player.position);
       const height = fromHeight + (toHeight - fromHeight) * contact.t;
       // Physical contact volume is body radius + ball radius. The former
       // +0.24 envelope turned near misses into blocks and collapsed the shot
       // funnel before the goal/goalkeeper interaction.
-      if (contact.distance > PLAYER_COLLISION_RADIUS + shot.goalFrame.ballRadius || height > 1.85) continue;
+      const jumping = Number(player.player.attributes.physical.jumpingReach ?? 10) / 20;
+      const heading = Number(player.player.attributes.technical.heading ?? 10) / 20;
+      const verticalReach = 1.15 + jumping * .75 + heading * .2;
+      const bracedRadius = PLAYER_COLLISION_RADIUS + shot.goalFrame.ballRadius
+        + (player.bodyState === "BALANCED" ? .04 : 0);
+      if (contact.distance > bracedRadius || height > verticalReach) continue;
       if (!best || contact.t < best.t) best = { player, point: contact.point, height, t: contact.t };
     }
     return best;
@@ -250,20 +308,34 @@ export class BallPhysicsSystem {
     point: Vector2,
     height: number,
   ): ShotInteractionResult {
-    shot.lifecycle = "RESOLVED";
-    shot.outcome = "BLOCKED";
+    shot.lifecycle = "DEFLECTED";
+    shot.outcome = null;
     shot.lastInteractionPlayerId = defender.player.id;
     shot.deflectionCount++;
     state.ball.noteTouch(defender.player.id);
-    const attackDirection = Math.sign(shot.initialVelocity.x) || 1;
-    const side = point.y <= state.pitch.width / 2 ? -1 : 1;
-    const target = point.add(new Vector2(-attackDirection * 5, side * 4));
+    state.ball.noteAssistIntervention("DEFENDER_DEFLECTION");
+    const incoming = state.ball.velocity.magnitude() > .01
+      ? state.ball.velocity.normalize()
+      : new Vector2(Math.sign(shot.initialVelocity.x) || 1, 0);
+    const contactNormalRaw = point.subtract(defender.position);
+    const contactNormal = contactNormalRaw.magnitude() > .01
+      ? contactNormalRaw.normalize()
+      : incoming.multiply(-1);
+    const reflected = incoming.subtract(contactNormal.multiply(2 * incoming.dot(contactNormal))).normalize();
+    const target = point.add(reflected.multiply(12));
+    shot.actualTarget=new Vector3(target.x,target.y,Math.max(0,height*.35));
     const oldTarget = state.ball.motion?.target ?? point;
     BallMotionPlanner.start(state.ball, {
       kind: "DEFLECTION", origin: point, target, speed: Math.max(7, state.ball.velocity.magnitude() * .42),
       startHeight: height, targetHeight: 0, peakHeight: Math.min(.5, height * .25),
     });
-    state.ball.activeShot = null;
+    state.ball.activeShot = shot;
+    const goalkeeper=this.goalkeeper(state,shot);
+    if(goalkeeper) {
+      goalkeeper.goalkeeperInterceptionTarget=null;
+      goalkeeper.goalkeeperInterceptionHeight=null;
+      goalkeeper.goalkeeperState="SET";
+    }
     const outcome = this.shotOutcomeEvent(state, shot, "SHOT_BLOCKED", point, height, "BLOCKED");
     const deflection = this.deflectionEvent(state, shot, defender.player.id, point, height, oldTarget, target);
     const rebound = this.reboundEvent(state, shot, defender.player.id, point, "DEFENDER");
@@ -279,13 +351,15 @@ export class BallPhysicsSystem {
   ): ShotInteractionResult {
     const handling = goalkeeper.player.attributes.goalkeeping.handling / 20;
     const speed = state.ball.velocity.magnitude();
-    const caught = handling >= .62 && speed <= 25 && height <= 1.75
+    const caught = handling >= .62 && speed <= SHOT_CALIBRATION.goalkeeperCatchSpeedMetersPerSecond && height <= 1.75
       && goalkeeper.position.distanceTo(point) <= 1.05;
     shot.lifecycle = "RESOLVED";
     shot.outcome = caught ? "SAVED_CAUGHT" : "SAVED_PARRIED";
     shot.lastInteractionPlayerId = goalkeeper.player.id;
     state.ball.noteTouch(goalkeeper.player.id);
-    const onTarget = this.shotOutcomeEvent(state, shot, "SHOT_ON_TARGET", point, height, "SAVED");
+    state.ball.noteAssistIntervention(caught ? "CONTROL_CHANGE" : "GOALKEEPER_PARRY");
+    const onTarget = this.trajectoryTargetsGoal(shot)
+      ? this.shotOutcomeEvent(state, shot, "SHOT_ON_TARGET", point, height, "SAVED") : null;
     const save: GoalkeeperSaveEvent = {
       id: `${shot.id}-save`, type: "GOALKEEPER_SAVE", shotId: shot.id,
       timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
@@ -302,6 +376,7 @@ export class BallPhysicsSystem {
       goalkeeper.velocity = Vector2.zero();
       goalkeeper.hasBall = true;
       goalkeeper.goalkeeperState = "CATCHING";
+      goalkeeper.goalkeeperStateUntil = state.currentSecond + .8;
       state.ball.position = point;
       state.ball.height = 0;
       state.ball.velocity = Vector2.zero();
@@ -309,14 +384,20 @@ export class BallPhysicsSystem {
       state.ball.activeShot = null;
       state.ball.acquirePossession(goalkeeper, "GOALKEEPER_SAVE", state.currentSecond);
       state.ball.state = BallState.CONTROLLED;
-      return { events: [onTarget, save], stopPhysics: true };
+      return { events: [...(onTarget?[onTarget]:[]), save, this.shotResolvedEvent(state,shot,point,height)], stopPhysics: true };
     }
 
     goalkeeper.goalkeeperState = "PARRYING";
+    goalkeeper.goalkeeperStateUntil = state.currentSecond + .55;
     shot.deflectionCount++;
     const attackDirection = Math.sign(shot.initialVelocity.x) || 1;
     const side = point.y <= state.pitch.width / 2 ? -1 : 1;
-    const target = point.add(new Vector2(-attackDirection * 5.5, side * 6));
+    const goalCentreY = (shot.goalFrame.leftY + shot.goalFrame.rightY) / 2;
+    const lateralFromCentre = Math.abs(point.y - goalCentreY);
+    const parryAroundPost = lateralFromCentre >= .45 || height >= 1.35;
+    const target = point.add(parryAroundPost
+      ? new Vector2(attackDirection * 2.4, side * 8)
+      : new Vector2(-attackDirection * 5.5, side * 6));
     const oldTarget = state.ball.motion?.target ?? point;
     BallMotionPlanner.start(state.ball, {
       kind: "DEFLECTION", origin: point, target, speed: Math.max(8, speed * .38),
@@ -325,7 +406,7 @@ export class BallPhysicsSystem {
     state.ball.activeShot = null;
     const deflection = this.deflectionEvent(state, shot, goalkeeper.player.id, point, height, oldTarget, target);
     const rebound = this.reboundEvent(state, shot, goalkeeper.player.id, point, "GOALKEEPER");
-    return { events: [onTarget, save, deflection, rebound], stopPhysics: false };
+    return { events: [...(onTarget?[onTarget]:[]), save, deflection, rebound, this.shotResolvedEvent(state,shot,point,height)], stopPhysics: false };
   }
 
   private resolveGoalPlane(
@@ -345,6 +426,7 @@ export class BallPhysicsSystem {
     if (hitsPost || hitsCrossbar) {
       shot.lifecycle = "RESOLVED";
       shot.outcome = hitsPost ? "POST" : "CROSSBAR";
+      state.ball.noteAssistIntervention("WOODWORK");
       const attackDirection = Math.sign(shot.initialVelocity.x) || 1;
       const side = point.y <= state.pitch.width / 2 ? -1 : 1;
       const target = point.add(new Vector2(-attackDirection * 7, hitsPost ? -side * 3 : side * 1.5));
@@ -357,7 +439,7 @@ export class BallPhysicsSystem {
       const woodwork = this.shotOutcomeEvent(state, shot, "WOODWORK", point, height, shot.outcome);
       const deflection = this.deflectionEvent(state, shot, null, point, height, oldTarget, target);
       const rebound = this.reboundEvent(state, shot, shot.shooterId, point, "WOODWORK");
-      return { events: [woodwork, deflection, rebound], stopPhysics: false };
+      return { events: [woodwork, deflection, rebound, this.shotResolvedEvent(state,shot,point,height)], stopPhysics: false };
     }
 
     if (!withinWidth || !withinHeight) {
@@ -365,7 +447,7 @@ export class BallPhysicsSystem {
       shot.outcome = "OFF_TARGET";
       state.ball.activeShot = null;
       return {
-        events: [this.shotOutcomeEvent(state, shot, "SHOT_OFF_TARGET", point, height, "OFF_TARGET")],
+        events: [this.shotOutcomeEvent(state, shot, "SHOT_OFF_TARGET", point, height, "OFF_TARGET"),this.shotResolvedEvent(state,shot,point,height)],
         stopPhysics: false,
       };
     }
@@ -386,13 +468,11 @@ export class BallPhysicsSystem {
     state.ball.activeShot = null;
     state.ball.state = BallState.FREE;
     const goalId = `goal-${shot.shooterId}-${state.currentSecond.toFixed(2)}`;
-    const lastPass=state.ball.lastCompletedPass;
-    const assistId=lastPass
-      && lastPass.receiverId===shot.shooterId
-      && lastPass.passerId!==shot.shooterId
-      && state.currentSecond-lastPass.completedAtSecond<=10
-        ? lastPass.passerId as PlayerId
-        : null;
+    const assistId = ASSIST_POLICY.resolve(
+      state.ball.lastCompletedPass,
+      shot.shooterId,
+      state.currentSecond,
+    ) as PlayerId | null;
     state.pendingGoalRestart = {
       concedingTeamId: conceding.team.id,
       executeAt: state.currentSecond + 2.5,
@@ -404,7 +484,7 @@ export class BallPhysicsSystem {
       period: this.period(state), teamId: shot.teamId as TeamId,
       scorerId: shot.shooterId as PlayerId, assistId,
     };
-    return { events: [onTarget, goal], stopPhysics: true };
+    return { events: [onTarget, goal, this.shotResolvedEvent(state,shot,point,height)], stopPhysics: true };
   }
 
   private shotOutcomeEvent(
@@ -420,6 +500,28 @@ export class BallPhysicsSystem {
       timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
       teamId: shot.teamId as TeamId, playerId: shot.shooterId as PlayerId,
       positionX: point.x, positionY: point.y, height, outcome,
+    };
+  }
+
+  private shotResolvedEvent(state:MatchState,shot:ShotExecution,point:Vector2,height:number):ShotResolvedEvent {
+    return {
+      id:`${shot.id}-resolved`,type:"SHOT_RESOLVED",shotId:shot.id,
+      timestamp:(state.currentSecond*1000) as Milliseconds,period:this.period(state),
+      teamId:shot.teamId as TeamId,playerId:shot.shooterId as PlayerId,
+      originX:shot.origin.x,originY:shot.origin.y,
+      intendedTargetY:shot.intendedTarget.y,intendedTargetZ:shot.intendedTarget.z,
+      actualTargetY:shot.actualTarget.y,actualTargetZ:shot.actualTarget.z,
+      initialSpeed:shot.speed,
+      executionError:Math.hypot(shot.actualTarget.y-shot.intendedTarget.y,shot.actualTarget.z-shot.intendedTarget.z),
+      goalkeeperId:shot.goalkeeperId as PlayerId|null,
+      goalkeeperInitialX:shot.goalkeeperInitialPosition?.x??null,
+      goalkeeperInitialY:shot.goalkeeperInitialPosition?.y??null,
+      goalkeeperDecision:shot.goalkeeperDecision,
+      goalkeeperReactionTime:shot.goalkeeperReactionTime,
+      interceptionX:shot.lastInteractionPlayerId?point.x:null,
+      interceptionY:shot.lastInteractionPlayerId?point.y:null,
+      interceptionHeight:shot.lastInteractionPlayerId?height:null,
+      finalOutcome:shot.outcome??"UNKNOWN",
     };
   }
 
@@ -461,6 +563,12 @@ export class BallPhysicsSystem {
     if (!shot.goalkeeperId) return null;
     return [...state.home.players, ...state.away.players]
       .find(player => player.player.id === shot.goalkeeperId) ?? null;
+  }
+
+  private trajectoryTargetsGoal(shot:ShotExecution):boolean {
+    const frame=shot.goalFrame,target=shot.actualTarget;
+    return target.y>frame.leftY+frame.ballRadius&&target.y<frame.rightY-frame.ballRadius
+      && target.z>=frame.bottomZ&&target.z<frame.topZ-frame.ballRadius;
   }
 
   private segmentContact(from: Vector2, to: Vector2, point: Vector2): { point: Vector2; distance: number; t: number } {

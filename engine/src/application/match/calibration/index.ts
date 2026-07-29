@@ -15,11 +15,14 @@ export type {
   MetricComparison,
 } from "./CalibrationReport";
 
-export { CalibrationRunner } from "./CalibrationRunner";
+export { CalibrationRunner, averageShotOutcomes, calibrationDistribution } from "./CalibrationRunner";
 export type {
   CalibrationRunOptions,
   CalibrationBatchResult,
   MatchSample,
+  ShotOutcomeSample,
+  AverageShotOutcomes,
+  CalibrationDistribution,
 } from "./CalibrationRunner";
 
 export {

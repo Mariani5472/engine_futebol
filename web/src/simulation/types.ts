@@ -14,14 +14,16 @@ export interface MatchFeedEvent {
 }
 export interface MatchTimelineEntry {
   readonly eventId:string; readonly minute:number; readonly type:string;
+  readonly stoppageTime?:number;
   readonly teamId?:string; readonly primaryPlayerId?:string; readonly secondaryPlayerId?:string;
   readonly label:string; readonly replayAvailable:boolean;
 }
 export interface ReplayFrame {
   readonly timestamp:number;
-  readonly ball:{readonly x:number;readonly y:number;readonly height:number};
-  readonly players:readonly {readonly id:string;readonly teamId:string;readonly x:number;readonly y:number;readonly facingX:number;readonly facingY:number;readonly action:string|null}[];
+  readonly ball:{readonly x:number;readonly y:number;readonly height:number;readonly velocityX:number;readonly velocityY:number;readonly motionKind:string|null};
+  readonly players:readonly {readonly id:string;readonly teamId:string;readonly x:number;readonly y:number;readonly velocityX:number;readonly velocityY:number;readonly facingX:number;readonly facingY:number;readonly bodyState:string;readonly goalkeeperState:string|null;readonly targetX:number;readonly targetY:number;readonly action:string|null}[];
   readonly events:readonly string[];
+  readonly camera:{readonly centerX:number;readonly centerY:number;readonly zoom:number};
 }
 export interface GoalReplay { readonly goalEventId:string; readonly speed:1; readonly frames:readonly ReplayFrame[] }
 export interface PlayerSnapshot extends Point {
@@ -38,6 +40,8 @@ export interface PlayerSnapshot extends Point {
   readonly role?: string;
   readonly goalkeeperState?: string|null;
   readonly goalkeeperInterceptionTarget?: Point|null;
+  readonly goalkeeperInterceptionHeight?: number|null;
+  readonly animationState?:string;
 }
 export interface TeamTacticalDiagnostics {
   readonly averageLineHeight: { readonly defence:number; readonly midfield:number; readonly attack:number };
@@ -81,6 +85,8 @@ export interface MatchSnapshot {
   readonly timeline?:readonly MatchTimelineEntry[];
   readonly replayGoalIds?:readonly string[];
   readonly analytics?:unknown|null;
+  readonly decisionTrace?:readonly {readonly playerId:string;readonly decisionType:string|number;readonly utility:number;readonly objective:string;readonly targetId?:string;readonly selected:boolean;readonly rejectionReasons:readonly string[];readonly components?:Readonly<Record<string,number>>}[];
+  readonly replayCamera?:{readonly centerX:number;readonly centerY:number;readonly zoom:number};
 }
 
 export function interpolatePoint(previous: Point, current: Point, alpha: number): Point {

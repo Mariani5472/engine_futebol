@@ -40,7 +40,6 @@ import { MatchMetricsCollector } from "../metrics/MatchMetricsCollector";
 import { MatchMetrics } from "../metrics/MatchMetrics";
 import { AttackFunnelCollector } from "../diagnostics/AttackFunnelCollector";
 import { MatchInitializer } from "./MatchInitializer";
-import { KickoffSystem } from "./KickoffSystem";
 import { GoalkeeperSystem } from "../goalkeeper/GoalkeeperSystem";
 import { RestartSystem } from "./RestartSystem";
 import { SimulationConfig } from "./SimulationConfig";
@@ -52,12 +51,15 @@ import { OffensiveFunnelCollector, type MatchOffensiveFunnel } from "../diagnost
 import { MatchEventStore, type EventDerivedMatchReport, type MatchTimelineEntry, type StoredMatchEvent } from "../analytics/MatchEventStore";
 import { GoalReplayRecorder, type GoalReplay } from "../replay/GoalReplayRecorder";
 import { PlayerId, TeamId } from "../../../domain";
+import { DecisionDebug, type DecisionDebugEntry } from "../decision/DecisionDebug";
 
 const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
 const FATIGUE_RATE = 0.008;
 const POSSESSION_DECISION_INTERVAL_SECONDS = 1;
 const OFF_BALL_DECISION_INTERVAL_SECONDS = 2;
+/** Perception/cognition run at 5 Hz; locomotion and physics remain at 20 Hz. */
+const COGNITIVE_UPDATE_INTERVAL_TICKS = 4;
 
 export interface MatchResult {
   readonly homeTeamId: string;
@@ -91,6 +93,7 @@ export interface IncrementalMatchFrame {
   readonly offensiveFunnel: MatchOffensiveFunnel;
   readonly timeline: readonly MatchTimelineEntry[];
   readonly goalReplays: readonly GoalReplay[];
+  readonly decisionTrace:readonly DecisionDebugEntry[];
 }
 
 export class MatchEngine {
@@ -129,13 +132,16 @@ export class MatchEngine {
       new PredictionSystem()
     );
     const worldAwarenessSystem = new WorldAwarenessSystem(config.pitch.length);
+    const decisionDebug=new DecisionDebug({maxEntries:500});
+    if(config.debugDecisions)decisionDebug.enable();
     const possessionDecisionSystem = new PossessionDecisionSystem(
       createPossessionEvaluators(),
       undefined,
       undefined,
       undefined,
       undefined,
-      config.pitch.length
+      config.pitch.length,
+      decisionDebug,
     );
     const offBallDecisionSystem = new OffBallDecisionSystem(
       createOffBallEvaluators(),
@@ -152,7 +158,6 @@ export class MatchEngine {
     const collectivePhaseSystem = new CollectivePhaseSystem();
     const possessionPredictionSystem = new PossessionPredictionSystem();
     const collectiveCoordination = new CollectiveCoordinationSystem();
-    const kickoffSystem = new KickoffSystem();
     const goalkeeperSystem = new GoalkeeperSystem();
     const restartSystem = new RestartSystem();
     const teamBehaviour = new TeamBehaviourSystem();
@@ -191,7 +196,7 @@ export class MatchEngine {
         allEvents.push(secondHalfStarted);
         frameEvents.push(secondHalfStarted);
         this.swapAttackingDirections(state);
-        kickoffSystem.setup(state, state.away, state.currentSecond);
+        restartSystem.setupKickoff(state, state.away, state.currentSecond);
       }
 
       const beforeBallPosition = state.ball.position;
@@ -201,7 +206,7 @@ export class MatchEngine {
         perceptionSystem, cognitiveSystem, worldAwarenessSystem,
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
-        collectivePhaseSystem, possessionPredictionSystem, collectiveCoordination, kickoffSystem, restartSystem, goalkeeperSystem, teamBehaviour, movementSystem, possessionSystem,
+        collectivePhaseSystem, possessionPredictionSystem, collectiveCoordination, restartSystem, goalkeeperSystem, teamBehaviour, movementSystem, possessionSystem,
         tick, period, metrics, offensiveFunnel, attackFunnel
       );
 
@@ -227,8 +232,9 @@ export class MatchEngine {
       const acquisitions = state.ball.drainPossessionAcquisitions();
       const passResolutions = state.ball.drainPassResolutions();
       const passEvents = passResolutions.map(resolution => this.makePassResolutionEvent(resolution, state, period));
-      allEvents.push(...passEvents);
-      frameEvents.push(...passEvents);
+      const possessionEvents = acquisitions.map(acquisition => this.makePossessionChangedEvent(acquisition, state, period));
+      allEvents.push(...passEvents, ...possessionEvents);
+      frameEvents.push(...passEvents, ...possessionEvents);
       for (const resolution of passResolutions) offensiveFunnel.onPassResolution(resolution, state);
       offensiveFunnel.onAcquisitions(acquisitions, state);
       offensiveFunnel.sample(state);
@@ -274,7 +280,7 @@ export class MatchEngine {
           timeline: eventStore.timeline(replayGoalIds),
           goalReplays,
         };
-        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics, offensiveFunnel: offensiveFunnel.snapshot(), timeline: finalResult.timeline, goalReplays };
+        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics, offensiveFunnel: offensiveFunnel.snapshot(), timeline: finalResult.timeline, goalReplays, decisionTrace:decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1) };
         return finalResult;
       }
 
@@ -288,6 +294,7 @@ export class MatchEngine {
         offensiveFunnel: offensiveFunnel.snapshot(),
         timeline: eventStore.timeline(new Set(replayRecorder.replays().map(replay => replay.goalEventId))),
         goalReplays: replayRecorder.replays(),
+        decisionTrace:decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1),
       };
     }
 
@@ -334,7 +341,6 @@ export class MatchEngine {
     collectivePhaseSystem: CollectivePhaseSystem,
     possessionPredictionSystem: PossessionPredictionSystem,
     collectiveCoordination: CollectiveCoordinationSystem,
-    kickoffSystem: KickoffSystem,
     restartSystem: RestartSystem,
     goalkeeperSystem: GoalkeeperSystem,
     teamBehaviour: TeamBehaviourSystem,
@@ -351,30 +357,31 @@ export class MatchEngine {
     if (state.pendingGoalRestart && state.currentSecond + 1e-9 >= state.pendingGoalRestart.executeAt) {
       const conceding = state.pendingGoalRestart.concedingTeamId === state.home.team.id ? state.home : state.away;
       state.pendingGoalRestart = null;
-      kickoffSystem.setup(state, conceding, state.currentSecond);
+      restartSystem.setupKickoff(state, conceding, state.currentSecond);
     }
     const goalRestartWaiting = state.pendingGoalRestart !== null;
     const restartWaiting = restartSystem.update(state);
-    const kickoffWaiting = kickoffSystem.update(state) || goalRestartWaiting || restartWaiting;
+    const kickoffWaiting = goalRestartWaiting || restartWaiting;
 
     for (const player of players) {
       recoverIdleActionState(player, deltaTime);
     }
 
-    const perceptions = perceptionSystem.update(state);
+    if (tick % COGNITIVE_UPDATE_INTERVAL_TICKS === 0) {
+      const perceptions = perceptionSystem.update(state);
+      for (const player of players) {
+        const awareness = awarenessMap.get(player.player.id);
+        const perception = perceptions.get(player.player.id);
+        if (!awareness || !perception) continue;
 
-    for (const player of players) {
-      const awareness = awarenessMap.get(player.player.id);
-      const perception = perceptions.get(player.player.id);
-      if (!awareness || !perception) continue;
-
-      cognitiveSystem.update({
-        player,
-        awareness,
-        perception,
-        deltaTime,
-        tick
-      } satisfies CognitiveContext);
+        cognitiveSystem.update({
+          player,
+          awareness,
+          perception,
+          deltaTime: deltaTime * COGNITIVE_UPDATE_INTERVAL_TICKS,
+          tick
+        } satisfies CognitiveContext);
+      }
     }
 
     const executingCandidates: ActionExecution[] = [];
@@ -492,18 +499,15 @@ export class MatchEngine {
     teamBehaviour.update(state);
     collectiveCoordination.update(state);
     goalkeeperSystem.update(state);
-    kickoffSystem.enforceWaitingPositions(state);
     restartSystem.enforceWaitingPositions(state);
     movementSystem.update(state, deltaTime);
     // Movement targets can be recalculated during the preparation window. Clamp
     // once more before publishing the frame so no opponent enters the circle.
-    kickoffSystem.enforceWaitingPositions(state);
     restartSystem.enforceWaitingPositions(state);
     // The authoritative ball follows the player's position from this same tick,
     // avoiding a one-frame correction on the next update.
     events.push(...ballPhysics.update(state, deltaTime));
     possessionSystem.update(state);
-    kickoffSystem.update(state);
     restartSystem.update(state);
     this.syncPossessionSide(state);
     possessionPredictionSystem.update(state);
@@ -632,6 +636,23 @@ export class MatchEngine {
       receiverId: resolution.intendedReceiverId as PlayerId,
       controllingPlayerId: resolution.controllingPlayerId as PlayerId,
       forwardGain: resolution.realForwardGain,
+    };
+  }
+
+  private makePossessionChangedEvent(
+    acquisition: PossessionAcquisitionRecord,
+    state: MatchState,
+    period: MatchPeriod,
+  ): MatchEvent {
+    const player = this.allPlayers(state).find(candidate=>candidate.player.id===acquisition.playerId);
+    const team = player && state.home.players.includes(player) ? state.home : state.away;
+    return {
+      id:`possession-${acquisition.playerId}-${acquisition.matchSecond.toFixed(2)}`,
+      type:"POSSESSION_CHANGED", timestamp:(acquisition.matchSecond*1000) as Milliseconds,
+      period, teamId:team.team.id as TeamId, playerId:acquisition.playerId as PlayerId,
+      previousPlayerId:acquisition.previousPlayerId as PlayerId|null, reason:acquisition.reason,
+      positionX:acquisition.ballPosition.x, positionY:acquisition.ballPosition.y,
+      ballSpeed:acquisition.ballSpeed,
     };
   }
 

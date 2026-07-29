@@ -21,6 +21,14 @@ export class PossessionSystem {
   public update(state: MatchState): void {
     const ball = state.ball;
 
+    // A shot is resolved exclusively by BallPhysicsSystem. Letting the generic
+    // control contest acquire it here cancels BallMotion while leaving the
+    // ShotExecution alive, producing an orphan shot with no terminal outcome.
+    // Defender blocks and goalkeeper contacts are segment-based interactions;
+    // possession may be contested again only after a rebound/deflection clears
+    // activeShot.
+    if (ball.activeShot !== null) return;
+
     if (ball.state === BallState.CONTROLLED && ball.owner) {
       this.syncOwnerFlags(state, ball.owner);
       return;

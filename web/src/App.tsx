@@ -111,6 +111,7 @@ export function App() {
   const phaseLabels: Record<MatchSnapshot["phase"], string> = { READY:"Preparando saída", KICKOFF_PASS:"Passe inicial", RECEIVED:"Bola recebida", OPEN_PLAY:"Bola rolando", FIRST_HALF:"Primeiro tempo", SECOND_HALF:"Segundo tempo", FINISHED:"Encerrada" };
   const diagnostics=frame.current.tacticalDiagnostics?.home;
   const funnel=frame.current.offensiveFunnel;
+  const latestDecision=[...(frame.current.decisionTrace??[])].reverse().find(entry=>entry.selected);
 
   return <main className="min-h-screen px-4 py-5 md:px-8 md:py-7">
     <header className="mx-auto mb-5 flex max-w-7xl items-center justify-between">
@@ -125,7 +126,7 @@ export function App() {
     <section className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[1fr_270px]">
       <Pitch {...pitchFrame} layers={layers}/>
       <aside className="panel"><p className="eyebrow">Controles</p><h2>Partida remota</h2>
-        {goalReplay&&<div className="replay-controls"><div><b>Replay do gol</b><span>{(goalReplay.frames[replayFrameIndex]?.timestamp??0).toFixed(2)}s</span></div><button onClick={()=>setReplayPlaying(value=>!value)}>{replayPlaying?<Pause size={14}/>:<Play size={14}/>}</button><button onClick={closeGoalReplay}>Fechar</button></div>}
+        {goalReplay&&<div className="replay-controls"><div><b>Replay do gol</b><span>{(goalReplay.frames[replayFrameIndex]?.timestamp??0).toFixed(2)}s</span></div><button aria-label="Pausar ou reproduzir replay" onClick={()=>setReplayPlaying(value=>!value)}>{replayPlaying?<Pause size={14}/>:<Play size={14}/>}</button><button aria-label="Reiniciar replay" onClick={()=>{setReplayFrameIndex(0);setReplayPlaying(true)}}><RotateCcw size={14}/></button><button onClick={closeGoalReplay}>Voltar ao vivo</button></div>}
         <button className="primary" onClick={toggle} disabled={!connected}>{running?<Pause size={17}/>:<Play size={17}/>} {running?"Pausar":"Continuar"}</button>
         <div className="speed-controls" aria-label="Velocidade da partida">
           {([1,2,4,8,50] as const).map(value=><button key={value} className={speed===value?"speed-active":""} onClick={()=>changeSpeed(value)} disabled={!connected}>{value}x</button>)}
@@ -166,10 +167,15 @@ export function App() {
           <details className="funnel-details"><summary>Motivos de término/atrito</summary>{Object.keys(funnel.home.reasons).map(reason=><div className="funnel-row" key={reason}><span>{reasonLabel(reason)}</span><b>{funnel.home.reasons[reason]}</b><b>{funnel.away.reasons[reason]}</b></div>)}</details>
           <details className="funnel-details"><summary>Contextos de gol</summary>{Object.keys(funnel.home.goalContexts).map(context=><div className="funnel-row" key={context}><span>{contextLabel(context)}</span><b>{funnel.home.goalContexts[context]}</b><b>{funnel.away.goalContexts[context]}</b></div>)}</details>
         </>}
+        {latestDecision&&<details className="funnel-details"><summary>Ãšltima decisÃ£o explicada</summary>
+          <div className="metric"><span>Jogador / objetivo</span><b>{latestDecision.playerId} Â· {latestDecision.objective}</b></div>
+          <div className="metric"><span>AÃ§Ã£o / utilidade</span><b>{String(latestDecision.decisionType)} Â· {latestDecision.utility.toFixed(1)}</b></div>
+          {(frame.current.decisionTrace??[]).filter(entry=>!entry.selected).slice(-4).map((entry,index)=><div className="metric" key={`${entry.playerId}-${index}`}><span>Rejeitada {String(entry.decisionType)}</span><b>{entry.rejectionReasons.join(", ")}</b></div>)}
+        </details>}
         <div className="divider"/><p className="label">Eventos e posse</p>
         <div className="event-feed">{feed.length?feed.map((event,index)=><div className={`feed-event feed-${event.type.toLowerCase()}`} key={eventKey(event,index)}><b>{formatEventTime(event)}</b><span>{describeEvent(event)}</span></div>):<p className="hint">Aguardando eventos da partida.</p>}</div>
         <div className="divider"/><p className="label">Timeline</p>
-        <div className="match-timeline">{frame.current.timeline?.length?frame.current.timeline.slice(-20).reverse().map(entry=><button className="timeline-entry" key={entry.eventId} disabled={!entry.replayAvailable} onClick={()=>void openGoalReplay(entry.eventId)}><b>{entry.minute}'</b><span>{entry.label}</span>{entry.replayAvailable&&<i>replay</i>}</button>):<p className="hint">Aguardando eventos normalizados.</p>}</div>
+        <div className="match-timeline">{frame.current.timeline?.length?frame.current.timeline.slice(-20).reverse().map(entry=><button className="timeline-entry" key={entry.eventId} disabled={!entry.replayAvailable} onClick={()=>void openGoalReplay(entry.eventId)}><b>{entry.minute}'{entry.stoppageTime?`+${entry.stoppageTime}`:""}</b><span>{entry.label}</span>{entry.replayAvailable&&<i>replay</i>}</button>):<p className="hint">Aguardando eventos normalizados.</p>}</div>
         <p className="hint">A API produz snapshots a 20 Hz. O navegador somente interpola e desenha.</p>
       </aside>
     </section>
@@ -225,9 +231,11 @@ function replaySnapshot(replayFrame:GoalReplay["frames"][number]|undefined,live:
         hasBall:false,
         role:source?.role,
         tacticalResponsibility:source?.tacticalResponsibility,
-        goalkeeperState:source?.goalkeeperState,
+        targetPosition:{x:player.targetX/105*100,y:player.targetY/68*100},
+        goalkeeperState:player.goalkeeperState??source?.goalkeeperState,
       };
     }),
     ball:{ x:replayFrame.ball.x/105*100, y:replayFrame.ball.y/68*100, height:replayFrame.ball.height },
+    replayCamera:{centerX:replayFrame.camera.centerX/105*100,centerY:replayFrame.camera.centerY/68*100,zoom:replayFrame.camera.zoom},
   };
 }

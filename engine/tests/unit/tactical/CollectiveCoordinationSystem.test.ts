@@ -104,7 +104,12 @@ describe("CollectiveCoordinationSystem", () => {
     const coordination = new CollectiveCoordinationSystem();
     coordination.update(state);
     const runner = state.home.players.find(player => player.tacticalResponsibility === "THIRD_MAN_RUN")!;
+    const support = state.home.players.find(player => player.tacticalResponsibility === "THIRD_MAN_SUPPORT")!;
     const firstTarget = runner.targetPosition;
+
+    expect(support.thirdManOriginId).toBe(owner.player.id);
+    expect(support.thirdManNextTargetId).toBe(runner.player.id);
+    expect(support.thirdManAvailableUntil).toBeGreaterThan(state.currentSecond);
 
     state.currentSecond += .05;
     coordination.update(state);

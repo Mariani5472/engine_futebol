@@ -39,5 +39,5 @@ export function createMatchConfig(id: string, seed = 1): SimulationConfig {
   const sharedTactic=tactic();
   return { id:id as any, homeTeam:team("home"), awayTeam:team("away"), pitch:Pitch.createStandard(),
     referee:Referee.create({id:"ref-1" as any,name:"Referee",strictness:50,consistency:70,advantageTendency:40}),
-    seed,homeTactic:sharedTactic,awayTactic:sharedTactic,tickDeltaSeconds:.05,maxDurationSeconds:90*60 };
+    seed,homeTactic:sharedTactic,awayTactic:sharedTactic,tickDeltaSeconds:.05,maxDurationSeconds:90*60,debugDecisions:true };
 }

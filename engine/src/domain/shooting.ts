@@ -1,4 +1,5 @@
 import { Vector3 } from "../core/geometry/Vector3";
+import { Vector2 } from "../core/geometry/Vector2";
 import type { PreferredFoot } from "./player";
 
 export type ShotType = "PLACED" | "POWER" | "CHIP" | "VOLLEY" | "HEADER";
@@ -28,9 +29,10 @@ export interface ShotExecution {
   readonly teamId: string;
   readonly defendingTeamId: string;
   readonly goalkeeperId: string | null;
+  readonly goalkeeperInitialPosition:Vector2|null;
   readonly origin: Vector3;
   readonly intendedTarget: Vector3;
-  readonly actualTarget: Vector3;
+  actualTarget: Vector3;
   readonly initialVelocity: Vector3;
   readonly speed: number;
   readonly shotType: ShotType;
@@ -48,6 +50,8 @@ export interface ShotExecution {
   outcome: ShotFinalOutcome | null;
   deflectionCount: number;
   lastInteractionPlayerId: string | null;
+  goalkeeperDecision:string|null;
+  goalkeeperReactionTime:number|null;
 }
 
 export function createGoalFrame(

@@ -31,7 +31,8 @@ export class MovementSystem {
 
     const toTarget = player.targetPosition.subtract(player.position);
     const distance = toTarget.magnitude();
-    const maxSpeed = this.calculateMaxSpeed(player) * movementMultiplier;
+    const physicalMaximum = this.calculateMaxSpeed(player) * movementMultiplier;
+    const maxSpeed = Math.min(physicalMaximum, player.activeCarry?.desiredSpeed ?? physicalMaximum);
     const acceleration = this.calculateAcceleration(player) * movementMultiplier;
     const deceleration = this.calculateDeceleration(player) * movementMultiplier;
     const receiving = state.ball.motion?.intendedReceiverId === player.player.id;
@@ -130,6 +131,13 @@ export class MovementSystem {
     if (player.bodyState === "LEANING") return .7;
     if (player.bodyState === "BALANCED") return .9;
     if (player.activeAction?.phase === ActionExecutionPhase.RECOVERING) return .65;
+    if(player.currentRole.includes("GOALKEEPER")) {
+      if(player.goalkeeperState==="SET") return .18;
+      if(player.goalkeeperState==="DIVING") return 1.18;
+      if(player.goalkeeperState==="SMOTHERING") return .82;
+      if(player.goalkeeperState==="RECOVERING") return .45;
+      if(player.goalkeeperState==="RUSHING_OUT") return 1.08;
+    }
     return 1;
   }
 

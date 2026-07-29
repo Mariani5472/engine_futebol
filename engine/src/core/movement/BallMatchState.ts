@@ -1,6 +1,7 @@
 import { Vector2 } from "../geometry/Vector2";
 import { PlayerMatchState } from "./PlayerMatchState";
 import type { ShotExecution } from "../../domain/shooting";
+import type { AssistIntervention } from "../../application/match/analytics/AssistPolicy";
 
 export enum BallState {
   CONTROLLED,
@@ -30,6 +31,7 @@ export interface PossessionAcquisitionRecord {
   readonly type: "POSSESSION_CHANGED";
   readonly matchSecond: number;
   readonly playerId: string;
+  readonly previousPlayerId: string | null;
   readonly distanceToBall: number;
   readonly ballSpeed: number;
   readonly reason: PossessionAcquisitionReason;
@@ -59,6 +61,7 @@ export interface LastCompletedPass {
   readonly passerId:string;
   readonly receiverId:string;
   readonly completedAtSecond:number;
+  readonly interventions: AssistIntervention[];
 }
 
 export class BallMatchState {
@@ -109,9 +112,15 @@ export class BallMatchState {
   }
 
   public acquirePossession(player: PlayerMatchState, reason: PossessionAcquisitionReason, matchSecond: number): void {
+    const previousPlayerId = this.owner?.player.id ?? null;
+    if (this.lastCompletedPass && player.player.id !== this.lastCompletedPass.receiverId
+      && !this.lastCompletedPass.interventions.includes("CONTROL_CHANGE")) {
+      this.lastCompletedPass.interventions.push("CONTROL_CHANGE");
+    }
     if (this.owner !== player) {
       this.possessionAcquisitions.push({
         type: "POSSESSION_CHANGED", matchSecond, playerId: player.player.id,
+        previousPlayerId,
         distanceToBall: player.position.distanceTo(this.position),
         ballSpeed: Math.max(this.velocity.magnitude(), this.visualVelocity.magnitude()),
         reason, previousAction: player.lastActionType === undefined ? null : String(player.lastActionType),
@@ -130,8 +139,15 @@ export class BallMatchState {
 
   public noteTouch(playerId: string): void { this.lastTouchedPlayerId = playerId; }
 
+  public noteAssistIntervention(intervention: AssistIntervention): void {
+    if (this.lastCompletedPass) this.lastCompletedPass.interventions.push(intervention);
+  }
+
   public release(): void {
-    if (this.owner) this.owner.hasBall = false;
+    if (this.owner) {
+      this.owner.hasBall = false;
+      this.owner.activeCarry = null;
+    }
     this.owner = null;
     this.controlOffset = Vector2.zero();
   }
@@ -155,7 +171,12 @@ export class BallMatchState {
       realForwardGain: pending.realForwardGain,
     });
     if (controllingPlayerId === pending.intendedReceiverId) {
-      this.lastCompletedPass={passerId:pending.passerId,receiverId:controllingPlayerId,completedAtSecond:matchSecond};
+      this.lastCompletedPass={
+        passerId:pending.passerId,
+        receiverId:controllingPlayerId,
+        completedAtSecond:matchSecond,
+        interventions:[],
+      };
     }
     this.pendingPass = null;
   }

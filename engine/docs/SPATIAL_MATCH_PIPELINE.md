@@ -39,8 +39,8 @@ The authoritative ball is the only ball used by rules and snapshots. Rebounds an
 - `ShotAction`: intent and initial physical conditions only.
 - `BallPhysicsSystem`: ball travel, collision, goal plane and final shot outcome.
 - `GoalkeeperSystem`: positioning and movement intention, not save probability.
-- `RestartSystem`: throw-in, corner and goal-kick placement/restrictions.
-- `KickoffSystem`: kickoff/half-time kickoff constraints.
+- `RestartSystem`: authoritative facade for kickoff, throw-in, corner and goal-kick placement/restrictions.
+- `KickoffSystem`: internal kickoff choreography used through `RestartSystem`.
 - `MatchEventStore`: normalized event stream, possession intervals, timeline and reports.
 - `GoalReplayRecorder`: five-second pre-roll and three-second post-roll at 1x.
 - `MatchSession`: fixed-step public API; speed controls real-time scheduling only.
@@ -57,15 +57,15 @@ The authoritative ball is the only ball used by rules and snapshots. Rebounds an
 
 ## Migration status and known limitations
 
-Completed in this refactor: spatial shots; frame/post/crossbar outcomes; defender blocks; dynamic goalkeeper intent and reaction; catches/parries; live rebounds; centralized non-kickoff restarts; normalized event store; event-derived reports; timeline; recorded replay; 50x scheduling contract; API and web replay integration.
+Completed in this refactor: spatial shots; frame/post/crossbar outcomes; defender blocks that remain physical threats; dynamic goalkeeper intent, aerial target, timed reach and recovery; catches/parries; live rebounds; continuous typed carries; all restarts behind one facade; normalized possession/duel event store; complete event-derived reports; timeline; recorded replay with camera and controls; configurable causal assists; explicit score/time-aware expected-value decision layer with rejected alternatives; one-two, third-man, overlap/underlap and box combinations; aerial/body/first-touch possession prediction; 50x scheduling contract; API report/replay integration and web replay integration.
 
 Still deliberately open:
 
-- airborne collision volumes use simplified player capsules;
+- airborne collision uses time-expanded, attribute-scaled 2D reach volumes. Articulated 3D limbs are intentionally outside this 2D engine's fidelity boundary;
 - spin and aerodynamics are deterministic approximations, not fluid simulation;
-- assists use the latest physically completed pass to the scorer inside a 10-second window; competition-specific attribution rules remain configurable future work;
-- one-two state is intentionally short-lived and currently recognizes short progressive pass-and-move combinations; more complex third-man patterns remain future work;
-- collective probable-possession exposes receiver/defender arrival estimates, confidence and interception risk, but aerial-duel quality is still a simplified extension point;
+- assist policy is configurable for age, defender deflection, goalkeeper parry and woodwork; it intentionally rejects intervening controlled possession;
+- a future coach-authoring language may compose the implemented one-two, third-man, overlap, underlap and box-occupation primitives; it is not required for their runtime behaviour;
+- collective probable-possession includes ETA, body orientation, incoming speed, first touch and aerial reach, but does not simulate articulated jumping contacts;
 - goal-net deformation and replay camera direction are presentation concerns and are not simulated.
 
 These limitations must not be hidden by visual animation or random score correction.

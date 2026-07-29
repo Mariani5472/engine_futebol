@@ -28,6 +28,15 @@ const SHOT_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.shot;
 export class ShotAction {
   public execute(context: ActionContext): ActionResult {
     const { player, match, random, matchSecond, pitch, teamSide, attackingDirection } = context;
+    const secondsIntoPeriod = matchSecond % (45 * 60);
+    if (45 * 60 - secondsIntoPeriod < 2.25) {
+      return {
+        actorId: player.player.id,
+        type: DecisionType.SHOT,
+        success: false,
+        events: [],
+      };
+    }
     const period = matchSecond < 45 * 60 ? "FIRST_HALF" as const : "SECOND_HALF" as const;
     const goal = attackingDirection === 1 ? pitch.geometry.rightGoal : pitch.geometry.leftGoal;
     const defending = teamSide === "HOME" ? match.away : match.home;
@@ -36,7 +45,7 @@ export class ShotAction {
     const pressure = this.pressureLevel(player, defending.players);
     const quality = this.executionQuality(player, pressure);
     const shotType = this.selectShotType(player, goalkeeper, goal.center.x, quality);
-    const intendedTarget = this.selectTarget(context, goalkeeper, shotType, goal.center.y, goal.width, goal.height);
+    const intendedTarget = this.selectTarget(context, goalkeeper, shotType, quality, goal.center.y, goal.width, goal.height);
     const actualTarget = this.applyExecutionError(context, intendedTarget, quality, shotType);
     const speed = this.initialSpeed(player, shotType, quality);
     const origin = new Vector3(player.position.x, player.position.y, .18);
@@ -72,6 +81,7 @@ export class ShotAction {
       teamId: attacking.team.id,
       defendingTeamId: defending.team.id,
       goalkeeperId: goalkeeper?.player.id ?? null,
+      goalkeeperInitialPosition:goalkeeper?.position??null,
       origin,
       intendedTarget,
       actualTarget,
@@ -92,6 +102,8 @@ export class ShotAction {
       outcome: null,
       deflectionCount: 0,
       lastInteractionPlayerId: null,
+      goalkeeperDecision:null,
+      goalkeeperReactionTime:null,
     };
 
     attacking.noteShotTaken(matchSecond, SHOT_CALIBRATION.cooldownSeconds);
@@ -177,19 +189,25 @@ export class ShotAction {
     context: ActionContext,
     goalkeeper: PlayerMatchState | null,
     shotType: ShotType,
+    quality: number,
     centreY: number,
     goalWidth: number,
     goalHeight: number,
   ): Vector3 {
     const keeperY = goalkeeper?.position.y ?? centreY;
+    const technique = context.player.player.attributes.technical.technique / 20;
     // Aim inside the frame rather than at the post itself. Execution error may
     // still produce a miss or woodwork, but a nominal high-quality target must
     // leave room for the complete ball to cross the plane.
-    const inset = 1.0;
+    const placement = Math.min(
+      goalWidth / 2 - shotTypeBallMargin(shotType),
+      SHOT_CALIBRATION.aimLateralBaseMeters
+        + technique * SHOT_CALIBRATION.aimTechniqueScaleMeters
+        + quality * SHOT_CALIBRATION.aimQualityScaleMeters,
+    );
     const targetY = keeperY <= centreY
-      ? centreY + goalWidth / 2 - inset
-      : centreY - goalWidth / 2 + inset;
-    const technique = context.player.player.attributes.technical.technique / 20;
+      ? centreY + placement
+      : centreY - placement;
     const targetZ = shotType === "CHIP"
       ? Math.min(goalHeight - .18, 1.55 + technique * .6)
       : shotType === "PLACED" ? .35 + technique * 1.05 : .55 + technique * .55;
@@ -203,15 +221,17 @@ export class ShotAction {
     quality: number,
     shotType: ShotType,
   ): Vector3 {
-    const baseError = shotType === "POWER" ? 2.15 : shotType === "CHIP" ? 1.5 : 1.2;
+    const baseError = shotType === "POWER"
+      ? SHOT_CALIBRATION.powerErrorMeters
+      : shotType === "CHIP" ? SHOT_CALIBRATION.chipErrorMeters : SHOT_CALIBRATION.placedErrorMeters;
     const errorScale = baseError * (1.08 - quality);
     // Triangular noise avoids a uniform wall of extreme misses and remains seeded.
     const lateralNoise = (context.random.nextFloat(-1, 1) + context.random.nextFloat(-1, 1)) / 2;
     const heightNoise = (context.random.nextFloat(-1, 1) + context.random.nextFloat(-1, 1)) / 2;
     return new Vector3(
       target.x,
-      target.y + lateralNoise * errorScale * 2.0,
-      Math.max(-.15, target.z + heightNoise * errorScale * .9),
+      target.y + lateralNoise * errorScale * SHOT_CALIBRATION.lateralErrorMultiplier,
+      Math.max(-.15, target.z + heightNoise * errorScale * SHOT_CALIBRATION.heightErrorMultiplier),
     );
   }
 
@@ -226,4 +246,8 @@ export class ShotAction {
     if (shooter.player.preferredFoot !== "BOTH") return shooter.player.preferredFoot;
     return targetY < centreY ? "RIGHT" : "LEFT";
   }
+}
+
+function shotTypeBallMargin(shotType: ShotType): number {
+  return shotType === "POWER" ? .55 : .70;
 }

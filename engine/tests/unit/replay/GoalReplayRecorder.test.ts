@@ -19,5 +19,8 @@ describe("GoalReplayRecorder", () => {
     expect(replay.speed).toBe(1);
     expect(replay.frames.length).toBeGreaterThanOrEqual(3);
     expect(replay.frames.some(frame => frame.events.includes("goal-1"))).toBe(true);
+    expect(replay.frames[0].camera.zoom).toBeGreaterThan(1);
+    expect(replay.frames[0].players[0].bodyState).toBeDefined();
+    expect(replay.frames[0].ball.velocityX).toBeDefined();
   });
 });

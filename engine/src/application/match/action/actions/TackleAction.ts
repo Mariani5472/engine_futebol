@@ -1,6 +1,6 @@
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import { BallState } from "../../../../core/movement/BallMatchState";
-import { FoulEvent, Milliseconds, PlayerId, TeamId } from "../../../../domain";
+import { FoulEvent, Milliseconds, PlayerId, TeamId, type TackleEvent } from "../../../../domain";
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
@@ -67,6 +67,7 @@ export class TackleAction {
 
     const tacklerTeam = isHomePlayer ? match.home : match.away;
     const victimTeam = isHomePlayer ? match.away : match.home;
+    const tacklerTeamId=tacklerTeam.team?.id??(isHomePlayer?"HOME":"AWAY");
 
     const foulOutcome = this.referee.evaluateTackle(
       player,
@@ -92,6 +93,7 @@ export class TackleAction {
         playerId: player.player.id as PlayerId,
       };
       events.push(foul);
+      events.push(this.tackleEvent(player, ballOwner, tacklerTeamId, matchSecond, period, false));
 
       return {
         actorId: player.player.id,
@@ -114,12 +116,28 @@ export class TackleAction {
       match.ball.acquirePossession(player, "TACKLE", matchSecond);
       match.ball.state = BallState.CONTROLLED;
     }
+    events.push(this.tackleEvent(player, ballOwner, tacklerTeamId, matchSecond, period, success && physicalContact));
 
     return {
       actorId: player.player.id,
       type: DecisionType.TACKLE,
       success: success && physicalContact,
       events,
+    };
+  }
+
+  private tackleEvent(
+    player:PlayerMatchState,
+    opponent:PlayerMatchState,
+    teamId:string,
+    second:number,
+    period:"FIRST_HALF"|"SECOND_HALF",
+    successful:boolean,
+  ):TackleEvent {
+    return {
+      id:`tackle-${player.player.id}-${second.toFixed(2)}`, type:"TACKLE",
+      timestamp:(second*1000) as Milliseconds, period, teamId:teamId as TeamId,
+      playerId:player.player.id as PlayerId, opponentId:opponent.player.id as PlayerId, successful,
     };
   }
 

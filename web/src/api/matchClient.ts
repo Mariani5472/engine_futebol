@@ -55,6 +55,7 @@ export function subscribeToMatch(
       timeline: wire.timeline,
       replayGoalIds: wire.replayGoalIds,
       analytics: wire.analytics,
+      decisionTrace:wire.decisionTrace,
       players: wire.players.map((player: any) => ({
         id: player.id,
         number: Number(player.id.match(/(\d+)$/)?.[1] ?? 0),
@@ -74,6 +75,8 @@ export function subscribeToMatch(
         tacticalResponsibility: player.tacticalResponsibility,
         occupiedChannel: player.occupiedChannel,
         goalkeeperState: player.goalkeeperState,
+        animationState:player.animationState,
+        goalkeeperInterceptionHeight: player.goalkeeperInterceptionHeight ?? null,
         goalkeeperInterceptionTarget: player.goalkeeperInterceptionTarget ? {
           x: player.goalkeeperInterceptionTarget.x / wire.pitch.length * 100,
           y: player.goalkeeperInterceptionTarget.y / wire.pitch.width * 100,

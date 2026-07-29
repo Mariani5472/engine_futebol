@@ -17,6 +17,8 @@ export interface DecisionDebugEntry {
   readonly reasons: readonly UtilityReason[];
   readonly components?: UtilityComponents;
   readonly hasBall: boolean;
+  readonly selected:boolean;
+  readonly rejectionReasons:readonly string[];
 }
 
 export interface DecisionDebugOptions {
@@ -82,7 +84,7 @@ export class DecisionDebug {
   public record(
     player: PlayerMatchState,
     decision: Decision,
-    meta: { tick: number; matchSecond: number },
+    meta: { tick: number; matchSecond: number; selected?:boolean; rejectionReasons?:readonly string[] },
   ): void {
     if (!this.enabled) return;
 
@@ -99,6 +101,8 @@ export class DecisionDebug {
       reasons,
       components: decision.components,
       hasBall: player.hasBall,
+      selected:meta.selected??true,
+      rejectionReasons:meta.rejectionReasons??[],
     };
 
     this.entries.push(entry);

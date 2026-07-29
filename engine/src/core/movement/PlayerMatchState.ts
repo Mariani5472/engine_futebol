@@ -31,12 +31,27 @@ export class PlayerMatchState {
   public goalkeeperState: "POSITIONING" | "SET" | "CLOSING_ANGLE" | "RUSHING_OUT" | "DIVING" | "SMOTHERING" | "PARRYING" | "CATCHING" | "RECOVERING" | "DISTRIBUTING" = "POSITIONING";
   public goalkeeperReactionUntil = 0;
   public goalkeeperInterceptionTarget: Vector2 | null = null;
+  public goalkeeperInterceptionHeight: number | null = null;
   public goalkeeperCommittedAt = 0;
+  public goalkeeperStateUntil = 0;
+  public goalkeeperDiveOrigin: Vector2 | null = null;
+  public activeCarry: {
+    readonly origin: Vector2;
+    readonly destination: Vector2;
+    readonly desiredSpeed: number;
+    readonly controlMode: "CLOSE" | "NORMAL" | "SPRINT";
+    readonly purpose: "PROGRESS" | "ESCAPE_PRESSURE" | "CREATE_ANGLE" | "ATTACK_SPACE" | "PROTECT_POSSESSION";
+    readonly startedAt: number;
+  } | null = null;
   /** Short-lived pass-and-move relationship used to create organic one-twos. */
   public oneTwoPartnerId: string | null = null;
   public oneTwoReturnTargetId: string | null = null;
   public oneTwoAvailableUntil = 0;
   public oneTwoRunTarget: Vector2 | null = null;
+  /** Two-stage collective combination: origin -> support -> runner. */
+  public thirdManOriginId: string | null = null;
+  public thirdManNextTargetId: string | null = null;
+  public thirdManAvailableUntil = 0;
 
   constructor(
     public readonly player: Player,

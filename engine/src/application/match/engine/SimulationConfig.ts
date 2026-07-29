@@ -17,4 +17,6 @@ export interface SimulationConfig extends MatchConfig {
   readonly tickDeltaSeconds?: number;
   /** Total simulated seconds. Default: 5400 (90 min). */
   readonly maxDurationSeconds?: number;
+  /** Retain complete candidate/rejection traces in incremental snapshots. */
+  readonly debugDecisions?:boolean;
 }

@@ -29,7 +29,7 @@ describe("MatchSession", () => {
 
   slowIt("finishes a regulation match after exactly 108,000 updates", () => {
     const session = MatchSession.create(config(90 * 60));
-    for (let update = 0; update < 108_000; update++) session.update(0.05);
+    for (let update = 0; update < 108_000; update++) session.advance(0.05);
 
     expect(session.isFinished()).toBe(true);
     expect(session.snapshot().sequence).toBe(108_000);
