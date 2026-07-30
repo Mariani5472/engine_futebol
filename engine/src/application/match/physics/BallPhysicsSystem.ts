@@ -367,6 +367,7 @@ export class BallPhysicsSystem {
       ? this.shotOutcomeEvent(state, shot, "SHOT_ON_TARGET", point, height, "SAVED") : null;
     const save: GoalkeeperSaveEvent = {
       id: `${shot.id}-save`, type: "GOALKEEPER_SAVE", shotId: shot.id,
+      actionId: shot.actionId,
       timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
       teamId: shot.defendingTeamId as TeamId,
       goalkeeperId: goalkeeper.player.id as PlayerId,
@@ -376,8 +377,10 @@ export class BallPhysicsSystem {
 
     if (caught) {
       for (const player of [...state.home.players, ...state.away.players]) player.hasBall = false;
-      goalkeeper.position = point;
-      goalkeeper.targetPosition = point;
+      if (!goalkeeper.scenarioMovementFrozen) {
+        goalkeeper.position = point;
+        goalkeeper.targetPosition = point;
+      }
       goalkeeper.velocity = Vector2.zero();
       goalkeeper.hasBall = true;
       goalkeeper.goalkeeperState = "CATCHING";
@@ -387,7 +390,7 @@ export class BallPhysicsSystem {
       state.ball.velocity = Vector2.zero();
       state.ball.motion = null;
       state.ball.activeShot = null;
-      state.ball.acquirePossession(goalkeeper, "GOALKEEPER_SAVE", state.currentSecond);
+      state.ball.acquirePossession(goalkeeper, "GOALKEEPER_SAVE", state.currentSecond, false, shot.actionId);
       state.ball.state = BallState.CONTROLLED;
       return { events: [...(onTarget?[onTarget]:[]), save, this.shotResolvedEvent(state,shot,point,height)], stopPhysics: true };
     }
@@ -486,6 +489,7 @@ export class BallPhysicsSystem {
     const onTarget = this.shotOutcomeEvent(state, shot, "SHOT_ON_TARGET", point, height, "GOAL");
     const goal: GoalEvent = {
       id: goalId, type: "GOAL", timestamp: (state.currentSecond * 1000) as Milliseconds,
+      actionId: shot.actionId,
       period: this.period(state), teamId: shot.teamId as TeamId,
       scorerId: shot.shooterId as PlayerId, assistId,
     };
@@ -502,6 +506,7 @@ export class BallPhysicsSystem {
   ): ShotOutcomeEvent {
     return {
       id: `${shot.id}-${type.toLowerCase()}`, type, shotId: shot.id,
+      actionId: shot.actionId,
       timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
       teamId: shot.teamId as TeamId, playerId: shot.shooterId as PlayerId,
       positionX: point.x, positionY: point.y, height, outcome,
@@ -511,6 +516,7 @@ export class BallPhysicsSystem {
   private shotResolvedEvent(state:MatchState,shot:ShotExecution,point:Vector2,height:number):ShotResolvedEvent {
     return {
       id:`${shot.id}-resolved`,type:"SHOT_RESOLVED",shotId:shot.id,
+      actionId:shot.actionId,
       timestamp:(state.currentSecond*1000) as Milliseconds,period:this.period(state),
       teamId:shot.teamId as TeamId,playerId:shot.shooterId as PlayerId,
       originX:shot.origin.x,originY:shot.origin.y,
@@ -541,6 +547,7 @@ export class BallPhysicsSystem {
   ): BallDeflectionEvent {
     return {
       id: `${shot.id}-deflection-${shot.deflectionCount}`, type: "BALL_DEFLECTION", shotId: shot.id,
+      actionId: shot.actionId,
       timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
       deflectorId: deflectorId as PlayerId | null,
       contactX: point.x, contactY: point.y, contactHeight: height,
@@ -558,6 +565,7 @@ export class BallPhysicsSystem {
   ): ReboundEvent {
     return {
       id: `${shot.id}-rebound-${source.toLowerCase()}`, type: "REBOUND", shotId: shot.id,
+      actionId: shot.actionId,
       timestamp: (state.currentSecond * 1000) as Milliseconds, period: this.period(state),
       teamId: shot.teamId as TeamId, playerId: playerId as PlayerId,
       positionX: point.x, positionY: point.y, source,

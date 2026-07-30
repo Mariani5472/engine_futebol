@@ -1,6 +1,7 @@
 import { Vector3 } from "../core/geometry/Vector3";
 import { Vector2 } from "../core/geometry/Vector2";
 import type { PreferredFoot } from "./player";
+import type { ActionId } from "./common";
 
 export type ShotType = "PLACED" | "POWER" | "CHIP" | "VOLLEY" | "HEADER";
 export type ShotLifecycle = "PREPARING" | "IN_FLIGHT" | "DEFLECTED" | "RESOLVED";
@@ -25,6 +26,7 @@ export interface GoalFrame {
 
 export interface ShotExecution {
   readonly id: string;
+  readonly actionId?: ActionId;
   readonly shooterId: string;
   readonly teamId: string;
   readonly defendingTeamId: string;

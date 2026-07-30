@@ -67,7 +67,7 @@ export class DribbleAction {
     // Keep CONTROLLED ownership glued during dribble.
     if (match.ball.owner === player || player.hasBall) {
       player.hasBall = true;
-      match.ball.acquirePossession(player, "DRIBBLE_RECOVERY", context.matchSecond);
+      match.ball.acquirePossession(player, "DRIBBLE_RECOVERY", context.matchSecond, false, context.actionId);
     }
     const event: CarryStartedEvent = {
       id: `carry-${player.player.id}-${context.matchSecond.toFixed(2)}`,

@@ -1,4 +1,6 @@
 import { MatchConfig, Tactic } from "../../../domain";
+import type { InstrumentationSelection } from "../instrumentation/TrainingInstrumentation";
+import type { MatchScenarioConfig } from "../scenario/MatchScenario";
 
 /**
  * Extended match configuration that includes team tactics.
@@ -19,4 +21,8 @@ export interface SimulationConfig extends MatchConfig {
   readonly maxDurationSeconds?: number;
   /** Retain complete candidate/rejection traces in incremental snapshots. */
   readonly debugDecisions?:boolean;
+  /** Observability only; profiles must never alter sporting behaviour. */
+  readonly instrumentation?: InstrumentationSelection;
+  /** Optional deterministic training/evaluation scenario. */
+  readonly scenario?: MatchScenarioConfig;
 }

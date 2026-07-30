@@ -161,4 +161,20 @@ describe("ActionFactory + ActionExecution — lifecycle integration", () => {
       passExecuteSpy.mockRestore();
     }
   });
+
+  it("assigns a unique deterministic identity to every accepted action", () => {
+    const { context, passDecision } = createContext(0);
+    const factory = new ActionFactory(new RefereeSystem(new SeededRandom(42)));
+
+    factory.execute(passDecision, context);
+    const first = context.player.activeAction!;
+    factory.execute(passDecision, { ...context, matchSecond: first.executeAt });
+    factory.execute(passDecision, { ...context, matchSecond: first.recoveryUntil });
+    factory.execute(passDecision, { ...context, matchSecond: first.recoveryUntil });
+    const second = context.player.activeAction!;
+
+    expect(first.actionId).toMatch(/^action:00000001:/);
+    expect(second.actionId).toMatch(/^action:00000002:/);
+    expect(second.actionId).not.toBe(first.actionId);
+  });
 });

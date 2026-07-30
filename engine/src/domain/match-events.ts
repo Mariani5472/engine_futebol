@@ -1,4 +1,4 @@
-import { Milliseconds, PlayerId, TeamId } from "./common";
+import { ActionId, Milliseconds, PlayerId, TeamId } from "./common";
 
 export type MatchPeriod = "FIRST_HALF" | "HALF_TIME" | "SECOND_HALF" | "FINISHED";
 
@@ -8,6 +8,8 @@ export type CardType = "YELLOW" | "RED";
 
 export interface BaseMatchEvent {
   readonly id: string;
+  /** Action that causally produced this event. Absent only for system events. */
+  readonly actionId?: ActionId;
   readonly timestamp: Milliseconds;
   readonly period: MatchPeriod;
 }

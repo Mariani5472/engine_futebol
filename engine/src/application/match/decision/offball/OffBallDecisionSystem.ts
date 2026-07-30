@@ -112,4 +112,15 @@ export class OffBallDecisionSystem {
 
     return best.decision;
   }
+
+  /** Legal evaluator-backed options exposed to a policy without selecting one. */
+  public availableDecisions(context: DecisionContext): readonly Decision[] {
+    const candidates = this.evaluators.flatMap(evaluator => evaluator.evaluate(context));
+    const ready = candidates.filter(() => ActionReadiness.canStartAction(context));
+    const valid = this.filter.filter(ready, context);
+    const safe = this.filter.filter([], context)[0];
+    return valid.some(decision => decision.type === safe.type)
+      ? valid
+      : [...valid, safe];
+  }
 }

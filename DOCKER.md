@@ -51,6 +51,31 @@ Para abrir um shell:
 docker compose run --rm engine /bin/sh
 ```
 
+## Primeiro PPO
+
+O profile `training` inclui Python, Gymnasium, PyTorch, Stable-Baselines3 e
+sb3-contrib. Ele não sobe junto com a aplicação normal:
+
+```bash
+docker compose --profile training build trainer
+docker compose run --rm trainer python python/train_ppo.py --timesteps 100000 --eval-seeds 20
+```
+
+Para validar o pipeline rapidamente antes de um treino longo:
+
+```bash
+docker compose run --rm trainer python python/train_ppo.py --timesteps 1024 --eval-seeds 2 --output artifacts/ppo-smoke
+```
+
+Antes de aumentar o número de workers:
+
+```bash
+docker compose run --rm trainer python python/benchmark_workers.py --scales 1,2,4,8
+```
+
+Modelo, manifesto e avaliação são gravados em `engine/artifacts`. O processo
+TypeScript usado por cada ambiente permanece dentro do container de treino.
+
 ## Persistencia
 
 As sessoes da API ainda ficam em memoria. Reiniciar o container encerra as

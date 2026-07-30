@@ -125,6 +125,7 @@ export class KickoffSystem {
   private resetShape(state: MatchState, team: TeamMatchState): void {
     const assignments = team.tactic.defensiveShape.assignments;
     team.players.forEach((player, index) => {
+      if (player.scenarioMovementFrozen) return;
       const anchor = assignments[index]?.defensiveAnchor;
       if (!anchor) return;
       const x = team.attackingDirection === 1 ? anchor.x : state.pitch.length - anchor.x;
@@ -139,7 +140,7 @@ export class KickoffSystem {
   private keepTeamInOwnHalf(state: MatchState, team: TeamMatchState, exception?: PlayerMatchState): void {
     const halfway = state.pitch.length / 2;
     for (const player of team.players) {
-      if (player === exception) continue;
+      if (player === exception || player.scenarioMovementFrozen) continue;
       const x = team.attackingDirection === 1
         ? Math.min(player.position.x, halfway - .5)
         : Math.max(player.position.x, halfway + .5);
@@ -151,6 +152,7 @@ export class KickoffSystem {
   private clearCentreCircle(state: MatchState, team: TeamMatchState): void {
     const centre = new Vector2(state.pitch.length / 2, state.pitch.width / 2);
     for (const player of team.players) {
+      if (player.scenarioMovementFrozen) continue;
       const offset = player.position.subtract(centre);
       if (offset.magnitude() >= OPPONENT_CLEARANCE) continue;
       const fallback = new Vector2(-team.attackingDirection, 0);

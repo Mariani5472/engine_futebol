@@ -126,6 +126,7 @@ export class RestartSystem {
   private keepMinimumDistance(state: MatchState, team: TeamMatchState, position: Vector2, minimum: number): void {
     const centre = new Vector2(state.pitch.length / 2, state.pitch.width / 2);
     for (const player of team.players) {
+      if (player.scenarioMovementFrozen) continue;
       const offset = player.position.subtract(position);
       if (offset.magnitude() >= minimum) continue;
       const direction = offset.magnitude() > .01 ? offset.normalize() : centre.subtract(position).normalize();
@@ -138,6 +139,7 @@ export class RestartSystem {
   private keepOutsidePenaltyArea(state: MatchState, opponents: TeamMatchState, restartX: number): void {
     const area = restartX < state.pitch.length / 2 ? state.pitch.geometry.penaltyAreaLeft : state.pitch.geometry.penaltyAreaRight;
     for (const player of opponents.players) {
+      if (player.scenarioMovementFrozen) continue;
       const inside = player.position.x >= area.x && player.position.x <= area.x + area.width
         && player.position.y >= area.y && player.position.y <= area.y + area.height;
       if (!inside) continue;
@@ -149,10 +151,12 @@ export class RestartSystem {
   }
 
   private selectTaker(type: RestartType, team: TeamMatchState, position: Vector2): PlayerMatchState {
+    const movable = team.players.filter(player => !player.scenarioMovementFrozen);
+    const candidates = movable.length > 0 ? movable : team.players;
     const preferred = type === "GOAL_KICK"
-      ? team.players.filter(player => player.currentRole.includes("GOALKEEPER"))
-      : team.players.filter(player => !player.currentRole.includes("GOALKEEPER"));
-    return (preferred.length ? preferred : team.players)
+      ? candidates.filter(player => player.currentRole.includes("GOALKEEPER"))
+      : candidates.filter(player => !player.currentRole.includes("GOALKEEPER"));
+    return (preferred.length ? preferred : candidates)
       .slice().sort((a, b) => a.position.distanceTo(position) - b.position.distanceTo(position))[0];
   }
 

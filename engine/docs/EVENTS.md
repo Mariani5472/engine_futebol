@@ -2,6 +2,16 @@
 
 Every normalized stored event contains `id`, `matchId`, `timestamp`, `matchMinute`, `type`, optional team/player/position fields, and `metadata`. IDs are deterministic within the event sequence.
 
+Events caused by an accepted physical action also contain `actionId`. One action may produce several events, but an event belongs to at most one action. Period, clock and other system events intentionally have no `actionId`.
+
+`MatchEventStore` is the authoritative journal and enforces idempotency by event ID:
+
+- appending the same event again is a no-op;
+- reusing an ID with different content is an invariant violation;
+- sequence numbers are assigned only to accepted unique events.
+
+All public football counts in `MatchResult.metrics` and `MatchResult.analytics` are projections of this journal. `MatchMetricsCollector` is retained only as a deprecated compatibility class and is not used by `MatchEngine` as a parallel source of statistics. Tactical spatial diagnostics remain sampled separately because they describe continuous state rather than count football events.
+
 Core causal events:
 
 | Event | Meaning |
@@ -30,3 +40,5 @@ Possession intervals are derived from physical ownership changes and closed by p
 The timeline is a presentation projection for goals, cards, saves, periods, substitutions, penalties and disallowed goals. Goal entries set `replayAvailable=true` only when a recorded replay exists; clicking a replay must request `/matches/:id/replays/:goalEventId`. The complete final archive is available from `GET /matches/:id/report`.
 
 Assist attribution is performed by `AssistPolicy`. The policy has a maximum pass age and independent switches for defender deflections, goalkeeper parries and woodwork rebounds. Any intervening controlled possession invalidates the previous pass.
+
+The normative counting rules and invariants are documented in [MatchStatisticsDefinitions.md](./MatchStatisticsDefinitions.md).

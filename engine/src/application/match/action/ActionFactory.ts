@@ -15,6 +15,7 @@ import { getActionExecutionProfile } from "./ActionExecutionProfile";
 import { PipelineBuilder } from "./PipelineBuilder";
 import { PipelineExecution, PipelinePhase } from "./PipelineExecution";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import type { ActionId } from "../../../domain";
 
 /**
  * Creates and advances physical action executions via pipelines.
@@ -28,6 +29,7 @@ import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
  * - Nothing executes instantaneously.
  */
 export class ActionFactory {
+  private actionSequence = 0;
   private readonly pass = new PassAction();
   private readonly shot = new ShotAction();
   private readonly dribble = new DribbleAction();
@@ -60,7 +62,12 @@ export class ActionFactory {
     if (!profile) return undefined;
 
     const steps = this.pipelineBuilder.build(decision, player);
-    return PipelineExecution.start(steps, player, currentTime);
+    return PipelineExecution.start(
+      steps,
+      player,
+      currentTime,
+      (step) => this.createActionId(player, step),
+    );
   }
 
   /**
@@ -113,7 +120,19 @@ export class ActionFactory {
     execution: ActionExecution,
     context: ActionContext,
   ): ActionResult {
-    const result = this.executeAction(execution.decision, context);
+    const causalContext: ActionContext = { ...context, actionId: execution.actionId };
+    const rawResult = this.executeAction(execution.decision, causalContext);
+    const result: ActionResult = {
+      ...rawResult,
+      actionId: execution.actionId,
+      events: rawResult.events.map((event, index) => ({
+        ...event,
+        id: event.id.includes(execution.actionId)
+          ? event.id
+          : `${execution.actionId}:event:${index}:${event.type}`,
+        actionId: execution.actionId,
+      })),
+    };
 
     const pipeline = context.player.activePipeline;
     if (pipeline && pipeline.currentAction === execution) {
@@ -124,6 +143,11 @@ export class ActionFactory {
     }
 
     return result;
+  }
+
+  private createActionId(player: PlayerMatchState, decision: Decision): ActionId {
+    this.actionSequence++;
+    return `action:${this.actionSequence.toString().padStart(8, "0")}:${player.player.id}:${decision.type}` as ActionId;
   }
 
   /**

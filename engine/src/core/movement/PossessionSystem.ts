@@ -94,8 +94,9 @@ export class PossessionSystem {
     const intended=state.ball.pendingPass
       ? [...state.home.players,...state.away.players].find(candidate=>candidate.player.id===state.ball.pendingPass!.intendedReceiverId)
       : undefined;
+    const causalActionId = state.ball.pendingPass?.actionId;
     state.ball.resolvePendingPass(player.player.id,state.currentSecond,intended?.position.distanceTo(state.ball.position)??null);
-    state.ball.acquirePossession(player, reason, state.currentSecond, contested);
+    state.ball.acquirePossession(player, reason, state.currentSecond, contested, causalActionId);
     player.possessionControlUntil = state.currentSecond + controlSeconds;
     player.possessionProtectedUntil = state.currentSecond + Math.min(.65, controlSeconds * .7);
     player.actionLockUntil = Math.max(player.actionLockUntil, player.possessionControlUntil);

@@ -44,5 +44,15 @@ services:
       - workspace_node_modules:/workspace/node_modules
     command: npm test -- --runInBand
 
+  trainer:
+    build:
+      context: .
+      dockerfile: engine/python/Dockerfile
+    profiles: ["training"]
+    working_dir: /workspace/engine
+    volumes:
+      - ./engine:/workspace/engine
+    command: python python/train_ppo.py
+
 volumes:
   workspace_node_modules:

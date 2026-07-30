@@ -1,10 +1,12 @@
-import { Pitch } from "../../../domain";
+import { ActionId, Pitch } from "../../../domain";
 import { MatchState } from "../../../core/movement/MatchState";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { Decision } from "../decision/Decision";
 import { Random } from "../../../core/random/Random";
 
 export interface ActionContext {
+  /** Identity assigned when the engine accepted this physical action. */
+  readonly actionId?: ActionId;
   readonly player: PlayerMatchState;
   readonly decision: Decision;
   readonly match: MatchState;

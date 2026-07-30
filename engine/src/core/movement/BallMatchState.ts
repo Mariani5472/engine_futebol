@@ -2,6 +2,7 @@ import { Vector2 } from "../geometry/Vector2";
 import { PlayerMatchState } from "./PlayerMatchState";
 import type { ShotExecution } from "../../domain/shooting";
 import type { AssistIntervention } from "../../application/match/analytics/AssistPolicy";
+import type { ActionId } from "../../domain";
 
 export enum BallState {
   CONTROLLED,
@@ -40,9 +41,11 @@ export interface PossessionAcquisitionRecord {
   readonly contested?: boolean;
   readonly ballPosition: Vector2;
   readonly playerPosition: Vector2;
+  readonly actionId?: ActionId;
 }
 
 export interface PendingPass {
+  readonly actionId?: ActionId;
   readonly passerId: string;
   readonly intendedReceiverId: string;
   /** A pass is complete when any teammate controls it, not only the nominated target. */
@@ -63,6 +66,7 @@ export interface PassResolutionRecord {
   readonly realForwardGain: number;
   readonly intendedReceiverDistance: number | null;
   readonly statisticalAttemptRecorded: boolean;
+  readonly actionId?: ActionId;
 }
 
 export interface LastCompletedPass {
@@ -124,6 +128,7 @@ export class BallMatchState {
     reason: PossessionAcquisitionReason,
     matchSecond: number,
     contested = false,
+    actionId?: ActionId,
   ): void {
     // During a pass or loose-ball phase owner is null, but the last physical
     // touch still identifies which team relinquished the ball. Keeping that
@@ -141,7 +146,7 @@ export class BallMatchState {
         distanceToBall: player.position.distanceTo(this.position),
         ballSpeed: Math.max(this.velocity.magnitude(), this.visualVelocity.magnitude()),
         reason, previousAction: player.lastActionType === undefined ? null : String(player.lastActionType), contested,
-        ballPosition: this.position, playerPosition: player.position,
+        ballPosition: this.position, playerPosition: player.position, actionId,
       });
     }
     this.owner = player;
@@ -189,6 +194,7 @@ export class BallMatchState {
       realForwardGain: pending.realForwardGain,
       intendedReceiverDistance,
       statisticalAttemptRecorded: pending.statisticalAttemptRecorded !== false,
+      actionId: pending.actionId,
     });
     if (success) {
       this.lastCompletedPass={

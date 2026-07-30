@@ -26,6 +26,9 @@ export class MovementSystem {
   }
 
   private steerPlayer(state: MatchState, player: PlayerMatchState, players: readonly PlayerMatchState[], dt: number) {
+    if (player.scenarioMovementFrozen) {
+      return { position: player.position, velocity: Vector2.zero(), facing: player.facingDirection };
+    }
     const movementMultiplier = this.getMovementMultiplier(player);
     if (movementMultiplier === 0) return { position: player.position, velocity: Vector2.zero(), facing: player.facingDirection };
 
@@ -117,12 +120,19 @@ export class MovementSystem {
       if (distance >= HARD_BODY_DISTANCE) continue;
       const direction = distance > .001 ? delta.divide(distance) : Vector2.fromAngle(this.stablePairAngle(first.player.id, second.player.id));
       const correction = (HARD_BODY_DISTANCE - distance) / 2;
-      first.position = this.clampPlayer(first.position.subtract(direction.multiply(correction)), state);
-      second.position = this.clampPlayer(second.position.add(direction.multiply(correction)), state);
+      if (first.scenarioMovementFrozen && second.scenarioMovementFrozen) continue;
+      if (first.scenarioMovementFrozen) {
+        second.position = this.clampPlayer(second.position.add(direction.multiply(correction * 2)), state);
+      } else if (second.scenarioMovementFrozen) {
+        first.position = this.clampPlayer(first.position.subtract(direction.multiply(correction * 2)), state);
+      } else {
+        first.position = this.clampPlayer(first.position.subtract(direction.multiply(correction)), state);
+        second.position = this.clampPlayer(second.position.add(direction.multiply(correction)), state);
+      }
       const firstInward = first.velocity.dot(direction);
       const secondInward = second.velocity.dot(direction);
-      if (firstInward > 0) first.velocity = first.velocity.subtract(direction.multiply(firstInward));
-      if (secondInward < 0) second.velocity = second.velocity.subtract(direction.multiply(secondInward));
+      if (!first.scenarioMovementFrozen && firstInward > 0) first.velocity = first.velocity.subtract(direction.multiply(firstInward));
+      if (!second.scenarioMovementFrozen && secondInward < 0) second.velocity = second.velocity.subtract(direction.multiply(secondInward));
     }
   }
 

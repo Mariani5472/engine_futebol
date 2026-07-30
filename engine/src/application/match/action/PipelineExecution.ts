@@ -6,6 +6,7 @@ import {
   ActionExecutionPhase,
   ActionInterruptionReason,
 } from "./ActionExecution";
+import type { ActionId } from "../../../domain";
 
 export enum PipelinePhase {
   IDLE = "IDLE",
@@ -37,6 +38,7 @@ export class PipelineExecution {
     steps: PipelineStep[],
     private readonly player: PlayerMatchState,
     startedAt: number,
+    private readonly nextActionId?: (decision: Decision) => ActionId,
   ) {
     this.steps = steps;
     this.startedAt = startedAt;
@@ -69,13 +71,14 @@ export class PipelineExecution {
     decisions: Decision[],
     player: PlayerMatchState,
     currentTime: number,
+    nextActionId?: (decision: Decision) => ActionId,
   ): PipelineExecution | undefined {
     if (decisions.length === 0) return undefined;
 
     const steps: PipelineStep[] = decisions.map((decision) => ({ decision }));
-    const pipeline = new PipelineExecution(steps, player, currentTime);
+    const pipeline = new PipelineExecution(steps, player, currentTime, nextActionId);
 
-    const first = ActionExecution.start(decisions[0], player, currentTime);
+    const first = ActionExecution.start(decisions[0], player, currentTime, nextActionId?.(decisions[0]));
     if (!first) return undefined;
 
     pipeline.phase = PipelinePhase.ACTIVE;
@@ -203,6 +206,7 @@ export class PipelineExecution {
       nextDecision,
       this.player,
       currentTime,
+      this.nextActionId?.(nextDecision),
     );
 
     if (!nextAction) {

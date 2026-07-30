@@ -1,4 +1,5 @@
 import { SeededRandom } from "../../../src/core/random/SeededRandom";
+import { createMatchRandomStreams } from "../../../src/core/random/MatchRandomStreams";
 
 describe("SeededRandom", () => {
   it("produces values in [0, 1)", () => {
@@ -42,6 +43,25 @@ describe("SeededRandom", () => {
       expect(Number.isInteger(v)).toBe(true);
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThanOrEqual(5);
+    }
+  });
+});
+
+describe("MatchRandomStreams", () => {
+  it("derives repeatable but distinct subsystem streams", () => {
+    const first = createMatchRandomStreams(42);
+    const second = createMatchRandomStreams(42);
+    expect(first.action.next()).toBe(second.action.next());
+    expect(first.cognition.next()).toBe(second.cognition.next());
+    expect(first.action.next()).not.toBe(first.cognition.next());
+  });
+
+  it("keeps action randomness unchanged when another subsystem consumes values", () => {
+    const untouched = createMatchRandomStreams(99);
+    const noisy = createMatchRandomStreams(99);
+    for (let index = 0; index < 100; index++) noisy.cognition.next();
+    for (let index = 0; index < 20; index++) {
+      expect(noisy.action.next()).toBe(untouched.action.next());
     }
   });
 });

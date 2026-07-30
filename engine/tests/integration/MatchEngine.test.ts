@@ -61,7 +61,74 @@ describe("MatchEngine — full match simulation", () => {
     expect(result.metrics.totalGoals).toBe(result.homeScore + result.awayScore);
     expect(result.metrics.home.xG).toBeGreaterThanOrEqual(0);
     expect(result.metrics.away.xG).toBeGreaterThanOrEqual(0);
+    expect(result.metrics.home.shots).toBe(result.analytics.teams.home.shots);
+    expect(result.metrics.away.shots).toBe(result.analytics.teams.away.shots);
+    expect(result.metrics.home.fouls).toBe(result.analytics.teams.home.fouls);
+    expect(result.metrics.away.fouls).toBe(result.analytics.teams.away.fouls);
+    expect(result.metrics.home.passes).toBe(result.analytics.teams.home.passesAttempted);
+    expect(result.metrics.away.passes).toBe(result.analytics.teams.away.passesAttempted);
   }, 120_000);
+
+  it("publishes unique event ids and causal action ids for action events", () => {
+    const result = engine.simulate(fastConfig(42));
+    expect(new Set(result.eventStore.map(event => event.id)).size).toBe(result.eventStore.length);
+    const actionEvents = result.eventStore.filter(event =>
+      ["PASS_ATTEMPTED", "SHOT", "TACKLE", "FOUL"].includes(event.type),
+    );
+    expect(actionEvents.length).toBeGreaterThan(0);
+    expect(actionEvents.every(event => Boolean(event.actionId))).toBe(true);
+    const shotIds = new Set(result.eventStore.filter(event => event.type === "SHOT").map(event => event.id));
+    const resolvedShotIds = result.eventStore
+      .filter(event => event.type === "SHOT_RESOLVED")
+      .map(event => String(event.metadata.shotId));
+    expect(resolvedShotIds.every(shotId => shotIds.has(shotId))).toBe(true);
+  }, 120_000);
+
+  it("changes observability profiles without changing the sporting result", () => {
+    const base = { ...buildSimulationConfig(81), tickDeltaSeconds: 0.2, maxDurationSeconds: 20 };
+    const evaluation = new MatchEngine().simulate({
+      ...base, instrumentation: { profile: "EVALUATION" },
+    });
+    const benchmark = new MatchEngine().simulate({
+      ...base, instrumentation: { profile: "BENCHMARK" },
+    });
+    const { tactical: _evaluationTactical, ...evaluationMetrics } = evaluation.metrics;
+    const { tactical: _benchmarkTactical, ...benchmarkMetrics } = benchmark.metrics;
+
+    expect({
+      score: [benchmark.homeScore, benchmark.awayScore],
+      shots: [benchmark.homeShots, benchmark.awayShots],
+      metrics: benchmarkMetrics,
+    }).toEqual({
+      score: [evaluation.homeScore, evaluation.awayScore],
+      shots: [evaluation.homeShots, evaluation.awayShots],
+      metrics: evaluationMetrics,
+    });
+    expect(benchmark.manifest.configurationHash).toBe(evaluation.manifest.configurationHash);
+    expect(benchmark.resultHash).toBe(evaluation.resultHash);
+    expect(benchmark.manifest.instrumentationHash).not.toBe(evaluation.manifest.instrumentationHash);
+    expect(evaluation.eventStore.length).toBeGreaterThan(0);
+    expect(evaluation.timeline.length).toBeGreaterThan(0);
+    expect(Object.keys(evaluation.analytics.players).length).toBeGreaterThan(0);
+    expect(benchmark.events).toEqual([]);
+    expect(benchmark.eventStore).toEqual([]);
+    expect(benchmark.timeline).toEqual([]);
+    expect(benchmark.goalReplays).toEqual([]);
+    expect(benchmark.analytics.players).toEqual({});
+  });
+
+  it("reproduces only when config and environment manifest match", () => {
+    const config = { ...buildSimulationConfig(91), tickDeltaSeconds: 0.2, maxDurationSeconds: 5 };
+    const engine = new MatchEngine();
+    const original = engine.simulate(config);
+    expect(engine.reproduce(config, original.manifest, original.resultHash)).toEqual(original);
+    expect(() => engine.reproduce({ ...config, seed: 92 }, original.manifest)).toThrow(
+      "Execution manifest mismatch",
+    );
+    expect(() => engine.reproduce(config, original.manifest, "0".repeat(64))).toThrow(
+      "Reproduced result hash mismatch",
+    );
+  });
 });
 
 describe("MatchEngine — determinism", () => {

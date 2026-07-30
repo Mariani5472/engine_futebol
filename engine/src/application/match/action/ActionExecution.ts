@@ -2,6 +2,7 @@ import { Decision } from "../decision/Decision";
 import { DecisionType } from "../decision/DecisionType";
 import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { PlayerAttributes } from "../../../domain/player";
+import { ActionId } from "../../../domain";
 import {
   ActionExecutionProfile,
   getActionExecutionProfile,
@@ -38,6 +39,7 @@ export class ActionExecution {
   public interruptionReason?: ActionInterruptionReason;
 
   private constructor(
+    public readonly actionId: ActionId,
     public readonly decision: Decision,
     private readonly player: PlayerMatchState,
     timing: ActionExecutionTiming,
@@ -58,12 +60,14 @@ export class ActionExecution {
     decision: Decision,
     player: PlayerMatchState,
     currentTime: number,
+    actionId?: ActionId,
   ): ActionExecution | undefined {
     const profile = getActionExecutionProfile(decision.type);
     if (!profile) return undefined;
 
     const timing = calculateTiming(profile, player.player.attributes);
     const execution = new ActionExecution(
+      actionId ?? (`legacy-action:${player.player.id}:${currentTime.toFixed(6)}:${decision.type}` as ActionId),
       decision,
       player,
       timing,

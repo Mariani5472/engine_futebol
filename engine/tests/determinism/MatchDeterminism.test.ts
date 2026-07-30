@@ -23,6 +23,8 @@ describe("Match Engine — determinism across seeds", () => {
       homeShots: first.homeShots,
       awayShots: first.awayShots,
       events: first.events,
+      eventStore: first.eventStore,
+      diagnostics: first.diagnostics,
       metrics: first.metrics,
     }).toEqual({
       homeScore: second.homeScore,
@@ -30,6 +32,8 @@ describe("Match Engine — determinism across seeds", () => {
       homeShots: second.homeShots,
       awayShots: second.awayShots,
       events: second.events,
+      eventStore: second.eventStore,
+      diagnostics: second.diagnostics,
       metrics: second.metrics,
     });
   });

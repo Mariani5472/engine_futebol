@@ -16,6 +16,10 @@ export class GoalkeeperSystem {
   private updateTeam(state: MatchState, team: TeamMatchState): void {
     const goalkeeper = team.players.find(player => player.currentRole.includes("GOALKEEPER"));
     if (!goalkeeper) return;
+    if (goalkeeper.scenarioMovementFrozen) {
+      goalkeeper.velocity = Vector2.zero();
+      return;
+    }
 
     const ownGoalX = team.attackingDirection === 1 ? 0 : state.pitch.length;
     const goal = ownGoalX === 0 ? state.pitch.geometry.leftGoal : state.pitch.geometry.rightGoal;

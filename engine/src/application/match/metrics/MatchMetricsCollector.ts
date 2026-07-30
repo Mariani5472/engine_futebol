@@ -66,6 +66,10 @@ function createMutable(): MutableTeamStats {
   };
 }
 
+/**
+ * @deprecated The running engine derives football statistics exclusively from
+ * MatchEventStore. Kept temporarily for consumers that instantiate it directly.
+ */
 export class MatchMetricsCollector {
   private readonly tactical = new TacticalDiagnosticsCollector();
   private readonly home = createMutable();

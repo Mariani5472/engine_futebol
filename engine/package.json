@@ -14,6 +14,8 @@
     "calibrate": "npx --yes tsx scripts/calibrate.ts",
     "check:authoritative-ball": "npx --yes tsx scripts/check-authoritative-ball.ts",
     "diagnose:offense": "npx --yes tsx scripts/diagnose-offensive-funnel.ts",
+    "protocol:stdio": "npx --yes tsx scripts/training-protocol-server.ts",
+    "profile:training": "npx --yes tsx scripts/profile-training.ts",
     "calibrate:quick": "npx --yes tsx scripts/calibrate.ts --matches 10 --tick 5"
   },
   "devDependencies": {

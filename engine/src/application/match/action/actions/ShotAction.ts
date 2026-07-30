@@ -51,7 +51,9 @@ export class ShotAction {
     const origin = new Vector3(player.position.x, player.position.y, .18);
     const direction = actualTarget.subtract(origin).normalize();
     const initialVelocity = direction.multiply(speed);
-    const shotId = `shot-${player.player.id}-${matchSecond.toFixed(2)}`;
+    const shotId = context.actionId
+      ? `shot:${context.actionId}`
+      : `shot-${player.player.id}-${matchSecond.toFixed(6)}`;
     const teamId = attacking.team.id as TeamId;
     const playerId = player.player.id as PlayerId;
     const technique = player.player.attributes.technical.technique / 20;
@@ -77,6 +79,7 @@ export class ShotAction {
 
     const execution: ShotExecution = {
       id: shotId,
+      actionId: context.actionId,
       shooterId: player.player.id,
       teamId: attacking.team.id,
       defendingTeamId: defending.team.id,
@@ -129,17 +132,20 @@ export class ShotAction {
       originX: origin.x, originY: origin.y,
       intendedTargetY: intendedTarget.y, intendedTargetZ: intendedTarget.z,
       shotType,
+      actionId: context.actionId,
     };
     const taken: ShotTakenEvent = {
       id: `${shotId}-taken`, type: "SHOT_TAKEN", shotId,
       timestamp: (matchSecond * 1000) as Milliseconds, period, teamId, playerId,
       actualTargetY: actualTarget.y, actualTargetZ: actualTarget.z,
       initialSpeed: speed, executionQuality: quality, pressureLevel: pressure,
+      actionId: context.actionId,
     };
     const shot: ShotEvent = {
       id: shotId, type: "SHOT", timestamp: (matchSecond * 1000) as Milliseconds,
       period, teamId, playerId, result: "IN_FLIGHT",
       targetX: intendedTarget.x, targetY: intendedTarget.y,
+      actionId: context.actionId,
     };
 
     return {

@@ -45,6 +45,7 @@ export class PassAction {
     for (const teammate of [...match.home.players, ...match.away.players]) teammate.hasBall = false;
     this.startMotion(context, origin, destination, target);
     match.ball.pendingPass = {
+      actionId: context.actionId,
       passerId: player.player.id,
       intendedReceiverId: target.player.id,
       teammateIds:team.players.filter(teammate=>teammate!==player).map(teammate=>teammate.player.id),
@@ -86,7 +87,9 @@ export class PassAction {
       : decision.type === DecisionType.GK_DISTRIBUTE ? "GOALKEEPER_DISTRIBUTION" as const
       : "PASS" as const;
     const event: PassAttemptedEvent = {
-      id: `pass-${player.player.id}-${matchSecond.toFixed(2)}`,
+      id: context.actionId
+        ? `${context.actionId}:pass-attempted`
+        : `pass-${player.player.id}-${matchSecond.toFixed(6)}`,
       type: "PASS_ATTEMPTED",
       timestamp: (matchSecond * 1000) as Milliseconds,
       period: matchSecond < 45 * 60 ? "FIRST_HALF" : "SECOND_HALF",
@@ -96,6 +99,7 @@ export class PassAction {
       originX: origin.x, originY: origin.y,
       targetX: destination.x, targetY: destination.y,
       passKind,
+      actionId: context.actionId,
     };
 
     return {

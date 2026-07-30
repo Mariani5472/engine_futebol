@@ -8,6 +8,14 @@ import type { MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollect
 import type { EventDerivedMatchReport, MatchTimelineEntry, StoredMatchEvent } from "../analytics/MatchEventStore";
 import type { GoalReplay } from "../replay/GoalReplayRecorder";
 import type { DecisionDebugEntry } from "../decision/DecisionDebug";
+import type { ExecutionManifest } from "./ExecutionManifest";
+import { PlayerPolicyController, type PolicyDecisionRecord } from "../policy/PlayerPolicyController";
+import type { PlayerActionCommand, PlayerPolicy } from "../policy/PlayerPolicy";
+import { RandomValidPlayerPolicy, ScriptedPlayerPolicy } from "../policy/PlayerPolicies";
+import { SeededRandom } from "../../../core/random/SeededRandom";
+import { deriveSeed } from "../../../core/random/MatchRandomStreams";
+import type { PlayerActionMask } from "../policy/PlayerActionSpace";
+import { OBSERVATION_SPACE, type ActorObservation, type DebugObservation, type PrivilegedCriticObservation } from "../observation/ObservationSpace";
 
 export interface SnapshotVector {
   readonly x: number;
@@ -66,6 +74,7 @@ export interface BallSnapshot {
 export type MatchSpeed = 1 | 2 | 4 | 8 | 50;
 
 export interface MatchSnapshot {
+  readonly manifest: ExecutionManifest;
   readonly seed: number;
   readonly sequence: number;
   readonly simulationTick: number;
@@ -106,6 +115,9 @@ export interface MatchSnapshot {
   readonly replayGoalIds: readonly string[];
   readonly analytics: EventDerivedMatchReport | null;
   readonly decisionTrace:readonly DecisionDebugEntry[];
+  readonly policyDecisions: readonly PolicyDecisionRecord[];
+  readonly actionMasks: readonly PlayerActionMask[];
+  readonly actorObservations: readonly ActorObservation[];
 }
 
 export interface SectorCentroids {
@@ -116,6 +128,7 @@ export interface SectorCentroids {
 
 export class MatchSession {
   private readonly engine = new MatchEngine();
+  private readonly policies = new PlayerPolicyController();
   private readonly iterator: Generator<IncrementalMatchFrame, MatchResult, void>;
   private latestFrame: IncrementalMatchFrame | null = null;
   private finalResult: MatchResult | null = null;
@@ -128,7 +141,10 @@ export class MatchSession {
       ...config,
       tickDeltaSeconds: config.tickDeltaSeconds
         ?? ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds,
-    });
+    }, undefined, this.policies);
+    // Prime initialization only. MatchEngine's sequence-0 frame contains the
+    // kickoff state before any physical update has run.
+    this.accept(this.iterator.next());
   }
 
   public static create(config: SimulationConfig): MatchSession {
@@ -148,12 +164,7 @@ export class MatchSession {
     if (Math.abs(deltaSeconds - expected) > 1e-9) {
       throw new Error(`MatchSession requires a fixed ${expected}s update`);
     }
-    const step = this.iterator.next();
-    if (step.done) this.finalResult = step.value;
-    else {
-      this.latestFrame = step.value;
-      this.finalResult = step.value.finalResult ?? null;
-    }
+    this.accept(this.iterator.next());
   }
 
   public pause(): void { this.paused = true; }
@@ -164,12 +175,63 @@ export class MatchSession {
     this.speed = speed as MatchSpeed;
   }
   public getSpeed(): MatchSpeed { return this.speed; }
+  public setPlayerPolicy(playerId: string, policy: PlayerPolicy): void {
+    this.assertPlayerExists(playerId);
+    this.policies.bind(playerId, policy);
+  }
+  public useScriptedPolicy(playerId: string, commands: readonly PlayerActionCommand[]): void {
+    this.setPlayerPolicy(playerId, new ScriptedPlayerPolicy(commands, `scripted:${playerId}`));
+  }
+  public useRandomValidPolicy(playerId: string, seed = this.config.seed): void {
+    this.setPlayerPolicy(
+      playerId,
+      new RandomValidPlayerPolicy(
+        new SeededRandom(deriveSeed(seed, `POLICY:${playerId}`)),
+        `random-valid:${playerId}`,
+      ),
+    );
+  }
+  public controlPlayer(playerId: string): void {
+    this.assertPlayerExists(playerId);
+    this.policies.controlExternally(playerId);
+  }
+  public submitPlayerAction(playerId: string, command: PlayerActionCommand): void {
+    this.assertPlayerExists(playerId);
+    this.policies.submit(playerId, command);
+  }
+  public releasePlayerControl(playerId: string): void {
+    this.assertPlayerExists(playerId);
+    this.policies.unbind(playerId);
+  }
+  public policyTranscript(): readonly PolicyDecisionRecord[] {
+    return this.policies.decisions();
+  }
+  public actionMask(playerId: string): PlayerActionMask | null {
+    this.assertPlayerExists(playerId);
+    return this.policies.actionMask(playerId);
+  }
+  public actorObservation(playerId: string): ActorObservation | null {
+    this.assertPlayerExists(playerId);
+    return this.policies.actorObservation(playerId);
+  }
+  /** Training-only centralized state. Never included in PlayerPolicyInput or normal snapshots. */
+  public privilegedCriticObservation(playerId: string): PrivilegedCriticObservation {
+    this.assertPlayerExists(playerId);
+    if (!this.latestFrame) throw new Error("Match session produced no frame");
+    return OBSERVATION_SPACE.privilegedCritic(this.latestFrame.state, playerId);
+  }
+  /** Raw internal state for diagnostics. Never included in PlayerPolicyInput or normal snapshots. */
+  public debugObservation(playerId: string): DebugObservation {
+    this.assertPlayerExists(playerId);
+    if (!this.latestFrame) throw new Error("Match session produced no frame");
+    return OBSERVATION_SPACE.debug(this.latestFrame.state, playerId);
+  }
   public isFinished(): boolean { return this.finalResult !== null; }
   public result(): MatchResult | null { return this.finalResult; }
-  public archive():Pick<MatchResult,"seed"|"matchDurationSeconds"|"eventStore"|"analytics"|"timeline"|"goalReplays">|null {
+  public archive():Pick<MatchResult,"manifest"|"resultHash"|"seed"|"matchDurationSeconds"|"eventStore"|"analytics"|"timeline"|"goalReplays"|"policyDecisions"|"actionMasks">|null {
     if(!this.finalResult)return null;
-    const {seed,matchDurationSeconds,eventStore,analytics,timeline,goalReplays}=this.finalResult;
-    return {seed,matchDurationSeconds,eventStore,analytics,timeline,goalReplays};
+    const {manifest,resultHash,seed,matchDurationSeconds,eventStore,analytics,timeline,goalReplays,policyDecisions,actionMasks}=this.finalResult;
+    return {manifest,resultHash,seed,matchDurationSeconds,eventStore,analytics,timeline,goalReplays,policyDecisions,actionMasks};
   }
   public goalReplay(goalEventId: string): GoalReplay | null {
     return this.latestFrame?.goalReplays.find(replay => replay.goalEventId === goalEventId)
@@ -178,19 +240,9 @@ export class MatchSession {
   }
 
   public snapshot(): MatchSnapshot {
-    if (!this.latestFrame) {
-      // Materialize the first real engine state without inventing API data.
-      const step = this.iterator.next();
-      if (step.done) this.finalResult = step.value;
-      else {
-        this.latestFrame = step.value;
-        this.finalResult = step.value.finalResult ?? null;
-      }
-    }
     const frame = this.latestFrame;
     if (!frame) throw new Error("Match session produced no frame");
     const state = frame.state;
-    this.lastEventSequence = Math.max(this.lastEventSequence, frame.eventStore.at(-1)?.sequence ?? 0);
     const playerSnapshot = (teamId: string, player: typeof state.home.players[number]): PlayerSnapshot => ({
       id: player.player.id,
       teamId,
@@ -230,6 +282,7 @@ export class MatchSession {
       lastDecisionAt:frame.decisionTrace.find(entry=>entry.playerId===player.player.id&&entry.selected)?.matchSecond??null,
     });
     return {
+      manifest: frame.manifest,
       seed: this.config.seed,
       sequence: frame.sequence,
       simulationTick:frame.sequence,
@@ -288,7 +341,29 @@ export class MatchSession {
       replayGoalIds: frame.goalReplays.map(replay => replay.goalEventId),
       analytics: frame.analytics,
       decisionTrace:frame.decisionTrace,
+      policyDecisions: frame.policyDecisions,
+      actionMasks: frame.actionMasks,
+      actorObservations: frame.actorObservations,
     };
+  }
+
+  private assertPlayerExists(playerId: string): void {
+    const exists = [...this.config.homeTeam.players, ...this.config.awayTeam.players]
+      .some(player => String(player.id) === playerId);
+    if (!exists) throw new Error(`Unknown player: ${playerId}`);
+  }
+
+  private accept(step: IteratorResult<IncrementalMatchFrame, MatchResult>): void {
+    if (step.done) {
+      this.finalResult = step.value;
+      return;
+    }
+    this.latestFrame = step.value;
+    this.finalResult = step.value.finalResult ?? null;
+    this.lastEventSequence = Math.max(
+      this.lastEventSequence,
+      step.value.eventStore.at(-1)?.sequence ?? 0,
+    );
   }
 }
 

@@ -1,4 +1,4 @@
-import { MatchEvent } from "../../../domain";
+import { ActionId, MatchEvent } from "../../../domain";
 import { DecisionType } from "../decision/DecisionType";
 
 /** Events that an action can produce within a single tick. */
@@ -11,6 +11,7 @@ export interface ActionResultMeta {
 }
 
 export interface ActionResult {
+  readonly actionId?: ActionId;
   readonly actorId: string;
   readonly type: DecisionType;
   readonly success: boolean;

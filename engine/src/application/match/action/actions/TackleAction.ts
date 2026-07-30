@@ -121,7 +121,7 @@ export class TackleAction {
 
       ballOwner.hasBall = false;
       player.hasBall = true;
-      match.ball.acquirePossession(player, "TACKLE", matchSecond);
+      match.ball.acquirePossession(player, "TACKLE", matchSecond, false, context.actionId);
       match.ball.state = BallState.CONTROLLED;
     }
     events.push(this.tackleEvent(player, ballOwner, tacklerTeamId, matchSecond, period, success && physicalContact));

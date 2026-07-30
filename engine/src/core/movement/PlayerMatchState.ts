@@ -6,6 +6,9 @@ import { Vector2 } from "../geometry/Vector2";
 import type { PlayerIntent } from "../../application/match/tactical/intelligence/TacticalIntelligenceTypes";
 
 export class PlayerMatchState {
+  /** Scenario-only constraints; normal matches leave both false. */
+  public scenarioMovementFrozen = false;
+  public scenarioDecisionDisabled = false;
   public tacticalAnchorPosition: Vector2;
 
   public activeAction?: ActionExecution;

@@ -5,6 +5,8 @@ export type Brand<T, B extends string> = T & { readonly __brand: B };
 export type TeamId = Brand<string, "TeamId">;
 export type PlayerId = Brand<string, "PlayerId">;
 export type MatchId = Brand<string, "MatchId">;
+/** Stable identity of one accepted physical action inside a match session. */
+export type ActionId = Brand<string, "ActionId">;
 export type RefereeId = Brand<string, "RefereeId">;
 
 export type LanguageCode = Brand<string, "LanguageCode">;

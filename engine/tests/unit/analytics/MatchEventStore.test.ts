@@ -14,6 +14,32 @@ describe("MatchEventStore", () => {
     expect(store.events()[1]).toMatchObject({simulationTick:5,simulationTimeMs:250,matchId:"ordered"});
   });
 
+  it("is idempotent for retried events and rejects conflicting reuse of an id", () => {
+    const store = new MatchEventStore("idempotent");
+    const event: MatchEvent = {
+      id: "foul-1", type: "FOUL", timestamp: 1000 as any, period: "FIRST_HALF",
+      teamId: "home" as any, playerId: "home-2" as any,
+    };
+    store.append([event, event]);
+    expect(store.events()).toHaveLength(1);
+    expect(store.events()[0].sequence).toBe(1);
+
+    expect(() => store.append([{ ...event, playerId: "home-3" as any }])).toThrow(
+      "Conflicting match event id: foul-1",
+    );
+  });
+
+  it("keeps action identity as a first-class causal field", () => {
+    const store = new MatchEventStore("causal");
+    store.append([{
+      id: "action-1:event-1", actionId: "action-1" as any,
+      type: "FOUL", timestamp: 1000 as any, period: "FIRST_HALF",
+      teamId: "home" as any, playerId: "home-2" as any,
+    }]);
+    expect(store.events()[0]).toMatchObject({ actionId: "action-1" });
+    expect(store.events()[0].metadata).not.toHaveProperty("actionId");
+  });
+
   it("can build live analytics without closing the active possession",()=>{
     const state=new MatchInitializer().initialize(buildSimulationConfig(9)).state;
     const store=new MatchEventStore("live");

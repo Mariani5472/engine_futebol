@@ -1,6 +1,9 @@
 import type { WebSocket } from "ws";
 import { MatchSession, type MatchSnapshot } from "../../engine/src/application/match/engine/MatchSession.js";
 import type { GoalReplay } from "../../engine/src/application/match/replay/GoalReplayRecorder.js";
+import type { PlayerActionCommand } from "../../engine/src/application/match/policy/PlayerPolicy.js";
+import type { PolicyDecisionRecord } from "../../engine/src/application/match/policy/PlayerPolicyController.js";
+import type { PlayerActionMask } from "../../engine/src/application/match/policy/PlayerActionSpace.js";
 import { createMatchConfig } from "./createMatchConfig.js";
 
 const STEP_SECONDS = 0.05;
@@ -40,6 +43,23 @@ export class LiveMatchSession {
     this.broadcast({ type: "speed_changed", speed });
     return this.current();
   }
+  public controlPlayer(playerId: string): void {
+    this.session.controlPlayer(playerId);
+    this.broadcast({ type: "player_control_changed", playerId, controlled: true });
+  }
+  public releasePlayer(playerId: string): void {
+    this.session.releasePlayerControl(playerId);
+    this.broadcast({ type: "player_control_changed", playerId, controlled: false });
+  }
+  public submitPlayerAction(playerId: string, command: PlayerActionCommand): void {
+    this.session.submitPlayerAction(playerId, command);
+  }
+  public policyTranscript(): readonly PolicyDecisionRecord[] {
+    return this.session.policyTranscript();
+  }
+  public actionMask(playerId: string): PlayerActionMask | null {
+    return this.session.actionMask(playerId);
+  }
   public step(count = 1): NetworkMatchSnapshot {
     if (process.env.NODE_ENV === "production") throw new Error("Manual stepping is disabled in production");
     if (!this.session.isPaused()) throw new Error("Pause the match before stepping");
@@ -71,7 +91,9 @@ export class LiveMatchSession {
     this.broadcast(this.current());
   }
 
-  private broadcast(message: NetworkMatchSnapshot | { type: "speed_changed"; speed: number }): void {
+  private broadcast(message: NetworkMatchSnapshot
+    | { type: "speed_changed"; speed: number }
+    | { type: "player_control_changed"; playerId: string; controlled: boolean }): void {
     const payload=JSON.stringify(message);
     this.clients.forEach(client=>{if(client.readyState===client.OPEN)client.send(payload);});
   }

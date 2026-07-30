@@ -35,6 +35,26 @@ export type { GoalReplay, ReplayFrame } from "./application/match/replay/GoalRep
 export { AssistPolicy } from "./application/match/analytics/AssistPolicy";
 export type { AssistPolicyConfig, AssistIntervention } from "./application/match/analytics/AssistPolicy";
 export type { SimulationConfig } from "./application/match/engine/SimulationConfig";
+export { ENVIRONMENT_VERSIONS, buildExecutionManifest, buildSportingResultHash, verifyExecutionManifest } from "./application/match/engine/ExecutionManifest";
+export type { EnvironmentVersions, ExecutionManifest, SportingResultFingerprintInput } from "./application/match/engine/ExecutionManifest";
+export type { PlayerActionCommand, PlayerPolicy, PlayerPolicyInput, PlayerPolicyProposal, PlayerPolicyResult, PlayerPolicyWait, PolicyFallback } from "./application/match/policy/PlayerPolicy";
+export { HeuristicPlayerPolicy, ScriptedPlayerPolicy, RandomValidPlayerPolicy, ExternalPlayerPolicy, DecisionGatePlayerPolicy } from "./application/match/policy/PlayerPolicies";
+export { PlayerPolicyController } from "./application/match/policy/PlayerPolicyController";
+export type { PolicyDecisionRecord } from "./application/match/policy/PlayerPolicyController";
+export { PLAYER_ACTION_IDS, PLAYER_ACTION_SPACE, PLAYER_ACTION_SPACE_VERSION, PlayerActionSpace } from "./application/match/policy/PlayerActionSpace";
+export type { ActionMaskBit, DiscretePlayerAction, PlayerActionId, PlayerActionMask, PlayerActionMaskEntry } from "./application/match/policy/PlayerActionSpace";
+export { ACTOR_OBSERVATION_VERSION, PRIVILEGED_CRITIC_OBSERVATION_VERSION, DEBUG_OBSERVATION_VERSION, ACTOR_OBSERVATION_VECTOR_SIZE, PRIVILEGED_CRITIC_VECTOR_SIZE, OBSERVATION_SPACE, ObservationSpace } from "./application/match/observation/ObservationSpace";
+export type { ActorEntityObservation, ActorObservation, PrivilegedCriticObservation, DebugObservation } from "./application/match/observation/ObservationSpace";
+export { PURE_MATCH_ENVIRONMENT_VERSION, PureMatchEnvironment } from "./application/match/environment/PureMatchEnvironment";
+export type { PureMatchEnvironmentOptions, EnvironmentResetResult, EnvironmentStepResult, EnvironmentTransitionInfo } from "./application/match/environment/PureMatchEnvironment";
+export { ATTACKER_VS_GOALKEEPER_SCENARIO_VERSION } from "./application/match/scenario/MatchScenario";
+export type { MatchScenarioConfig, AttackerVsGoalkeeperScenarioConfig, ScenarioPoint } from "./application/match/scenario/MatchScenario";
+export { AttackerVsGoalkeeperEnvironment } from "./application/match/scenario/AttackerVsGoalkeeperEnvironment";
+export type { AttackerVsGoalkeeperEnvironmentOptions, AttackerVsGoalkeeperOutcome, AttackerVsGoalkeeperResetResult, AttackerVsGoalkeeperStepResult } from "./application/match/scenario/AttackerVsGoalkeeperEnvironment";
+export { DecisionType } from "./application/match/decision/DecisionType";
+export { Decision } from "./application/match/decision/Decision";
+export { instrumentationProfile, resolveInstrumentation } from "./application/match/instrumentation/TrainingInstrumentation";
+export type { InstrumentationProfile, InstrumentationSelection, ResolvedInstrumentation, TrainingInstrumentationConfig } from "./application/match/instrumentation/TrainingInstrumentation";
 export { BrowserAnimationScheduler, FixedTimestepLoop } from "./application/match/runtime";
 export type {
   AnimationScheduler,
@@ -127,6 +147,7 @@ export type {
   PeriodStartedEvent, PeriodEndedEvent, MatchPeriod, ShotResult, CardType
 } from "./domain/match-events";
 export { createAttributeValue, createVector2 } from "./domain/common";
+export type { ActionId } from "./domain/common";
 export { createGoalFrame } from "./domain/shooting";
 export type { ShotExecution, ShotType, ShotLifecycle, ShotFinalOutcome, GoalFrame } from "./domain/shooting";
 
@@ -143,3 +164,22 @@ export { Vector3 } from "./core/geometry/Vector3";
 // Random
 export { SeededRandom } from "./core/random/SeededRandom";
 export type { Random } from "./core/random/Random";
+
+// Internal learning baselines and paired evaluation (Phase 8)
+export * from "./application/match/evaluation";
+
+// Explainable, reconstructible rewards (Phase 9)
+export * from "./application/match/reward";
+
+// Versioned TypeScript-Python training protocol (Phase 10)
+export * from "./application/match/protocol";
+
+// Training throughput profiling and scale decisions (Phase 12)
+export * from "./application/match/performance";
+export { MULTI_AGENT_MATCH_ENVIRONMENT_VERSION, MultiAgentMatchEnvironment } from "./application/match/environment/MultiAgentMatchEnvironment";
+export type { MultiAgentBoundary, MultiAgentMatchEnvironmentOptions, MultiAgentRewardComponent, MultiAgentTransitionInfo } from "./application/match/environment/MultiAgentMatchEnvironment";
+
+// Versioned curriculum, promotion gates and deterministic self-play matchmaking (Phase 13)
+export * from "./application/match/curriculum";
+export { CURRICULUM_SCENARIO_VERSION, createCurriculumScenarioPreset } from "./application/match/scenario/MatchScenario";
+export type { CurriculumGoalkeeperMode, CurriculumObjective, CurriculumScenarioConfig, CurriculumScenarioStage } from "./application/match/scenario/MatchScenario";

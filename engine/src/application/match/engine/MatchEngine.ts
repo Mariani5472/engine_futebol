@@ -9,7 +9,7 @@ import { PossessionSystem } from "../../../core/movement/PossessionSystem";
 import { ReachCalculator } from "../../../core/movement/ReachCalculator";
 import { PitchGrid } from "../../../core/pitch/PitchGrid";
 import { Random } from "../../../core/random/Random";
-import { SeededRandom } from "../../../core/random/SeededRandom";
+import { createMatchRandomStreams } from "../../../core/random/MatchRandomStreams";
 import { CognitiveContext } from "../cognitive/CognitiveContext";
 import { CognitiveSystem } from "../cognitive/CognitiveSystem";
 import { NoiseSystem } from "../cognitive/NoiseSystem";
@@ -36,24 +36,29 @@ import { PossessionPredictionSystem } from "../tactical/PossessionPredictionSyst
 import { CollectiveCoordinationSystem } from "../tactical/CollectiveCoordinationSystem";
 import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
 import { RefereeSystem } from "../referee/RefereeSystem";
-import { MatchMetricsCollector } from "../metrics/MatchMetricsCollector";
 import { MatchMetrics } from "../metrics/MatchMetrics";
+import { buildEventDerivedMatchMetrics } from "../metrics/EventDerivedMatchMetrics";
 import { AttackFunnelCollector } from "../diagnostics/AttackFunnelCollector";
 import { MatchInitializer } from "./MatchInitializer";
 import { GoalkeeperSystem } from "../goalkeeper/GoalkeeperSystem";
 import { RestartSystem } from "./RestartSystem";
 import { SimulationConfig } from "./SimulationConfig";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
-import type { MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
+import { TacticalDiagnosticsCollector, type MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
 import { BallTeleportDetector, type BallTeleportViolation } from "../diagnostics/BallTeleportDetector";
 import type { PassResolutionRecord, PossessionAcquisitionRecord } from "../../../core/movement/BallMatchState";
 import { OffensiveFunnelCollector, type MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollector";
 import { MatchEventStore, type EventDerivedMatchReport, type MatchTimelineEntry, type StoredMatchEvent } from "../analytics/MatchEventStore";
 import { GoalReplayRecorder, type GoalReplay } from "../replay/GoalReplayRecorder";
-import { PlayerId, TeamId } from "../../../domain";
+import { ActionId, PlayerId, TeamId } from "../../../domain";
 import { DecisionDebug, type DecisionDebugEntry } from "../decision/DecisionDebug";
 import { TacticalIntelligenceSystem } from "../tactical/intelligence/TacticalIntelligenceSystem";
 import { DecisionQualityMetrics, type DecisionQualityReport } from "../decision/DecisionQualityMetrics";
+import { resolveInstrumentation, type ResolvedInstrumentation } from "../instrumentation/TrainingInstrumentation";
+import { buildExecutionManifest, buildSportingResultHash, verifyExecutionManifest, type ExecutionManifest } from "./ExecutionManifest";
+import { PlayerPolicyController, type PolicyDecisionRecord } from "../policy/PlayerPolicyController";
+import type { PlayerActionMask } from "../policy/PlayerActionSpace";
+import { OBSERVATION_SPACE, type ActorObservation } from "../observation/ObservationSpace";
 
 const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
@@ -66,6 +71,8 @@ const COGNITIVE_UPDATE_INTERVAL_TICKS = 4;
 const TACTICAL_INTELLIGENCE_UPDATE_INTERVAL_TICKS = 8;
 
 export interface MatchResult {
+  readonly manifest: ExecutionManifest;
+  readonly resultHash: string;
   readonly homeTeamId: string;
   readonly awayTeamId: string;
   readonly homeScore: number;
@@ -83,11 +90,41 @@ export interface MatchResult {
   readonly timeline: readonly MatchTimelineEntry[];
   readonly goalReplays: readonly GoalReplay[];
   readonly decisionQuality: DecisionQualityReport;
+  readonly policyDecisions: readonly PolicyDecisionRecord[];
+  readonly actionMasks: readonly PlayerActionMask[];
+  readonly actorObservations: readonly ActorObservation[];
+}
+
+function publishedDiagnostics(
+  diagnostics: readonly MatchDiagnosticEvent[],
+  instrumentation: ResolvedInstrumentation,
+): readonly MatchDiagnosticEvent[] {
+  return instrumentation.diagnostics
+    ? diagnostics
+    : diagnostics.filter(event => event.type === "BALL_TELEPORT");
+}
+
+function publishedAnalytics(
+  report: EventDerivedMatchReport,
+  instrumentation: ResolvedInstrumentation,
+): EventDerivedMatchReport {
+  if (instrumentation.detailedAnalytics) return report;
+  return {
+    matchId: report.matchId,
+    teams: report.teams,
+    players: {},
+    possessionIntervals: [],
+  };
 }
 
 export type MatchDiagnosticEvent = PossessionAcquisitionRecord | PassResolutionRecord | BallTeleportViolation;
 
+interface MatchRuntimeContext {
+  lastPossessionTeamId: string | null;
+}
+
 export interface IncrementalMatchFrame {
+  readonly manifest: ExecutionManifest;
   readonly sequence: number;
   readonly period: MatchPeriod;
   readonly state: MatchState;
@@ -101,46 +138,68 @@ export interface IncrementalMatchFrame {
   readonly decisionTrace:readonly DecisionDebugEntry[];
   readonly eventStore: readonly StoredMatchEvent[];
   readonly analytics: EventDerivedMatchReport;
+  readonly policyDecisions: readonly PolicyDecisionRecord[];
+  readonly actionMasks: readonly PlayerActionMask[];
+  readonly actorObservations: readonly ActorObservation[];
 }
 
 export class MatchEngine {
   private readonly initializer = new MatchInitializer();
   private readonly arbitrator = new ActionArbitrator();
-  /** Tracks which team last held continuous possession for shot-count reset. */
-  private lastPossessionTeamId: string | null = null;
 
   public simulate(
     config: SimulationConfig,
     attackFunnel?: AttackFunnelCollector,
+    policies = new PlayerPolicyController(),
   ): MatchResult {
-    const iterator = this.runIncrementally(config, attackFunnel);
+    const iterator = this.runIncrementally(config, attackFunnel, policies);
     while (true) {
       const step = iterator.next();
       if (step.done) return step.value;
     }
   }
 
+  /** Replays only when the supplied config still matches the recorded environment contract. */
+  public reproduce(
+    config: SimulationConfig,
+    manifest: ExecutionManifest,
+    expectedResultHash?: string,
+    policies = new PlayerPolicyController(),
+  ): MatchResult {
+    if (!verifyExecutionManifest(config, manifest)) {
+      throw new Error(`Execution manifest mismatch: expected ${manifest.manifestHash}`);
+    }
+    const result = this.simulate(config, undefined, policies);
+    if (expectedResultHash && result.resultHash !== expectedResultHash) {
+      throw new Error(`Reproduced result hash mismatch: expected ${expectedResultHash}, received ${result.resultHash}`);
+    }
+    return result;
+  }
+
   public *runIncrementally(
     config: SimulationConfig,
     attackFunnel?: AttackFunnelCollector,
+    policies = new PlayerPolicyController(),
   ): Generator<IncrementalMatchFrame, MatchResult, void> {
-    const rng = new SeededRandom(config.seed);
+    const instrumentation = resolveInstrumentation(config.instrumentation, config.debugDecisions);
+    const manifest = buildExecutionManifest(config, instrumentation);
+    const random = createMatchRandomStreams(config.seed);
     const deltaTime = config.tickDeltaSeconds ?? DEFAULT_DELTA_TIME;
     const matchDuration = config.maxDurationSeconds ?? DEFAULT_MATCH_DURATION_SECONDS;
     const halfTime = matchDuration / 2;
 
-    this.lastPossessionTeamId = null;
+    const runtime: MatchRuntimeContext = { lastPossessionTeamId: null };
 
     const pitchGrid = PitchGrid.create(config.pitch);
     const perceptionSystem = new PerceptionSystem(pitchGrid);
     const cognitiveSystem = new CognitiveSystem(
-      new NoiseSystem(rng),
+      new NoiseSystem(random.cognition),
       new MemorySystem(),
       new PredictionSystem()
     );
     const worldAwarenessSystem = new WorldAwarenessSystem(config.pitch.length);
     const decisionDebug=new DecisionDebug({maxEntries:500});
-    if(config.debugDecisions)decisionDebug.enable();
+    if(instrumentation.debugSnapshots)decisionDebug.enable();
     const possessionDecisionSystem = new PossessionDecisionSystem(
       createPossessionEvaluators(),
       undefined,
@@ -159,7 +218,7 @@ export class MatchEngine {
       config.pitch.length,
       decisionDebug,
     );
-    const refereeSystem = new RefereeSystem(rng);
+    const refereeSystem = new RefereeSystem(random.referee);
     const actionFactory = new ActionFactory(refereeSystem);
     const ballPhysics = new BallPhysicsSystem();
     const tacticalEngine = new TacticalEngine();
@@ -171,16 +230,14 @@ export class MatchEngine {
     const restartSystem = new RestartSystem();
     const teamBehaviour = new TeamBehaviourSystem();
     const movementSystem = new MovementSystem();
-    const possessionSystem = new PossessionSystem(rng, new ReachCalculator());
-    const metrics = new MatchMetricsCollector();
+    const possessionSystem = new PossessionSystem(random.possession, new ReachCalculator());
+    const tacticalDiagnostics = new TacticalDiagnosticsCollector();
     const teleportDetector = new BallTeleportDetector();
     const offensiveFunnel = new OffensiveFunnelCollector();
     const eventStore = new MatchEventStore(String(config.id));
     const replayRecorder = new GoalReplayRecorder(5, 3, deltaTime);
 
     const { state, awarenessMap } = this.initializer.initialize(config);
-    metrics.bindTeams(state.home.team.id, state.away.team.id);
-
     let period: MatchPeriod = "FIRST_HALF";
     const allEvents: MatchEvent[] = [];
     const allDiagnostics: MatchDiagnosticEvent[] = [];
@@ -190,21 +247,43 @@ export class MatchEngine {
     let halfTimeHandled = false;
 
     const firstHalfStarted = this.makePeriodStarted("FIRST_HALF", 0);
-    allEvents.push(firstHalfStarted);
+    if (instrumentation.eventHistory) allEvents.push(firstHalfStarted);
     eventStore.append([firstHalfStarted]);
     let lastPublishedEventSequence = 0;
+    let lastPublishedPolicySequence = 0;
     let liveAnalytics = eventStore.snapshot(state);
+
+    const initialStoredEvents = eventStore.events();
+    lastPublishedEventSequence = initialStoredEvents.at(-1)?.sequence ?? 0;
+    yield {
+      manifest,
+      sequence: 0,
+      period,
+      state,
+      events: [firstHalfStarted],
+      tacticalDiagnostics: tacticalDiagnostics.snapshot(),
+      diagnostics: [],
+      offensiveFunnel: offensiveFunnel.snapshot(),
+      timeline: instrumentation.timeline ? eventStore.timeline() : [],
+      goalReplays: [],
+      decisionTrace: [],
+      eventStore: instrumentation.eventHistory ? initialStoredEvents : [],
+      analytics: publishedAnalytics(liveAnalytics, instrumentation),
+      policyDecisions: [],
+      actionMasks: [],
+      actorObservations: [],
+    };
 
     while (state.currentSecond < matchDuration) {
       const frameEvents: MatchEvent[] = [];
       if (!halfTimeHandled && state.currentSecond >= halfTime) {
         const firstHalfEnded = this.makePeriodEnded("FIRST_HALF", state.currentSecond);
-        allEvents.push(firstHalfEnded);
+        if (instrumentation.eventHistory) allEvents.push(firstHalfEnded);
         frameEvents.push(firstHalfEnded);
         period = "SECOND_HALF";
         halfTimeHandled = true;
         const secondHalfStarted = this.makePeriodStarted("SECOND_HALF", state.currentSecond);
-        allEvents.push(secondHalfStarted);
+        if (instrumentation.eventHistory) allEvents.push(secondHalfStarted);
         frameEvents.push(secondHalfStarted);
         this.swapAttackingDirections(state);
         restartSystem.setupKickoff(state, state.away, state.currentSecond);
@@ -213,16 +292,17 @@ export class MatchEngine {
       const beforeBallPosition = state.ball.position;
       const beforeBallSpeed = state.ball.velocity.magnitude();
       const tickEvents = this.runTick(
-        state, awarenessMap, rng, deltaTime,
+        state, awarenessMap, random.action, deltaTime,
         perceptionSystem, cognitiveSystem, worldAwarenessSystem,
         possessionDecisionSystem, offBallDecisionSystem,
         actionFactory, ballPhysics, tacticalEngine,
         collectivePhaseSystem, possessionPredictionSystem, collectiveCoordination, tacticalIntelligence, restartSystem, goalkeeperSystem, teamBehaviour, movementSystem, possessionSystem,
-        tick, period, metrics, offensiveFunnel, attackFunnel
+        tick, period, runtime, instrumentation.diagnostics, tacticalDiagnostics, offensiveFunnel,
+        attackFunnel, policies,
       );
 
       for (const event of tickEvents) {
-        allEvents.push(event);
+        if (instrumentation.eventHistory) allEvents.push(event);
         frameEvents.push(event);
         if (event.type === "SHOT") {
           if (event.teamId === state.home.team.id) homeShots++;
@@ -230,9 +310,10 @@ export class MatchEngine {
         }
       }
 
-      metrics.onEvents(tickEvents, state);
-      offensiveFunnel.onEvents(tickEvents, state);
-      metrics.sampleState(state, deltaTime);
+      if (instrumentation.diagnostics) {
+        offensiveFunnel.onEvents(tickEvents, state);
+        tacticalDiagnostics.sample(state, deltaTime);
+      }
       attackFunnel?.sampleState(state);
 
       this.accumulateFatigue(state, deltaTime);
@@ -246,11 +327,13 @@ export class MatchEngine {
         .filter(resolution => resolution.statisticalAttemptRecorded)
         .map(resolution => this.makePassResolutionEvent(resolution, state, period));
       const possessionEvents = acquisitions.map(acquisition => this.makePossessionChangedEvent(acquisition, state, period));
-      allEvents.push(...passEvents, ...possessionEvents);
+      if (instrumentation.eventHistory) allEvents.push(...passEvents, ...possessionEvents);
       frameEvents.push(...passEvents, ...possessionEvents);
-      for (const resolution of passResolutions) offensiveFunnel.onPassResolution(resolution, state);
-      offensiveFunnel.onAcquisitions(acquisitions, state);
-      offensiveFunnel.sample(state);
+      if (instrumentation.diagnostics) {
+        for (const resolution of passResolutions) offensiveFunnel.onPassResolution(resolution, state);
+        offensiveFunnel.onAcquisitions(acquisitions, state);
+        offensiveFunnel.sample(state);
+      }
       const teleports = teleportDetector.inspectTick({
         seed: config.seed, matchSecond: state.currentSecond, deltaTime,
         before: beforeBallPosition, after: state.ball.position,
@@ -261,87 +344,123 @@ export class MatchEngine {
           || acquisitions.some(acquisition => acquisition.reason === "RESTART"),
       });
       const tickDiagnostics: MatchDiagnosticEvent[] = [...acquisitions, ...passResolutions, ...teleports];
-      allDiagnostics.push(...tickDiagnostics);
+      allDiagnostics.push(...publishedDiagnostics(tickDiagnostics, instrumentation));
       eventStore.append(frameEvents);
       eventStore.sample(state);
-      replayRecorder.sample(state, frameEvents);
+      if (instrumentation.replay) replayRecorder.sample(state, frameEvents);
       tick++;
       if (tick % Math.max(1, Math.round(1 / deltaTime)) === 0) liveAnalytics = eventStore.snapshot(state);
       const storedFrameEvents = eventStore.events().filter(event => event.sequence > lastPublishedEventSequence);
       lastPublishedEventSequence = storedFrameEvents.at(-1)?.sequence ?? lastPublishedEventSequence;
+      const framePolicyDecisions = policies.decisionsAfter(lastPublishedPolicySequence);
+      lastPublishedPolicySequence = framePolicyDecisions.at(-1)?.sequence ?? lastPublishedPolicySequence;
 
       if (state.currentSecond >= matchDuration) {
         const matchEnded = this.makePeriodEnded("SECOND_HALF", state.currentSecond);
-        allEvents.push(matchEnded);
+        if (instrumentation.eventHistory) allEvents.push(matchEnded);
         frameEvents.push(matchEnded);
         eventStore.append([matchEnded]);
-        replayRecorder.sample(state, [matchEnded]);
-        const goalReplays = replayRecorder.replays();
+        if (instrumentation.replay) replayRecorder.sample(state, [matchEnded]);
+        const goalReplays = instrumentation.replay ? replayRecorder.replays() : [];
         const replayGoalIds = new Set(goalReplays.map(replay => replay.goalEventId));
+        const finalAnalytics = eventStore.finalize(state);
+        const finalMetrics = buildEventDerivedMatchMetrics(
+          finalAnalytics, state.home.team.id, state.away.team.id, tacticalDiagnostics.snapshot(),
+        );
+        const resultHash = buildSportingResultHash({
+          seed: config.seed, matchDurationSeconds: state.currentSecond,
+          homeTeamId: state.home.team.id, awayTeamId: state.away.team.id,
+          homeScore: state.home.score, awayScore: state.away.score,
+          authoritativeEvents: eventStore.events(), teamAnalytics: finalAnalytics.teams,
+        });
         const finalResult: MatchResult = {
+          manifest,
+          resultHash,
           homeTeamId: state.home.team.id,
           awayTeamId: state.away.team.id,
           homeScore: state.home.score,
           awayScore: state.away.score,
-          events: allEvents,
+          events: instrumentation.eventHistory ? allEvents : [],
           homeShots,
           awayShots,
           matchDurationSeconds: state.currentSecond,
           seed: config.seed,
-          metrics: metrics.finalize(),
-          diagnostics: allDiagnostics,
+          metrics: finalMetrics,
+          diagnostics: publishedDiagnostics(allDiagnostics, instrumentation),
           offensiveFunnel: offensiveFunnel.snapshot(),
-          eventStore: eventStore.events(),
-          analytics: eventStore.finalize(state),
-          timeline: eventStore.timeline(replayGoalIds),
+          eventStore: instrumentation.eventHistory ? eventStore.events() : [],
+          analytics: publishedAnalytics(finalAnalytics, instrumentation),
+          timeline: instrumentation.timeline ? eventStore.timeline(replayGoalIds) : [],
           goalReplays,
           decisionQuality: new DecisionQualityMetrics().summarize(decisionDebug.getEntries()),
+          policyDecisions: policies.decisions(),
+          actionMasks: policies.actionMasks(),
+          actorObservations: policies.actorObservations(),
         };
-        yield { sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: metrics.tacticalSnapshot(), diagnostics: tickDiagnostics, offensiveFunnel: offensiveFunnel.snapshot(), timeline: finalResult.timeline, goalReplays, decisionTrace:decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1), eventStore:storedFrameEvents, analytics:finalResult.analytics };
+        yield { manifest, sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: tacticalDiagnostics.snapshot(), diagnostics: publishedDiagnostics(tickDiagnostics, instrumentation), offensiveFunnel: offensiveFunnel.snapshot(), timeline: finalResult.timeline, goalReplays, decisionTrace:instrumentation.debugSnapshots?decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1):[], eventStore:instrumentation.eventHistory?storedFrameEvents:[], analytics:finalResult.analytics, policyDecisions: framePolicyDecisions, actionMasks: policies.actionMasks(), actorObservations: policies.actorObservations() };
         return finalResult;
       }
 
       yield {
+        manifest,
         sequence: tick,
         period,
         state,
         events: frameEvents,
-        tacticalDiagnostics: metrics.tacticalSnapshot(),
-        diagnostics: tickDiagnostics,
+        tacticalDiagnostics: tacticalDiagnostics.snapshot(),
+        diagnostics: publishedDiagnostics(tickDiagnostics, instrumentation),
         offensiveFunnel: offensiveFunnel.snapshot(),
-        timeline: eventStore.timeline(new Set(replayRecorder.replays().map(replay => replay.goalEventId))),
-        goalReplays: replayRecorder.replays(),
-        decisionTrace:decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1),
-        eventStore:storedFrameEvents,
-        analytics:liveAnalytics,
+        timeline: instrumentation.timeline ? eventStore.timeline(new Set(replayRecorder.replays().map(replay => replay.goalEventId))) : [],
+        goalReplays: instrumentation.replay ? replayRecorder.replays() : [],
+        decisionTrace:instrumentation.debugSnapshots?decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1):[],
+        eventStore:instrumentation.eventHistory?storedFrameEvents:[],
+        analytics:publishedAnalytics(liveAnalytics, instrumentation),
+        policyDecisions: framePolicyDecisions,
+        actionMasks: policies.actionMasks(),
+        actorObservations: policies.actorObservations(),
       };
     }
 
-    allEvents.push(this.makePeriodEnded("SECOND_HALF", state.currentSecond));
-    eventStore.append([allEvents[allEvents.length - 1]]);
+    const finalPeriodEnded = this.makePeriodEnded("SECOND_HALF", state.currentSecond);
+    if (instrumentation.eventHistory) allEvents.push(finalPeriodEnded);
+    eventStore.append([finalPeriodEnded]);
 
-    const finalMetrics = metrics.finalize();
+    const finalAnalytics = eventStore.finalize(state);
+    const finalMetrics = buildEventDerivedMatchMetrics(
+      finalAnalytics, state.home.team.id, state.away.team.id, tacticalDiagnostics.snapshot(),
+    );
+    const resultHash = buildSportingResultHash({
+      seed: config.seed, matchDurationSeconds: state.currentSecond,
+      homeTeamId: state.home.team.id, awayTeamId: state.away.team.id,
+      homeScore: state.home.score, awayScore: state.away.score,
+      authoritativeEvents: eventStore.events(), teamAnalytics: finalAnalytics.teams,
+    });
 
-    const goalReplays = replayRecorder.replays();
+    const goalReplays = instrumentation.replay ? replayRecorder.replays() : [];
     const replayGoalIds = new Set(goalReplays.map(replay => replay.goalEventId));
     return {
+      manifest,
+      resultHash,
       homeTeamId: state.home.team.id,
       awayTeamId: state.away.team.id,
       homeScore: state.home.score,
       awayScore: state.away.score,
-      events: allEvents,
+      events: instrumentation.eventHistory ? allEvents : [],
       homeShots,
       awayShots,
       matchDurationSeconds: state.currentSecond,
       seed: config.seed,
       metrics: finalMetrics,
-      diagnostics: allDiagnostics,
+      diagnostics: publishedDiagnostics(allDiagnostics, instrumentation),
       offensiveFunnel: offensiveFunnel.snapshot(),
-      eventStore: eventStore.events(),
-      analytics: eventStore.finalize(state),
-      timeline: eventStore.timeline(replayGoalIds),
+      eventStore: instrumentation.eventHistory ? eventStore.events() : [],
+      analytics: publishedAnalytics(finalAnalytics, instrumentation),
+      timeline: instrumentation.timeline ? eventStore.timeline(replayGoalIds) : [],
       goalReplays,
       decisionQuality: new DecisionQualityMetrics().summarize(decisionDebug.getEntries()),
+      policyDecisions: policies.decisions(),
+      actionMasks: policies.actionMasks(),
+      actorObservations: policies.actorObservations(),
     };
   }
 
@@ -369,9 +488,12 @@ export class MatchEngine {
     possessionSystem: PossessionSystem,
     tick: number,
     period: MatchPeriod,
-    metrics: MatchMetricsCollector,
+    runtime: MatchRuntimeContext,
+    collectDiagnostics: boolean,
+    tacticalDiagnostics: TacticalDiagnosticsCollector,
     offensiveFunnel: OffensiveFunnelCollector,
     attackFunnel?: AttackFunnelCollector,
+    policies = new PlayerPolicyController(),
   ): MatchEvent[] {
     const events: MatchEvent[] = [];
     const players = this.allPlayers(state);
@@ -455,14 +577,9 @@ export class MatchEngine {
 
     for (const player of players) {
       if (kickoffWaiting) continue;
+      if (player.scenarioDecisionDisabled) continue;
       if (player.isActionBusy()) continue;
       if (state.currentSecond + 1e-9 < player.nextDecisionAt) continue;
-
-      player.nextDecisionAt =
-        state.currentSecond +
-        (player.hasBall
-          ? POSSESSION_DECISION_INTERVAL_SECONDS
-          : OFF_BALL_DECISION_INTERVAL_SECONDS);
 
       const awareness = awarenessMap.get(player.player.id);
       if (!awareness) continue;
@@ -471,19 +588,39 @@ export class MatchEngine {
       const decisionCtx = new DecisionContext(
         state, player, awareness, tick, deltaTime, world, tacticalSnapshot,
       );
-      const decision = player.hasBall
+      const heuristicDecision = () => player.hasBall
         ? possessionDecisionSystem.decide(decisionCtx)
         : offBallDecisionSystem.decide(decisionCtx);
+      const validDecisions = policies.hasPolicy(player.player.id)
+        ? (player.hasBall
+            ? possessionDecisionSystem.availableDecisions(decisionCtx)
+            : offBallDecisionSystem.availableDecisions(decisionCtx))
+        : [];
+      const decision = policies.decide({
+        playerId: player.player.id,
+        matchSecond: state.currentSecond,
+        hasBall: player.hasBall,
+        validDecisions,
+        heuristicDecision,
+        buildActorObservation: mask => OBSERVATION_SPACE.actor(decisionCtx, mask),
+      });
+      if (!decision) continue;
+
+      player.nextDecisionAt =
+        state.currentSecond +
+        (player.hasBall
+          ? POSSESSION_DECISION_INTERVAL_SECONDS
+          : OFF_BALL_DECISION_INTERVAL_SECONDS);
 
       if (player.hasBall && attackFunnel) {
         attackFunnel.onPossessionDecision(decision.type, player, world, decision);
       }
-      if (player.hasBall) offensiveFunnel.onDecision(player, decision, world, state);
+      if (player.hasBall && collectDiagnostics) offensiveFunnel.onDecision(player, decision, world, state);
 
       const started = actionFactory.tryStart(decision, player, state.currentSecond);
       if (!started) continue;
 
-      metrics.onActionStarted(player, decision.type, state);
+      if (collectDiagnostics) tacticalDiagnostics.onActionStarted(player, decision.type, state);
 
       if (
         attackFunnel &&
@@ -535,7 +672,7 @@ export class MatchEngine {
     events.push(...ballPhysics.update(state, deltaTime));
     possessionSystem.update(state);
     restartSystem.update(state);
-    this.syncPossessionSide(state);
+    this.syncPossessionSide(state, runtime);
     possessionPredictionSystem.update(state);
     collectivePhaseSystem.update(state, events);
 
@@ -591,7 +728,7 @@ export class MatchEngine {
     }
   }
 
-  private syncPossessionSide(state: MatchState): void {
+  private syncPossessionSide(state: MatchState, runtime: MatchRuntimeContext): void {
     const owner = state.ball.owner;
     if (!owner) {
       // Ball flight has no physical owner. Change collective attacking side
@@ -612,10 +749,10 @@ export class MatchEngine {
     state.attackingTeam = team;
     state.defendingTeam = other;
 
-    if (this.lastPossessionTeamId !== team.team.id) {
+    if (runtime.lastPossessionTeamId !== team.team.id) {
       // Fresh possession spell for this team — allow up to MAX shots again.
       team.resetPossessionShotCount();
-      this.lastPossessionTeamId = team.team.id;
+      runtime.lastPossessionTeamId = team.team.id;
     }
   }
 
@@ -660,7 +797,10 @@ export class MatchEngine {
     const passer = this.allPlayers(state).find(player => player.player.id === resolution.passerId);
     const team = passer && state.home.players.includes(passer) ? state.home : state.away;
     return {
-      id: `pass-resolution-${resolution.passerId}-${resolution.matchSecond.toFixed(2)}`,
+      id: resolution.actionId
+        ? `${resolution.actionId}:pass-resolved`
+        : `pass-resolution-${resolution.passerId}-${resolution.matchSecond.toFixed(6)}`,
+      actionId: resolution.actionId as ActionId | undefined,
       type: resolution.success ? "PASS_COMPLETED" : "PASS_INTERCEPTED",
       timestamp: (resolution.matchSecond * 1000) as Milliseconds,
       period,
@@ -682,7 +822,10 @@ export class MatchEngine {
     const player = this.allPlayers(state).find(candidate=>candidate.player.id===acquisition.playerId);
     const team = player && state.home.players.includes(player) ? state.home : state.away;
     return {
-      id:`possession-${acquisition.playerId}-${acquisition.matchSecond.toFixed(2)}`,
+      id:acquisition.actionId
+        ? `${acquisition.actionId}:possession:${acquisition.playerId}`
+        : `possession-${acquisition.playerId}-${acquisition.matchSecond.toFixed(6)}`,
+      actionId:acquisition.actionId as ActionId|undefined,
       type:"POSSESSION_CHANGED", timestamp:(acquisition.matchSecond*1000) as Milliseconds,
       period, teamId:team.team.id as TeamId, playerId:acquisition.playerId as PlayerId,
       previousPlayerId:acquisition.previousPlayerId as PlayerId|null, reason:acquisition.reason,

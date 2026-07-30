@@ -4,6 +4,8 @@ import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParamet
 
 export interface StoredMatchEvent {
   readonly id: string;
+  /** Causal action identity, absent for clock/restart system events. */
+  readonly actionId?: string;
   /** Monotonic order assigned by the authoritative event store. */
   readonly sequence: number;
   readonly matchId: string;
@@ -18,6 +20,15 @@ export interface StoredMatchEvent {
   readonly secondaryPlayerId?: string;
   readonly position?: { readonly x: number; readonly y: number };
   readonly metadata: Readonly<Record<string, unknown>>;
+}
+
+/** Canonical JSON used only to distinguish a harmless retry from an ID collision. */
+function stableSerialize(value: unknown): string {
+  if (value === undefined) return '"__undefined__"';
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableSerialize).join(",")}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record).sort().map(key => `${JSON.stringify(key)}:${stableSerialize(record[key])}`).join(",")}}`;
 }
 
 export interface PossessionInterval {
@@ -130,6 +141,7 @@ interface MutablePlayerReport {
 /** Stores normalized real events and derives reports without parallel shot/pass counters. */
 export class MatchEventStore {
   private readonly stored: StoredMatchEvent[] = [];
+  private readonly fingerprintsById = new Map<string, string>();
   private readonly timelineEntries: MatchTimelineEntry[] = [];
   private readonly intervals: PossessionInterval[] = [];
   private readonly distanceByPlayer = new Map<string, number>();
@@ -140,7 +152,15 @@ export class MatchEventStore {
 
   public append(events: readonly MatchEvent[]): void {
     for (const event of events) {
+      if (!event.id) throw new Error("Authoritative match events require a non-empty id");
+      const fingerprint = stableSerialize(event);
+      const existing = this.fingerprintsById.get(event.id);
+      if (existing !== undefined) {
+        if (existing !== fingerprint) throw new Error(`Conflicting match event id: ${event.id}`);
+        continue;
+      }
       const stored = this.normalize(event);
+      this.fingerprintsById.set(event.id, fingerprint);
       this.stored.push(stored);
       const timeline = this.toTimelineEntry(stored);
       if (timeline) this.timelineEntries.push(timeline);
@@ -369,10 +389,11 @@ export class MatchEventStore {
     const x = this.number(raw.positionX) ?? this.number(raw.originX);
     const y = this.number(raw.positionY) ?? this.number(raw.originY);
     const metadata: Record<string, unknown> = { ...raw };
-    for (const key of ["id", "type", "timestamp", "period", "teamId", "playerId", "scorerId", "goalkeeperId", "assistId", "receiverId", "shooterId", "positionX", "positionY", "originX", "originY"]) delete metadata[key];
+    for (const key of ["id", "actionId", "type", "timestamp", "period", "teamId", "playerId", "scorerId", "goalkeeperId", "assistId", "receiverId", "shooterId", "positionX", "positionY", "originX", "originY"]) delete metadata[key];
     if (x !== undefined) metadata.zone = x < 35 ? "OWN_THIRD" : x < 70 ? "MIDDLE_THIRD" : "FINAL_THIRD";
     return {
       id: event.id,
+      actionId: typeof raw.actionId === "string" ? raw.actionId : undefined,
       sequence: this.stored.length + 1,
       matchId: this.matchId,
       simulationTick: Math.round(Number(event.timestamp) / 1000 / ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds),
