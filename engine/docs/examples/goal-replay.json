@@ -1,0 +1,8 @@
+{
+  "goalEventId": "seed-77:44",
+  "speed": 1,
+  "frames": [
+    { "timestamp": 813.65, "ball": { "x": 88, "y": 34, "height": 0.11 }, "players": [{ "id": "home-9", "teamId": "home", "x": 87.8, "y": 34.1, "facingX": 0.99, "facingY": -0.05, "action": "SHOT" }], "events": ["SHOT_STARTED"] },
+    { "timestamp": 814.32, "ball": { "x": 105.12, "y": 31.5, "height": 1.08 }, "players": [{ "id": "home-9", "teamId": "home", "x": 88.4, "y": 34, "facingX": 0.99, "facingY": -0.05, "action": null }], "events": ["GOAL"] }
+  ]
+}

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "football-match-engine-env"
+version = "0.1.0"
+description = "Gymnasium wrapper for the versioned TypeScript football training environment"
+requires-python = ">=3.10"
+dependencies = [
+  "gymnasium>=1.0,<2",
+  "numpy>=1.26,<3",
+  "stable-baselines3==2.9.0",
+  "sb3-contrib==2.9.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["football_env*"]

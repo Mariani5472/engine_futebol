@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/api/matchClient.ts","./src/components/DebugPanel.tsx","./src/components/Pitch.tsx","./src/debug/observability.ts","./src/simulation/DemoMatchFeed.ts","./src/simulation/types.ts","./vite.config.ts"],"version":"5.9.3"}

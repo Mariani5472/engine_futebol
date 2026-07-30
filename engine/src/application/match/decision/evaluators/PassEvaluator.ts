@@ -1,0 +1,240 @@
+import { ActionEvaluator } from "../ActionEvaluator";
+import { Decision } from "../Decision";
+import { DecisionContext } from "../DecisionContext";
+import { DecisionType } from "../DecisionType";
+import { UtilityScore } from "../UtilityScore";
+import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCalculator";
+import { PassingLane } from "../../awareness/WorldAwareness";
+import { ActionReadiness } from "./ActionReadiness";
+import { GoalOpportunityAnalyzer } from "../GoalOpportunityAnalyzer";
+
+export class PassEvaluator implements ActionEvaluator {
+  private readonly goalOpportunity = new GoalOpportunityAnalyzer();
+  public evaluate(context: DecisionContext): Decision[] {
+    if (!context.player.hasBall) return [];
+    if (!ActionReadiness.canStartAction(context, 0.2)) return [];
+
+    const lanes = context.world.passingLanes;
+    if (lanes.length === 0) return [];
+
+    const tacticallySafe = lanes.filter(lane => {
+      const future = context.teamTacticalContext?.passingLanes.find(item =>
+        item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+      );
+      return lane.clear && (!future || future.clearAtArrival);
+    });
+    const viableOutlets = lanes.filter(lane => {
+      const future = context.teamTacticalContext?.passingLanes.find(item =>
+        item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+      );
+      return lane.clear && (!future || future.arrivalMargin > 0);
+    });
+    // When a safe outlet exists, risky lanes are not merely assigned a lower
+    // score: they are excluded. Otherwise large progression bonuses could
+    // still select a visibly blocked pass hundreds of times per match.
+    const candidateLanes = tacticallySafe.length > 0 ? tacticallySafe : viableOutlets;
+    if (candidateLanes.length === 0) return [];
+
+    const bestForward = Math.max(...candidateLanes.map((l) => l.forwardProgress));
+    const hasProgressiveOption = bestForward >= 6;
+
+    const team = context.match.home.players.includes(context.player)
+      ? context.match.home
+      : context.match.away;
+    const holdProgressive = team.inProgressiveHold(context.match.currentSecond);
+
+    const decisions: Decision[] = [];
+
+    for (const lane of candidateLanes) {
+      // Ordinary ground passes should not become hopeful clearances across
+      // half the pitch. Crosses and goalkeeper distribution have evaluators
+      // and execution profiles of their own.
+      if (lane.distance > 42) continue;
+      let score = this.scoreLane(
+        context,
+        lane,
+        hasProgressiveOption,
+        bestForward,
+        holdProgressive,
+      );
+      const futureLane = context.teamTacticalContext?.passingLanes.find(item =>
+        item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+      );
+      if (context.player.oneTwoReturnTargetId===lane.targetId
+        && context.match.currentSecond<=context.player.oneTwoAvailableUntil
+        && lane.clear && (futureLane?.clearAtArrival ?? true) && lane.distance<=22) {
+        score=UtilityScore.fromComponents({
+          ...score.components,
+          TACTICAL:(score.components.TACTICAL??0)+32,
+        });
+      }
+      const targetPlayer = team.players.find(player => player.player.id === lane.targetId);
+      const combination = context.teamTacticalContext?.combinations.find(item =>
+        item.receiverId === context.player.player.id && item.thirdPlayerId === lane.targetId && item.availableReturnLane,
+      );
+      if (combination) {
+        score = UtilityScore.fromComponents({
+          ...score.components,
+          COMBINATION_PLAY: 10 + combination.completionProbability * 18 + Math.max(0, combination.progressionGain) * .25,
+        });
+      }
+      const combinationActive = context.match.currentSecond <= context.player.thirdManAvailableUntil;
+      if (combinationActive && context.player.thirdManNextTargetId === lane.targetId && lane.clear) {
+        score = UtilityScore.fromComponents({
+          ...score.components,
+          TACTICAL: (score.components.TACTICAL ?? 0) + 28,
+          FUTURE_POSSESSION_VALUE: 10,
+        });
+      } else if (targetPlayer?.thirdManOriginId === context.player.player.id
+        && context.match.currentSecond <= targetPlayer.thirdManAvailableUntil
+        && lane.clear) {
+        score = UtilityScore.fromComponents({
+          ...score.components,
+          TACTICAL: (score.components.TACTICAL ?? 0) + 12,
+          FUTURE_POSSESSION_VALUE: 6,
+        });
+      }
+      if (score.total <= 0) continue;
+      decisions.push(
+        new Decision(
+          DecisionType.PASS,
+          score.total,
+          lane.targetId,
+          score.reasons,
+          score.components,
+        ),
+      );
+    }
+
+    return decisions;
+  }
+
+  private scoreLane(
+    context: DecisionContext,
+    lane: PassingLane,
+    hasProgressiveOption: boolean,
+    bestForward: number,
+    holdProgressive: boolean,
+  ): UtilityScore {
+    const attrs = context.player.player.attributes;
+    const world = context.world;
+    const futureLane = context.teamTacticalContext?.passingLanes.find(item =>
+      item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
+    );
+    const opportunity = this.goalOpportunity.analyze(context);
+
+    const passing = (attrs.technical.passing ?? 10) / 20;
+    const vision = (attrs.mental.vision ?? 10) / 20;
+    const decisionsAttr = (attrs.mental.decisions ?? 10) / 20;
+
+    const roleQuality = PositionInfluenceCalculator.passingQuality(
+      context.player.currentRole,
+    );
+
+    // Very short passes inside a crowd perpetuate local pinball. Reward useful
+    // separation (roughly 8-24m) and strongly discourage sub-4m recycling.
+    const distanceScore = lane.distance < 4
+      ? -18 + lane.distance * 3
+      : lane.distance < 8
+        ? 12 + (lane.distance - 4) * 2
+        : lane.distance <= 16
+          ? 24
+          : lane.distance <= 22
+            ? 24 - (lane.distance - 16) * 1.5
+            : Math.max(-24, 15 - (lane.distance - 22) * 2.4);
+    const nearbyOpponents = world.opponents.filter(opponent => opponent.position.distanceTo(lane.targetPosition) < 3).length;
+    const nearbyTeammates = world.teammates.filter(teammate =>
+      teammate.player.id !== lane.targetId && teammate.position.distanceTo(lane.targetPosition) < 2,
+    ).length;
+    const receiverCongestion = nearbyOpponents * -8 + nearbyTeammates * -4;
+    const progressBonus = Math.max(-12, Math.min(30, lane.forwardProgress * 1.15));
+    const certaintyBonus = lane.certainty * 6;
+    const clearanceBonus = lane.clear ? 12 : -42;
+    const arrivalValue = futureLane
+      ? Math.max(-30, Math.min(18, futureLane.arrivalMargin * 14)) + (futureLane.clearAtArrival ? 8 : -18)
+      : 0;
+
+    const desiredDirection = lane.targetPosition.subtract(context.player.position);
+    const orientationQuality = ActionReadiness.orientationQuality(
+      context.player.facingDirection,
+      desiredDirection,
+    );
+    const bodyQuality = ActionReadiness.bodyQuality(context);
+    const pressure = world.pressure;
+
+    let pressureRelief = 0;
+    if (pressure > 0.3) {
+      pressureRelief = pressure * (lane.clear ? 24 : 8);
+      if (lane.forwardProgress > 4) pressureRelief += 14;
+    }
+
+    let antiStagnation = 0;
+    if (hasProgressiveOption || holdProgressive) {
+      if (lane.forwardProgress < 0) {
+        antiStagnation = holdProgressive ? -18 : -12;
+      } else if (lane.forwardProgress < 3) {
+        antiStagnation = holdProgressive ? -12 : -6;
+      } else if (lane.forwardProgress < bestForward * 0.5) {
+        antiStagnation = -10;
+      }
+    } else if (lane.forwardProgress < -2 && pressure < 0.3) {
+      antiStagnation = -18;
+    }
+
+    const bodyExecutionQuality = Math.max(
+      0.25,
+      orientationQuality * 0.55 + bodyQuality * 0.45,
+    );
+
+    const technique = vision * 14 + passing * 12 + decisionsAttr * 6;
+    const space =
+      distanceScore +
+      progressBonus +
+      certaintyBonus +
+      clearanceBonus +
+      receiverCongestion +
+      antiStagnation;
+
+    const progressiveFloor =
+      lane.forwardProgress >= 8 && lane.clear
+        ? 28 * bodyExecutionQuality
+        : lane.forwardProgress >= 4
+          ? 12 * bodyExecutionQuality
+          : 0;
+
+    const shotOpportunityCost = opportunity.shotAvailable && !opportunity.teammateBetterPositioned
+      ? -opportunity.shotQuality * (lane.forwardProgress < 3 ? 44 : 22)
+      : opportunity.teammateBetterPositioned ? 8 : 0;
+    const raw = technique + space + pressureRelief + progressiveFloor + shotOpportunityCost + arrivalValue;
+    const phaseRisk = this.phaseRiskAdjustment(teamPhase(context), lane);
+    const adjustedRaw = raw + phaseRisk;
+    const scaled = Math.max(0, adjustedRaw * roleQuality * bodyExecutionQuality);
+    const scale = adjustedRaw !== 0 ? scaled / adjustedRaw : 0;
+
+    return UtilityScore.fromComponents({
+      SPACE: space * scale,
+      TECHNIQUE: technique * scale,
+      PRESSURE: pressureRelief * scale,
+      ROLE: roleQuality * 12 * bodyExecutionQuality * 0.35,
+      BODY: bodyQuality * 8 * roleQuality * 0.3,
+      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4 + phaseRisk * scale + shotOpportunityCost * scale,
+      ARRIVAL_MARGIN: arrivalValue * scale,
+    });
+  }
+
+  private phaseRiskAdjustment(
+    phase: "DEFENSIVE_BLOCK" | "DEFENSIVE_TRANSITION" | "BUILD_UP" | "PROGRESSION" | "FINAL_THIRD" | "ATTACKING_TRANSITION" | "COUNTER_ATTACK" | "SET_PIECE",
+    lane: PassingLane,
+  ): number {
+    if (phase === "COUNTER_ATTACK" || phase === "ATTACKING_TRANSITION") {
+      return Math.max(-4, Math.min(16, lane.forwardProgress * .45)) + (lane.clear ? 3 : -4);
+    }
+    if (phase === "FINAL_THIRD") return Math.max(-3, Math.min(10, lane.forwardProgress * .3));
+    if (phase === "BUILD_UP") return lane.clear ? 3 : -8;
+    return 0;
+  }
+}
+
+function teamPhase(context: DecisionContext) {
+  return (context.match.home.players.includes(context.player) ? context.match.home : context.match.away).collectivePhase;
+}

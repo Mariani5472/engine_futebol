@@ -1,0 +1,26 @@
+#,Ação,Sucesso se…
+1,Corrigir emissão de cartão/falta no tackle/árbitro,Vermelhos < 1/jogo
+2,Debug de decisões de chute + pipeline,SHOT aparece com frequência no terço ofensivo
+3,Garantir execução e eventos de SHOT,≥ 12 finalizações/jogo
+4,Ajustar precisão e GK,"~2–3 gols, ~8 no alvo"
+5,Implementar corners,Escanteios > 0 e depois ~10
+6,Re-rodar calibrate 200 jogos,Convergência sobe de 0% para dezenas de %
+
+
+2. Calibrar atributos nos profiles
+   ↓
+3. Action Lifecycle
+   ↓
+4. ActiveAction no PlayerMatchState
+   ↓
+5. Separar intenção de execução
+   ↓
+6. ActionExecutor
+   ↓
+7. ActionResult
+   ↓
+8. OutcomeResolver
+   ↓
+9. Refatorar ActionFactory
+   ↓
+10. Melhorar MatchEngine
