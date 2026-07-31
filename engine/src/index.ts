@@ -183,3 +183,40 @@ export type { MultiAgentBoundary, MultiAgentMatchEnvironmentOptions, MultiAgentR
 export * from "./application/match/curriculum";
 export { CURRICULUM_SCENARIO_VERSION, createCurriculumScenarioPreset } from "./application/match/scenario/MatchScenario";
 export type { CurriculumGoalkeeperMode, CurriculumObjective, CurriculumScenarioConfig, CurriculumScenarioStage } from "./application/match/scenario/MatchScenario";
+export { FUNDAMENTAL_SCENARIO_VERSION } from "./application/match/scenario/MatchScenario";
+export type { FundamentalScenarioConfig, FundamentalScenarioSkill } from "./application/match/scenario/MatchScenario";
+export {
+  MovementScenarioEnvironment,
+  BallControlScenarioEnvironment,
+  PassingScenarioEnvironment,
+  ShootingScenarioEnvironment,
+} from "./application/match/scenario/FundamentalScenarioEnvironment";
+export type {
+  FundamentalScenarioEnvironmentOptions,
+  FundamentalScenarioResetResult,
+  FundamentalScenarioStepResult,
+} from "./application/match/scenario/FundamentalScenarioEnvironment";
+export type { FundamentalScenarioOutcome } from "./application/match/scenario/contracts/FundamentalScenarioOutcome";
+export {
+  FUNDAMENTAL_REWARD_VERSION,
+  fundamentalReward,
+  reconstructFundamentalReward,
+  verifyFundamentalReward,
+} from "./application/match/reward/FundamentalReward";
+export type {
+  FundamentalRewardBreakdown,
+  FundamentalRewardComponent,
+  FundamentalRewardComponentId,
+} from "./application/match/reward/FundamentalReward";
+export {
+  TRAINING_SCENARIO_CATALOG_VERSION,
+  TRAINING_SCENARIO_DEFINITION_VERSION,
+  trainingScenarioCatalog,
+  trainingScenarioDefinition,
+} from "./application/match/scenario/TrainingScenarioRegistry";
+export type {
+  TrainingOpponentMode,
+  TrainingPolicyMode,
+  TrainingScenarioDefinition,
+  TrainingScenarioFamily,
+} from "./application/match/scenario/TrainingScenarioRegistry";

@@ -1,0 +1,15 @@
+export type FundamentalScenarioOutcome =
+  | "TARGET_REACHED"
+  | "BALL_CONTROLLED"
+  | "PASS_COMPLETED"
+  | "PASS_INTERCEPTED"
+  | "GOAL"
+  | "SAVED_CAUGHT"
+  | "SAVED_PARRIED"
+  | "BLOCKED"
+  | "OFF_TARGET"
+  | "POST"
+  | "CROSSBAR"
+  | "POSSESSION_LOST"
+  | "BALL_OUT"
+  | "TIMEOUT";

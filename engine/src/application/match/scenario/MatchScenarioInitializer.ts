@@ -9,6 +9,79 @@ export class MatchScenarioInitializer {
   public apply(state: MatchState, scenario: MatchScenarioConfig): void {
     if (scenario.kind === "ATTACKER_VS_GOALKEEPER") this.applyAttackerVsGoalkeeper(state, scenario);
     else if (scenario.kind === "CURRICULUM") this.applyCurriculum(state, scenario);
+    else if (scenario.kind === "FUNDAMENTAL") this.applyFundamental(state, scenario);
+  }
+
+  private applyFundamental(
+    state: MatchState,
+    scenario: Extract<MatchScenarioConfig, { kind: "FUNDAMENTAL" }>,
+  ): void {
+    const player = this.player(state, scenario.playerId);
+    const receiver = scenario.receiverId ? this.player(state, scenario.receiverId) : null;
+    const team = this.teamOf(state, player);
+    if (receiver && this.teamOf(state, receiver) !== team) throw new Error("Fundamental receiver must be a teammate");
+    if (scenario.skill === "PASSING" && !receiver) throw new Error("PASSING requires receiverId");
+    if (scenario.skill === "MOVEMENT" && !scenario.targetPosition) throw new Error("MOVEMENT requires targetPosition");
+
+    const playerPosition = new Vector2(scenario.playerPosition.x, scenario.playerPosition.y);
+    const target = scenario.targetPosition ? new Vector2(scenario.targetPosition.x, scenario.targetPosition.y) : null;
+    const ballPosition = scenario.ballPosition
+      ? new Vector2(scenario.ballPosition.x, scenario.ballPosition.y)
+      : playerPosition;
+    this.assertOnPitch(playerPosition, state, "playerPosition");
+    this.assertOnPitch(ballPosition, state, "ballPosition");
+    if (target) this.assertOnPitch(target, state, "targetPosition");
+
+    const all = [...state.home.players, ...state.away.players];
+    for (const candidate of all) {
+      candidate.hasBall = false;
+      candidate.scenarioMovementFrozen = false;
+      candidate.scenarioDecisionDisabled = false;
+      candidate.scenarioTargetPosition = null;
+      candidate.activeAction = undefined;
+      candidate.activePipeline = undefined;
+      candidate.activeCarry = null;
+      candidate.intent = null;
+      candidate.nextDecisionAt = 0;
+      candidate.actionLockUntil = 0;
+      candidate.recoveryUntil = 0;
+    }
+    this.place(player, playerPosition, target?.subtract(playerPosition).normalize() ?? new Vector2(team.attackingDirection, 0));
+    if (target) {
+      player.targetPosition = target;
+      player.tacticalAnchorPosition = target;
+      player.scenarioTargetPosition = target;
+    }
+    if (receiver) {
+      const point = scenario.receiverPosition
+        ? new Vector2(scenario.receiverPosition.x, scenario.receiverPosition.y)
+        : playerPosition.add(new Vector2(team.attackingDirection * 10, 0));
+      this.assertOnPitch(point, state, "receiverPosition");
+      this.place(receiver, point, new Vector2(team.attackingDirection, 0));
+      receiver.scenarioMovementFrozen = true;
+      receiver.scenarioDecisionDisabled = true;
+    }
+
+    const selected = new Set([player, ...(receiver ? [receiver] : [])]);
+    if (scenario.isolateOtherPlayers ?? true) {
+      all.filter(candidate => !selected.has(candidate)).forEach((candidate, index) => {
+        this.place(candidate, new Vector2(5 + Math.floor(index / 2) * 7, index % 2 === 0 ? .5 : state.pitch.width - .5), new Vector2(team.attackingDirection, 0));
+        candidate.scenarioMovementFrozen = true;
+        candidate.scenarioDecisionDisabled = true;
+      });
+    }
+
+    if (scenario.skill === "MOVEMENT" || scenario.skill === "BALL_CONTROL") {
+      BallPlacement.freeForScenario(state.ball, ballPosition);
+      if (scenario.skill === "BALL_CONTROL") player.scenarioTargetPosition = ballPosition;
+    } else {
+      BallPlacement.forScenario(state.ball, player, playerPosition);
+    }
+    state.kickoff = null;
+    state.restart = null;
+    state.pendingGoalRestart = null;
+    state.attackingTeam = team;
+    state.defendingTeam = team === state.home ? state.away : state.home;
   }
 
   private applyCurriculum(
@@ -47,6 +120,7 @@ export class MatchScenarioInitializer {
       player.hasBall = false;
       player.scenarioMovementFrozen = false;
       player.scenarioDecisionDisabled = false;
+      player.scenarioTargetPosition = null;
       player.activeAction = undefined;
       player.activePipeline = undefined;
       player.activeCarry = null;
@@ -126,6 +200,7 @@ export class MatchScenarioInitializer {
       player.hasBall = false;
       player.scenarioMovementFrozen = false;
       player.scenarioDecisionDisabled = false;
+      player.scenarioTargetPosition = null;
       player.activeAction = undefined;
       player.activePipeline = undefined;
       player.activeCarry = null;

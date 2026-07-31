@@ -74,6 +74,26 @@ export class BallPlacement {
     player.hasBall = true;
   }
 
+  public static freeForScenario(ball: BallMatchState, position: Vector2): void {
+    ball.release();
+    ball.position = position;
+    ball.previousPosition = position;
+    ball.visualPosition = position;
+    ball.velocity = ball.velocity.multiply(0);
+    ball.visualVelocity = ball.visualVelocity.multiply(0);
+    ball.height = 0;
+    ball.visualHeight = 0;
+    ball.state = BallState.FREE;
+    ball.motion = null;
+    ball.activeShot = null;
+    ball.intendedReceiverId = null;
+    ball.pendingPass = null;
+    ball.restrictedTouchPlayerId = null;
+    ball.lastCompletedPass = null;
+    ball.lastTouchedPlayerId = null;
+    ball.controlOffset = ball.controlOffset.multiply(0);
+  }
+
   public static holdAt(ball: BallMatchState, position: Vector2, controlOffset: Vector2): void {
     ball.position = position;
     ball.visualPosition = position;

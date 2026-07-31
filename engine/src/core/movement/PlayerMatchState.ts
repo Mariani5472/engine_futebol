@@ -9,6 +9,8 @@ export class PlayerMatchState {
   /** Scenario-only constraints; normal matches leave both false. */
   public scenarioMovementFrozen = false;
   public scenarioDecisionDisabled = false;
+  /** Fixed scenario target consumed by locomotion even if tactical systems update their own target. */
+  public scenarioTargetPosition: Vector2 | null = null;
   public tacticalAnchorPosition: Vector2;
 
   public activeAction?: ActionExecution;
