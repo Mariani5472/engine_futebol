@@ -1,5 +1,3 @@
-import { PlayerMatchState } from "../core/movement/PlayerMatchState";
-
 export type Brand<T, B extends string> = T & { readonly __brand: B };
 
 export type TeamId = Brand<string, "TeamId">;
@@ -30,12 +28,6 @@ export interface Rect {
 export interface CircleObstacle {
   position: Vector2;
   radius: number;
-}
-
-export interface PossessionCandidate {
-  player: PlayerMatchState;
-  distance: number;
-  score: number;
 }
 
 export function clamp(value: number, min: number, max: number): number {

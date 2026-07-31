@@ -1,5 +1,5 @@
 import { Vector2 } from "../../../core/geometry/Vector2";
-import { BallState } from "../../../core/movement/BallMatchState";
+import { BallPlacement } from "../../../core/movement/BallPlacement";
 import type { MatchState } from "../../../core/movement/MatchState";
 import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
@@ -86,24 +86,7 @@ export class MatchScenarioInitializer {
       defendingGoalkeeper.scenarioMovementFrozen = true;
       defendingGoalkeeper.scenarioDecisionDisabled = true;
     }
-    carrier.hasBall = true;
-    state.ball.position = carrier.position;
-    state.ball.previousPosition = carrier.position;
-    state.ball.visualPosition = carrier.position;
-    state.ball.velocity = Vector2.zero();
-    state.ball.visualVelocity = Vector2.zero();
-    state.ball.height = 0;
-    state.ball.visualHeight = 0;
-    state.ball.owner = carrier;
-    state.ball.state = BallState.CONTROLLED;
-    state.ball.motion = null;
-    state.ball.activeShot = null;
-    state.ball.intendedReceiverId = null;
-    state.ball.pendingPass = null;
-    state.ball.restrictedTouchPlayerId = null;
-    state.ball.lastCompletedPass = null;
-    state.ball.lastTouchedPlayerId = carrier.player.id;
-    state.ball.controlOffset = Vector2.zero();
+    BallPlacement.forScenario(state.ball, carrier, carrier.position);
     state.kickoff = null;
     state.restart = null;
     state.pendingGoalRestart = null;
@@ -169,24 +152,7 @@ export class MatchScenarioInitializer {
       });
     }
 
-    attacker.hasBall = true;
-    state.ball.position = attackerPosition;
-    state.ball.previousPosition = attackerPosition;
-    state.ball.visualPosition = attackerPosition;
-    state.ball.velocity = Vector2.zero();
-    state.ball.visualVelocity = Vector2.zero();
-    state.ball.height = 0;
-    state.ball.visualHeight = 0;
-    state.ball.owner = attacker;
-    state.ball.state = BallState.CONTROLLED;
-    state.ball.motion = null;
-    state.ball.activeShot = null;
-    state.ball.intendedReceiverId = null;
-    state.ball.pendingPass = null;
-    state.ball.restrictedTouchPlayerId = null;
-    state.ball.lastCompletedPass = null;
-    state.ball.lastTouchedPlayerId = attacker.player.id;
-    state.ball.controlOffset = Vector2.zero();
+    BallPlacement.forScenario(state.ball, attacker, attackerPosition);
     state.kickoff = null;
     state.restart = null;
     state.pendingGoalRestart = null;

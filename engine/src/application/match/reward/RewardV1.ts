@@ -1,4 +1,4 @@
-import type { AttackerVsGoalkeeperOutcome } from "../scenario/AttackerVsGoalkeeperEnvironment";
+import type { AttackerVsGoalkeeperOutcome } from "../scenario/contracts/AttackerVsGoalkeeperOutcome";
 
 export const REWARD_VERSION = 1 as const;
 

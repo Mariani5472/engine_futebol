@@ -1,6 +1,6 @@
 import { MatchState } from "./MatchState";
 import { PlayerMatchState } from "./PlayerMatchState";
-import { PossessionCandidate } from "../../domain";
+import type { PossessionCandidate } from "./contracts/PossessionCandidate";
 import { ReachCalculator } from "./ReachCalculator";
 import { BallState, type PossessionAcquisitionReason } from "./BallMatchState";
 import { Random } from "../random/Random";

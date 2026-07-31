@@ -1,7 +1,7 @@
 import { Vector2 } from "../geometry/Vector2";
 import { PlayerMatchState } from "./PlayerMatchState";
 import type { ShotExecution } from "../../domain/shooting";
-import type { AssistIntervention } from "../../application/match/analytics/AssistPolicy";
+import type { AssistIntervention, LastCompletedPass } from "./contracts/AssistTracking";
 import type { ActionId } from "../../domain";
 
 export enum BallState {
@@ -69,12 +69,7 @@ export interface PassResolutionRecord {
   readonly actionId?: ActionId;
 }
 
-export interface LastCompletedPass {
-  readonly passerId:string;
-  readonly receiverId:string;
-  readonly completedAtSecond:number;
-  readonly interventions: AssistIntervention[];
-}
+export type { LastCompletedPass } from "./contracts/AssistTracking";
 
 export class BallMatchState {
 

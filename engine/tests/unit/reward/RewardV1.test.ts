@@ -4,7 +4,7 @@ import {
   reconstructReward,
   verifyRewardBreakdown,
 } from "../../../src/application/match/reward/RewardV1";
-import type { AttackerVsGoalkeeperOutcome } from "../../../src/application/match/scenario/AttackerVsGoalkeeperEnvironment";
+import type { AttackerVsGoalkeeperOutcome } from "../../../src/application/match/scenario/contracts/AttackerVsGoalkeeperOutcome";
 
 const outcomes: readonly AttackerVsGoalkeeperOutcome[] = [
   "GOAL", "SAVED_CAUGHT", "SAVED_PARRIED", "BLOCKED", "OFF_TARGET", "POST", "CROSSBAR",
