@@ -32,7 +32,8 @@ export class MovementSystem {
     const movementMultiplier = this.getMovementMultiplier(player);
     if (movementMultiplier === 0) return { position: player.position, velocity: Vector2.zero(), facing: player.facingDirection };
 
-    const toTarget = player.targetPosition.subtract(player.position);
+    const targetPosition = player.scenarioTargetPosition ?? player.targetPosition;
+    const toTarget = targetPosition.subtract(player.position);
     const distance = toTarget.magnitude();
     const physicalMaximum = this.calculateMaxSpeed(player) * movementMultiplier;
     const maxSpeed = Math.min(physicalMaximum, player.activeCarry?.desiredSpeed ?? physicalMaximum);
@@ -46,7 +47,9 @@ export class MovementSystem {
       const brakingSpeed = Math.sqrt(2 * deceleration * Math.max(0, distance - ARRIVAL_RADIUS));
       const arrivalFactor = Math.min(1, distance / slowdownRadius);
       const desiredSpeed = Math.min(maxSpeed, brakingSpeed, maxSpeed * Math.max(.18, arrivalFactor));
-      const corridorDirection = this.corridorDirection(player, toTarget);
+      const corridorDirection = player.scenarioTargetPosition
+        ? toTarget.normalize()
+        : this.corridorDirection(player, toTarget);
       desiredVelocity = corridorDirection.multiply(desiredSpeed);
       desiredVelocity = desiredVelocity.add(this.localAvoidance(state, player, players, maxSpeed));
       desiredVelocity = this.limitMagnitude(desiredVelocity, maxSpeed);
@@ -60,11 +63,11 @@ export class MovementSystem {
     if (distance <= ARRIVAL_RADIUS && velocity.magnitude() < .08) velocity = Vector2.zero();
 
     let position = player.position.add(velocity.multiply(dt));
-    const remainingAfterStep = player.targetPosition.subtract(position);
+    const remainingAfterStep = targetPosition.subtract(position);
     // Do not coast through a reached target while the steering direction is
     // still turning around. This was especially visible near the end lines.
     if (distance > ARRIVAL_RADIUS && toTarget.dot(remainingAfterStep) <= 0) {
-      position = player.targetPosition;
+      position = targetPosition;
       velocity = Vector2.zero();
     }
     const facingTarget = receiving && distance < 4

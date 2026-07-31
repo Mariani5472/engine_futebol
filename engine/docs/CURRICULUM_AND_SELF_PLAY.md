@@ -1,5 +1,9 @@
 # Curriculum e self-play v1
 
+> Este arquivo descreve o contrato v1 já implementado. A progressão completa de
+> habilidades individuais até liga de self-play e sua ordem de implantação estão em
+> [`SELF_TRAINING_IMPLEMENTATION_PLAN.md`](./SELF_TRAINING_IMPLEMENTATION_PLAN.md).
+
 Esta fase expande o ambiente causal das fases anteriores; ela não cria uma física ou
 uma simulação alternativa. Todos os cenários rodam por `MatchSession`, com timestep
 fixo de `0.05s`, action mask autoritativa e observação de ator sem estado privilegiado.

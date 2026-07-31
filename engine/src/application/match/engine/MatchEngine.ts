@@ -36,29 +36,33 @@ import { PossessionPredictionSystem } from "../tactical/PossessionPredictionSyst
 import { CollectiveCoordinationSystem } from "../tactical/CollectiveCoordinationSystem";
 import { TeamBehaviourSystem } from "../team/TeamBehaviourSystem";
 import { RefereeSystem } from "../referee/RefereeSystem";
-import { MatchMetrics } from "../metrics/MatchMetrics";
-import { buildEventDerivedMatchMetrics } from "../metrics/EventDerivedMatchMetrics";
 import { AttackFunnelCollector } from "../diagnostics/AttackFunnelCollector";
 import { MatchInitializer } from "./MatchInitializer";
 import { GoalkeeperSystem } from "../goalkeeper/GoalkeeperSystem";
 import { RestartSystem } from "./RestartSystem";
 import { SimulationConfig } from "./SimulationConfig";
 import { ENGINE_CALIBRATION_PARAMETERS } from "../calibration/CalibrationParameters";
-import { TacticalDiagnosticsCollector, type MatchTacticalDiagnostics } from "../diagnostics/TacticalDiagnosticsCollector";
-import { BallTeleportDetector, type BallTeleportViolation } from "../diagnostics/BallTeleportDetector";
+import { TacticalDiagnosticsCollector } from "../diagnostics/TacticalDiagnosticsCollector";
+import { BallTeleportDetector } from "../diagnostics/BallTeleportDetector";
 import type { PassResolutionRecord, PossessionAcquisitionRecord } from "../../../core/movement/BallMatchState";
-import { OffensiveFunnelCollector, type MatchOffensiveFunnel } from "../diagnostics/OffensiveFunnelCollector";
-import { MatchEventStore, type EventDerivedMatchReport, type MatchTimelineEntry, type StoredMatchEvent } from "../analytics/MatchEventStore";
-import { GoalReplayRecorder, type GoalReplay } from "../replay/GoalReplayRecorder";
+import { OffensiveFunnelCollector } from "../diagnostics/OffensiveFunnelCollector";
+import { MatchEventStore, type EventDerivedMatchReport } from "../analytics/MatchEventStore";
+import { GoalReplayRecorder } from "../replay/GoalReplayRecorder";
 import { ActionId, PlayerId, TeamId } from "../../../domain";
-import { DecisionDebug, type DecisionDebugEntry } from "../decision/DecisionDebug";
+import { DecisionDebug } from "../decision/DecisionDebug";
 import { TacticalIntelligenceSystem } from "../tactical/intelligence/TacticalIntelligenceSystem";
-import { DecisionQualityMetrics, type DecisionQualityReport } from "../decision/DecisionQualityMetrics";
 import { resolveInstrumentation, type ResolvedInstrumentation } from "../instrumentation/TrainingInstrumentation";
-import { buildExecutionManifest, buildSportingResultHash, verifyExecutionManifest, type ExecutionManifest } from "./ExecutionManifest";
-import { PlayerPolicyController, type PolicyDecisionRecord } from "../policy/PlayerPolicyController";
-import type { PlayerActionMask } from "../policy/PlayerActionSpace";
-import { OBSERVATION_SPACE, type ActorObservation } from "../observation/ObservationSpace";
+import { buildExecutionManifest, verifyExecutionManifest, type ExecutionManifest } from "./ExecutionManifest";
+import { PlayerPolicyController } from "../policy/PlayerPolicyController";
+import { OBSERVATION_SPACE } from "../observation/ObservationSpace";
+import { MatchResultAssembler } from "./MatchResultAssembler";
+import type { MatchDiagnosticEvent } from "./contracts/MatchDiagnosticEvent";
+import type { MatchResult } from "./contracts/MatchResult";
+import type { IncrementalMatchFrame } from "./contracts/IncrementalMatchFrame";
+
+export type { MatchDiagnosticEvent } from "./contracts/MatchDiagnosticEvent";
+export type { MatchResult } from "./contracts/MatchResult";
+export type { IncrementalMatchFrame } from "./contracts/IncrementalMatchFrame";
 
 const DEFAULT_DELTA_TIME = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
 const DEFAULT_MATCH_DURATION_SECONDS = 90 * 60;
@@ -69,31 +73,6 @@ const OFF_BALL_DECISION_INTERVAL_SECONDS = 2;
 const COGNITIVE_UPDATE_INTERVAL_TICKS = 4;
 /** Expensive shared space-time field runs at 2.5 Hz; decisions reuse the latest immutable frame. */
 const TACTICAL_INTELLIGENCE_UPDATE_INTERVAL_TICKS = 8;
-
-export interface MatchResult {
-  readonly manifest: ExecutionManifest;
-  readonly resultHash: string;
-  readonly homeTeamId: string;
-  readonly awayTeamId: string;
-  readonly homeScore: number;
-  readonly awayScore: number;
-  readonly events: MatchEvent[];
-  readonly homeShots: number;
-  readonly awayShots: number;
-  readonly matchDurationSeconds: number;
-  readonly seed: number;
-  readonly metrics: MatchMetrics;
-  readonly diagnostics: readonly MatchDiagnosticEvent[];
-  readonly offensiveFunnel: MatchOffensiveFunnel;
-  readonly eventStore: readonly StoredMatchEvent[];
-  readonly analytics: EventDerivedMatchReport;
-  readonly timeline: readonly MatchTimelineEntry[];
-  readonly goalReplays: readonly GoalReplay[];
-  readonly decisionQuality: DecisionQualityReport;
-  readonly policyDecisions: readonly PolicyDecisionRecord[];
-  readonly actionMasks: readonly PlayerActionMask[];
-  readonly actorObservations: readonly ActorObservation[];
-}
 
 function publishedDiagnostics(
   diagnostics: readonly MatchDiagnosticEvent[],
@@ -117,35 +96,14 @@ function publishedAnalytics(
   };
 }
 
-export type MatchDiagnosticEvent = PossessionAcquisitionRecord | PassResolutionRecord | BallTeleportViolation;
-
 interface MatchRuntimeContext {
   lastPossessionTeamId: string | null;
-}
-
-export interface IncrementalMatchFrame {
-  readonly manifest: ExecutionManifest;
-  readonly sequence: number;
-  readonly period: MatchPeriod;
-  readonly state: MatchState;
-  readonly events: readonly MatchEvent[];
-  readonly finalResult?: MatchResult;
-  readonly tacticalDiagnostics: MatchTacticalDiagnostics;
-  readonly diagnostics: readonly MatchDiagnosticEvent[];
-  readonly offensiveFunnel: MatchOffensiveFunnel;
-  readonly timeline: readonly MatchTimelineEntry[];
-  readonly goalReplays: readonly GoalReplay[];
-  readonly decisionTrace:readonly DecisionDebugEntry[];
-  readonly eventStore: readonly StoredMatchEvent[];
-  readonly analytics: EventDerivedMatchReport;
-  readonly policyDecisions: readonly PolicyDecisionRecord[];
-  readonly actionMasks: readonly PlayerActionMask[];
-  readonly actorObservations: readonly ActorObservation[];
 }
 
 export class MatchEngine {
   private readonly initializer = new MatchInitializer();
   private readonly arbitrator = new ActionArbitrator();
+  private readonly resultAssembler = new MatchResultAssembler();
 
   public simulate(
     config: SimulationConfig,
@@ -362,41 +320,24 @@ export class MatchEngine {
         eventStore.append([matchEnded]);
         if (instrumentation.replay) replayRecorder.sample(state, [matchEnded]);
         const goalReplays = instrumentation.replay ? replayRecorder.replays() : [];
-        const replayGoalIds = new Set(goalReplays.map(replay => replay.goalEventId));
         const finalAnalytics = eventStore.finalize(state);
-        const finalMetrics = buildEventDerivedMatchMetrics(
-          finalAnalytics, state.home.team.id, state.away.team.id, tacticalDiagnostics.snapshot(),
-        );
-        const resultHash = buildSportingResultHash({
-          seed: config.seed, matchDurationSeconds: state.currentSecond,
-          homeTeamId: state.home.team.id, awayTeamId: state.away.team.id,
-          homeScore: state.home.score, awayScore: state.away.score,
-          authoritativeEvents: eventStore.events(), teamAnalytics: finalAnalytics.teams,
-        });
-        const finalResult: MatchResult = {
+        const finalResult = this.resultAssembler.assemble({
           manifest,
-          resultHash,
-          homeTeamId: state.home.team.id,
-          awayTeamId: state.away.team.id,
-          homeScore: state.home.score,
-          awayScore: state.away.score,
-          events: instrumentation.eventHistory ? allEvents : [],
+          seed: config.seed,
+          state,
+          instrumentation,
+          allEvents,
           homeShots,
           awayShots,
-          matchDurationSeconds: state.currentSecond,
-          seed: config.seed,
-          metrics: finalMetrics,
           diagnostics: publishedDiagnostics(allDiagnostics, instrumentation),
           offensiveFunnel: offensiveFunnel.snapshot(),
-          eventStore: instrumentation.eventHistory ? eventStore.events() : [],
-          analytics: publishedAnalytics(finalAnalytics, instrumentation),
-          timeline: instrumentation.timeline ? eventStore.timeline(replayGoalIds) : [],
+          tacticalDiagnostics: tacticalDiagnostics.snapshot(),
+          eventStore,
+          analytics: finalAnalytics,
           goalReplays,
-          decisionQuality: new DecisionQualityMetrics().summarize(decisionDebug.getEntries()),
-          policyDecisions: policies.decisions(),
-          actionMasks: policies.actionMasks(),
-          actorObservations: policies.actorObservations(),
-        };
+          decisionDebug,
+          policies,
+        });
         yield { manifest, sequence: tick, period, state, events: frameEvents, finalResult, tacticalDiagnostics: tacticalDiagnostics.snapshot(), diagnostics: publishedDiagnostics(tickDiagnostics, instrumentation), offensiveFunnel: offensiveFunnel.snapshot(), timeline: finalResult.timeline, goalReplays, decisionTrace:instrumentation.debugSnapshots?decisionDebug.getEntries().filter(entry=>entry.tick>=tick-1):[], eventStore:instrumentation.eventHistory?storedFrameEvents:[], analytics:finalResult.analytics, policyDecisions: framePolicyDecisions, actionMasks: policies.actionMasks(), actorObservations: policies.actorObservations() };
         return finalResult;
       }
@@ -426,42 +367,24 @@ export class MatchEngine {
     eventStore.append([finalPeriodEnded]);
 
     const finalAnalytics = eventStore.finalize(state);
-    const finalMetrics = buildEventDerivedMatchMetrics(
-      finalAnalytics, state.home.team.id, state.away.team.id, tacticalDiagnostics.snapshot(),
-    );
-    const resultHash = buildSportingResultHash({
-      seed: config.seed, matchDurationSeconds: state.currentSecond,
-      homeTeamId: state.home.team.id, awayTeamId: state.away.team.id,
-      homeScore: state.home.score, awayScore: state.away.score,
-      authoritativeEvents: eventStore.events(), teamAnalytics: finalAnalytics.teams,
-    });
-
     const goalReplays = instrumentation.replay ? replayRecorder.replays() : [];
-    const replayGoalIds = new Set(goalReplays.map(replay => replay.goalEventId));
-    return {
+    return this.resultAssembler.assemble({
       manifest,
-      resultHash,
-      homeTeamId: state.home.team.id,
-      awayTeamId: state.away.team.id,
-      homeScore: state.home.score,
-      awayScore: state.away.score,
-      events: instrumentation.eventHistory ? allEvents : [],
+      seed: config.seed,
+      state,
+      instrumentation,
+      allEvents,
       homeShots,
       awayShots,
-      matchDurationSeconds: state.currentSecond,
-      seed: config.seed,
-      metrics: finalMetrics,
       diagnostics: publishedDiagnostics(allDiagnostics, instrumentation),
       offensiveFunnel: offensiveFunnel.snapshot(),
-      eventStore: instrumentation.eventHistory ? eventStore.events() : [],
-      analytics: publishedAnalytics(finalAnalytics, instrumentation),
-      timeline: instrumentation.timeline ? eventStore.timeline(replayGoalIds) : [],
+      tacticalDiagnostics: tacticalDiagnostics.snapshot(),
+      eventStore,
+      analytics: finalAnalytics,
       goalReplays,
-      decisionQuality: new DecisionQualityMetrics().summarize(decisionDebug.getEntries()),
-      policyDecisions: policies.decisions(),
-      actionMasks: policies.actionMasks(),
-      actorObservations: policies.actorObservations(),
-    };
+      decisionDebug,
+      policies,
+    });
   }
 
   private runTick(

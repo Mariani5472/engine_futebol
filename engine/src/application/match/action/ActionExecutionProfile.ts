@@ -1,5 +1,5 @@
 import { DecisionType } from "../decision/DecisionType";
-import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import { PlayerAttributes } from "../../../domain/player";
 
 export type BodyState =

@@ -1,5 +1,5 @@
 import { Vector2 } from "../../../core/geometry/Vector2";
-import { BallState } from "../../../core/movement/BallMatchState";
+import { BallPlacement } from "../../../core/movement/BallPlacement";
 import type { MatchState } from "../../../core/movement/MatchState";
 import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
@@ -35,18 +35,7 @@ export class KickoffSystem {
       player.hasBall = false;
     }
 
-    state.ball.release();
-    state.ball.position = centre;
-    state.ball.previousPosition = centre;
-    state.ball.visualPosition = centre;
-    state.ball.velocity = Vector2.zero();
-    state.ball.visualVelocity = Vector2.zero();
-    state.ball.height = 0;
-    state.ball.motion = null;
-    state.ball.pendingPass = null;
-    taker.hasBall = true;
-    state.ball.acquirePossession(taker, "RESTART", matchSecond);
-    state.ball.state = BallState.CONTROLLED;
+    BallPlacement.forKickoff(state.ball, taker, centre, matchSecond);
     state.attackingTeam = takingTeam;
     state.defendingTeam = defendingTeam;
     state.kickoff = {
@@ -112,10 +101,7 @@ export class KickoffSystem {
 
     // The controlled-ball offset normally decays. During kickoff preparation,
     // keep the ball exactly on the centre mark and the taker behind it.
-    state.ball.position = centre;
-    state.ball.visualPosition = centre;
-    state.ball.velocity = Vector2.zero();
-    state.ball.controlOffset = centre.subtract(takerPosition);
+    BallPlacement.holdAt(state.ball, centre, centre.subtract(takerPosition));
 
     this.keepTeamInOwnHalf(state, takingTeam, taker);
     this.keepTeamInOwnHalf(state, defendingTeam);

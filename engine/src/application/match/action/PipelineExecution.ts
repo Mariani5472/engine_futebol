@@ -1,6 +1,6 @@
 import { Decision } from "../decision/Decision";
 import { DecisionType } from "../decision/DecisionType";
-import { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
+import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import {
   ActionExecution,
   ActionExecutionPhase,

@@ -1,6 +1,5 @@
-import type { LastCompletedPass } from "../../../core/movement/BallMatchState";
-
-export type AssistIntervention = "DEFENDER_DEFLECTION" | "GOALKEEPER_PARRY" | "WOODWORK" | "CONTROL_CHANGE";
+import type { LastCompletedPass } from "../../../core/movement/contracts/AssistTracking";
+export type { AssistIntervention } from "../../../core/movement/contracts/AssistTracking";
 
 export interface AssistPolicyConfig {
   readonly maxPassAgeSeconds: number;

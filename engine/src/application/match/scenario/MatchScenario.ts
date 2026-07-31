@@ -1,5 +1,6 @@
 export const ATTACKER_VS_GOALKEEPER_SCENARIO_VERSION = 1 as const;
 export const CURRICULUM_SCENARIO_VERSION = 1 as const;
+export const FUNDAMENTAL_SCENARIO_VERSION = 1 as const;
 
 export interface ScenarioPoint {
   readonly x: number;
@@ -49,7 +50,23 @@ export interface CurriculumScenarioConfig {
   readonly isolateOtherPlayers?: boolean;
 }
 
-export type MatchScenarioConfig = AttackerVsGoalkeeperScenarioConfig | CurriculumScenarioConfig;
+export type FundamentalScenarioSkill = "MOVEMENT" | "BALL_CONTROL" | "PASSING" | "SHOOTING_EMPTY_GOAL";
+
+export interface FundamentalScenarioConfig {
+  readonly kind: "FUNDAMENTAL";
+  readonly version: typeof FUNDAMENTAL_SCENARIO_VERSION;
+  readonly skill: FundamentalScenarioSkill;
+  readonly playerId: string;
+  readonly playerPosition: ScenarioPoint;
+  readonly targetPosition?: ScenarioPoint;
+  readonly receiverId?: string;
+  readonly receiverPosition?: ScenarioPoint;
+  readonly ballPosition?: ScenarioPoint;
+  readonly targetRadius?: number;
+  readonly isolateOtherPlayers?: boolean;
+}
+
+export type MatchScenarioConfig = AttackerVsGoalkeeperScenarioConfig | CurriculumScenarioConfig | FundamentalScenarioConfig;
 
 export function createCurriculumScenarioPreset(stage: CurriculumScenarioStage): CurriculumScenarioConfig {
   const base = {

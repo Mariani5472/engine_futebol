@@ -1,5 +1,5 @@
 import { Vector2 } from "../../../core/geometry/Vector2";
-import { BallState } from "../../../core/movement/BallMatchState";
+import { BallPlacement } from "../../../core/movement/BallPlacement";
 import type { MatchState, RestartType } from "../../../core/movement/MatchState";
 import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
@@ -38,19 +38,7 @@ export class RestartSystem {
     taker.targetPosition = restartPosition;
     taker.velocity = Vector2.zero();
 
-    state.ball.release();
-    state.ball.motion = null;
-    state.ball.pendingPass = null;
-    state.ball.activeShot = null;
-    state.ball.restrictedTouchPlayerId = null;
-    state.ball.position = restartPosition;
-    state.ball.previousPosition = restartPosition;
-    state.ball.visualPosition = restartPosition;
-    state.ball.velocity = Vector2.zero();
-    state.ball.height = 0;
-    state.ball.acquirePossession(taker, "RESTART", matchSecond);
-    state.ball.state = BallState.CONTROLLED;
-    taker.hasBall = true;
+    BallPlacement.forSetPiece(state.ball, taker, restartPosition, matchSecond);
 
     state.restart = {
       type, teamId: awarded.team.id, takerId: taker.player.id,
@@ -114,10 +102,7 @@ export class RestartSystem {
     taker.position = position;
     taker.targetPosition = position;
     taker.velocity = Vector2.zero();
-    state.ball.position = position;
-    state.ball.visualPosition = position;
-    state.ball.velocity = Vector2.zero();
-    state.ball.controlOffset = Vector2.zero();
+    BallPlacement.holdAt(state.ball, position, Vector2.zero());
 
     if (restart.type === "GOAL_KICK") this.keepOutsidePenaltyArea(state, opponents, position.x);
     else this.keepMinimumDistance(state, opponents, position, restart.type === "CORNER" ? CORNER_DISTANCE : THROW_IN_DISTANCE);

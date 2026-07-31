@@ -12,17 +12,8 @@ import {
   type ScenarioPoint,
 } from "./MatchScenario";
 import { attackerVsGoalkeeperRewardV1, type RewardBreakdownV1 } from "../reward/RewardV1";
-
-export type AttackerVsGoalkeeperOutcome =
-  | "GOAL"
-  | "SAVED_CAUGHT"
-  | "SAVED_PARRIED"
-  | "BLOCKED"
-  | "OFF_TARGET"
-  | "POST"
-  | "CROSSBAR"
-  | "POSSESSION_LOST"
-  | "TIMEOUT";
+import type { AttackerVsGoalkeeperOutcome } from "./contracts/AttackerVsGoalkeeperOutcome";
+export type { AttackerVsGoalkeeperOutcome } from "./contracts/AttackerVsGoalkeeperOutcome";
 
 export interface AttackerVsGoalkeeperEnvironmentOptions {
   readonly attackerId: string;

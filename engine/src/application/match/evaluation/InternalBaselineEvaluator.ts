@@ -1,8 +1,8 @@
 import { deriveSeed } from "../../../core/random/MatchRandomStreams";
 import {
   type AttackerVsGoalkeeperEnvironment,
-  type AttackerVsGoalkeeperOutcome,
 } from "../scenario/AttackerVsGoalkeeperEnvironment";
+import type { AttackerVsGoalkeeperOutcome } from "../scenario/contracts/AttackerVsGoalkeeperOutcome";
 import {
   createDefaultBaselines,
   isCommandAllowed,
