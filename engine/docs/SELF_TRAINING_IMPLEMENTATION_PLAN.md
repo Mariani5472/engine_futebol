@@ -442,6 +442,22 @@ training/
 - minijogos e goleiro aprendido;
 - benchmarks de throughput antes de ampliar workers.
 
+### Marco C operacional — futebol reduzido (implantação atual)
+
+- [x] `FIVE_V_FIVE` determinístico com 5 jogadores ativos por equipe.
+- [x] `SEVEN_V_SEVEN` determinístico com 7 jogadores ativos por equipe.
+- [x] Presets independentes de pressão, largura, linha, circulação e transição.
+- [x] Parâmetros táticos aplicados à `Tactic` real; não executam ações diretamente.
+- [x] `reset/step` multiagente compartilhando a mesma física, mask e eventos da partida.
+- [x] Liga inicial por divisão, checkpoints coletivos imutáveis, ida/volta e rating Elo.
+- [x] Hot path de treino não materializa snapshots de frontend a cada tick físico.
+- [x] 5×5 precede 7×7 nos gates; 7×7 precede goleiro aprendido.
+- [ ] Treinar e promover checkpoints reais de 5×5 e 7×7.
+- [x] Persistir resultados/standings da liga atomicamente no model registry Python.
+- [ ] Adicionar adversários de estilos congelados e torneio held-out oficial.
+- [ ] Medir throughput em múltiplos workers e definir gate mínimo de performance.
+- [ ] Implementar duelos aéreos e ombro a ombro antes de usá-los em rewards coletivos.
+
 ### Marco E — nível 8
 
 - partida 11×11 contra biblioteca congelada de estilos;

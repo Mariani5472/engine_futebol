@@ -286,8 +286,10 @@ export class MatchEngine {
         .map(resolution => this.makePassResolutionEvent(resolution, state, period));
       const possessionEvents = acquisitions.map((acquisition, index) =>
         this.makePossessionChangedEvent(acquisition, state, period, index));
-      if (instrumentation.eventHistory) allEvents.push(...passEvents, ...possessionEvents);
-      frameEvents.push(...passEvents, ...possessionEvents);
+      const acquisitionEvents = acquisitions.flatMap((acquisition, index) =>
+        this.makeAcquisitionSemanticEvents(acquisition, state, period, index));
+      if (instrumentation.eventHistory) allEvents.push(...passEvents, ...possessionEvents, ...acquisitionEvents);
+      frameEvents.push(...passEvents, ...possessionEvents, ...acquisitionEvents);
       if (instrumentation.diagnostics) {
         for (const resolution of passResolutions) offensiveFunnel.onPassResolution(resolution, state);
         offensiveFunnel.onAcquisitions(acquisitions, state);
@@ -758,6 +760,68 @@ export class MatchEngine {
       positionX:acquisition.ballPosition.x, positionY:acquisition.ballPosition.y,
       ballSpeed:acquisition.ballSpeed,
     };
+  }
+
+  private makeAcquisitionSemanticEvents(
+    acquisition: PossessionAcquisitionRecord,
+    state: MatchState,
+    period: MatchPeriod,
+    acquisitionIndex: number,
+  ): MatchEvent[] {
+    const player = this.allPlayers(state).find(candidate => candidate.player.id === acquisition.playerId);
+    if (!player) return [];
+    const team = state.home.players.includes(player) ? state.home : state.away;
+    const baseId = acquisition.actionId
+      ? `${acquisition.actionId}:${acquisition.playerId}`
+      : `${acquisition.playerId}-${acquisition.matchSecond.toFixed(6)}-${acquisitionIndex}`;
+    const common = {
+      timestamp: (acquisition.matchSecond * 1000) as Milliseconds,
+      period,
+      teamId: team.team.id as TeamId,
+      playerId: acquisition.playerId as PlayerId,
+      positionX: acquisition.ballPosition.x,
+      positionY: acquisition.ballPosition.y,
+      actionId: acquisition.actionId as ActionId | undefined,
+    };
+    const events: MatchEvent[] = [];
+
+    if (acquisition.reason === "INTERCEPTION") {
+      events.push({
+        ...common, id: `${baseId}:interception`, type: "INTERCEPTION",
+        passerId: acquisition.previousPlayerId as PlayerId | null,
+      });
+    } else if (acquisition.reason === "DRIBBLE_RECOVERY") {
+      events.push({
+        ...common, id: `${baseId}:recovery`, type: "BALL_RECOVERY",
+        previousTouchPlayerId: acquisition.previousPlayerId as PlayerId | null,
+        recoveryKind: "DRIBBLE",
+      });
+    } else if (acquisition.reason === "PHYSICAL_CLAIM" && !acquisition.contested
+      && acquisition.wasLoose && acquisition.previousPlayerId) {
+      const previous = this.allPlayers(state)
+        .find(candidate => candidate.player.id === acquisition.previousPlayerId);
+      const previousWasOpponent = previous
+        ? state.home.players.includes(previous) !== state.home.players.includes(player)
+        : false;
+      if (previousWasOpponent) {
+        events.push({
+          ...common, id: `${baseId}:recovery`, type: "BALL_RECOVERY",
+          previousTouchPlayerId: acquisition.previousPlayerId as PlayerId,
+          recoveryKind: "LOOSE_BALL",
+        });
+      }
+    }
+
+    if (acquisition.reason === "PHYSICAL_CLAIM" && acquisition.contested && acquisition.opponentId) {
+      events.push({
+        ...common, id: `${baseId}:duel`, type: "DUEL",
+        opponentId: acquisition.opponentId as PlayerId,
+        winnerId: acquisition.playerId as PlayerId,
+        loserId: acquisition.opponentId as PlayerId,
+        duelKind: "LOOSE_BALL",
+      });
+    }
+    return events;
   }
 
   private makePeriodEnded(

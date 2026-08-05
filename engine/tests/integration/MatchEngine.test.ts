@@ -82,6 +82,13 @@ describe("MatchEngine — full match simulation", () => {
       .filter(event => event.type === "SHOT_RESOLVED")
       .map(event => String(event.metadata.shotId));
     expect(resolvedShotIds.every(shotId => shotIds.has(shotId))).toBe(true);
+    const interceptions = result.eventStore.filter(event => event.type === "INTERCEPTION").length;
+    const recoveries = result.eventStore.filter(event => event.type === "BALL_RECOVERY").length;
+    const duels = result.eventStore.filter(event => event.type === "DUEL").length;
+    expect(result.analytics.teams.home.interceptions + result.analytics.teams.away.interceptions).toBe(interceptions);
+    expect(result.analytics.teams.home.recoveries + result.analytics.teams.away.recoveries).toBe(recoveries);
+    // Each causal duel has exactly two participants, one on each team.
+    expect(result.analytics.teams.home.duels + result.analytics.teams.away.duels).toBe(duels * 2);
   }, 120_000);
 
   it("changes observability profiles without changing the sporting result", () => {

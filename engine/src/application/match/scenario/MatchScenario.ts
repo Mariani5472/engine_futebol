@@ -28,6 +28,7 @@ export type CurriculumScenarioStage =
   | "TWO_V_ONE"
   | "THREE_V_TWO"
   | "FIVE_V_FIVE"
+  | "SEVEN_V_SEVEN"
   | "LEARNED_GOALKEEPER"
   | "ELEVEN_V_ELEVEN"
   | "COLLECTIVE_POLICY"
@@ -35,6 +36,18 @@ export type CurriculumScenarioStage =
 
 export type CurriculumObjective = "COMPLETE_PASS" | "SCORE_GOAL" | "PLAY_MATCH";
 export type CurriculumGoalkeeperMode = "NONE" | "FROZEN" | "HEURISTIC" | "EXTERNAL";
+
+export interface ReducedTacticalParameters {
+  readonly tempo: "LOW" | "NORMAL" | "HIGH";
+  readonly width: "NARROW" | "BALANCED" | "WIDE";
+  readonly passingStyle: "SHORTER" | "BALANCED" | "DIRECT";
+  readonly defensiveLine: "LOW" | "STANDARD" | "HIGH";
+  readonly pressLine: "LOW" | "MID" | "HIGH";
+  readonly pressingIntensity: "LOW" | "NORMAL" | "HIGH";
+  readonly counterPress: boolean;
+  readonly counterAttack: boolean;
+  readonly regroup: boolean;
+}
 
 export interface CurriculumScenarioConfig {
   readonly kind: "CURRICULUM";
@@ -47,6 +60,8 @@ export interface CurriculumScenarioConfig {
   readonly attackingGoalkeeperId?: string;
   readonly defendingGoalkeeperId?: string;
   readonly goalkeeperMode: CurriculumGoalkeeperMode;
+  readonly attackingTactics?: ReducedTacticalParameters;
+  readonly defendingTactics?: ReducedTacticalParameters;
   readonly isolateOtherPlayers?: boolean;
 }
 
@@ -80,12 +95,19 @@ export function createCurriculumScenarioPreset(stage: CurriculumScenarioStage): 
     case "PASS": return Object.freeze({ ...base, objective: "COMPLETE_PASS", attackingPlayerIds: ["home-10", "home-9"], defendingPlayerIds: [], goalkeeperMode: "NONE" });
     case "TWO_V_ONE": return Object.freeze({ ...base, objective: "SCORE_GOAL", attackingPlayerIds: ["home-10", "home-9"], defendingPlayerIds: ["away-2"], defendingGoalkeeperId: "away-1", goalkeeperMode: "FROZEN" });
     case "THREE_V_TWO": return Object.freeze({ ...base, objective: "SCORE_GOAL", attackingPlayerIds: ["home-10", "home-9", "home-11"], defendingPlayerIds: ["away-2", "away-3"], defendingGoalkeeperId: "away-1", goalkeeperMode: "FROZEN" });
-    case "FIVE_V_FIVE": return Object.freeze({ ...base, objective: "PLAY_MATCH", attackingPlayerIds: ["home-2", "home-6", "home-9", "home-10"], defendingPlayerIds: ["away-2", "away-6", "away-9", "away-10"], attackingGoalkeeperId: "home-1", defendingGoalkeeperId: "away-1", goalkeeperMode: "HEURISTIC" });
+    case "FIVE_V_FIVE": return Object.freeze({ ...base, objective: "PLAY_MATCH", attackingPlayerIds: ["home-2", "home-6", "home-9", "home-10"], defendingPlayerIds: ["away-2", "away-6", "away-9", "away-10"], attackingGoalkeeperId: "home-1", defendingGoalkeeperId: "away-1", goalkeeperMode: "HEURISTIC", attackingTactics: reducedTactics("BALANCED"), defendingTactics: reducedTactics("PRESS") });
+    case "SEVEN_V_SEVEN": return Object.freeze({ ...base, objective: "PLAY_MATCH", attackingPlayerIds: ["home-2", "home-3", "home-6", "home-7", "home-9", "home-10"], defendingPlayerIds: ["away-2", "away-3", "away-6", "away-7", "away-9", "away-10"], attackingGoalkeeperId: "home-1", defendingGoalkeeperId: "away-1", goalkeeperMode: "HEURISTIC", attackingTactics: reducedTactics("TRANSITION"), defendingTactics: reducedTactics("BALANCED") });
     case "LEARNED_GOALKEEPER": return Object.freeze({ ...base, objective: "SCORE_GOAL", attackingPlayerIds: ["home-10"], defendingPlayerIds: [], defendingGoalkeeperId: "away-1", goalkeeperMode: "EXTERNAL" });
     case "ELEVEN_V_ELEVEN": return Object.freeze({ ...base, objective: "PLAY_MATCH", attackingPlayerIds: fieldPlayers("home"), defendingPlayerIds: fieldPlayers("away"), attackingGoalkeeperId: "home-1", defendingGoalkeeperId: "away-1", goalkeeperMode: "HEURISTIC", isolateOtherPlayers: false });
     case "COLLECTIVE_POLICY": return Object.freeze({ ...base, objective: "PLAY_MATCH", attackingPlayerIds: fieldPlayers("home"), defendingPlayerIds: fieldPlayers("away"), attackingGoalkeeperId: "home-1", defendingGoalkeeperId: "away-1", goalkeeperMode: "HEURISTIC", isolateOtherPlayers: false });
     case "SELF_PLAY": return Object.freeze({ ...base, objective: "PLAY_MATCH", attackingPlayerIds: fieldPlayers("home"), defendingPlayerIds: fieldPlayers("away"), attackingGoalkeeperId: "home-1", defendingGoalkeeperId: "away-1", goalkeeperMode: "EXTERNAL", isolateOtherPlayers: false });
   }
+}
+
+function reducedTactics(profile: "BALANCED" | "PRESS" | "TRANSITION"): ReducedTacticalParameters {
+  if (profile === "PRESS") return Object.freeze({ tempo: "HIGH", width: "BALANCED", passingStyle: "SHORTER", defensiveLine: "HIGH", pressLine: "HIGH", pressingIntensity: "HIGH", counterPress: true, counterAttack: false, regroup: false });
+  if (profile === "TRANSITION") return Object.freeze({ tempo: "HIGH", width: "WIDE", passingStyle: "DIRECT", defensiveLine: "STANDARD", pressLine: "MID", pressingIntensity: "NORMAL", counterPress: false, counterAttack: true, regroup: true });
+  return Object.freeze({ tempo: "NORMAL", width: "BALANCED", passingStyle: "BALANCED", defensiveLine: "STANDARD", pressLine: "MID", pressingIntensity: "NORMAL", counterPress: true, counterAttack: false, regroup: false });
 }
 
 function fieldPlayers(team: "home" | "away"): string[] {

@@ -110,7 +110,7 @@ export class PureMatchEnvironment {
 
     while (!session.isFinished() && physicalTicks < stepLimit) {
       session.advance(ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds);
-      events.push(...session.snapshot().events);
+      events.push(...session.latestEvents());
       physicalTicks++;
       this.totalPhysicalTicks++;
       if (this.reachedEpisodeTickLimit()) {

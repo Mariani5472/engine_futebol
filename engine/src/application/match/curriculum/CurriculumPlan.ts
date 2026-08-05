@@ -71,7 +71,7 @@ const AWAY_FIELD = Object.freeze(Array.from({ length: 10 }, (_, index) => `away-
 
 /** The order is part of the public training contract. Never infer it from object keys. */
 export const CURRICULUM_STAGE_ORDER: readonly CurriculumScenarioStage[] = Object.freeze([
-  "PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "LEARNED_GOALKEEPER",
+  "PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "SEVEN_V_SEVEN", "LEARNED_GOALKEEPER",
   "ELEVEN_V_ELEVEN", "COLLECTIVE_POLICY", "SELF_PLAY",
 ]);
 
@@ -99,6 +99,7 @@ export function buildCurriculumPlan(): readonly CurriculumStageDefinition[] {
     stage("TWO_V_ONE", ["home-10", "home-9"], "SHARED_TEAM", "FROZEN", ["ATTACKER"]),
     stage("THREE_V_TWO", ["home-10", "home-9", "home-11"], "SHARED_TEAM", "FROZEN", ["ATTACKER"]),
     stage("FIVE_V_FIVE", ["home-1", "home-2", "home-6", "home-9", "home-10"], "SHARED_TEAM", "HEURISTIC", ["ATTACKER"]),
+    stage("SEVEN_V_SEVEN", ["home-1", "home-2", "home-3", "home-6", "home-7", "home-9", "home-10"], "SHARED_TEAM", "CHECKPOINT", ["ATTACKER"], { minimumEpisodes: 150, minimumSuccessRateLowerBound: 0.50 }),
     stage("LEARNED_GOALKEEPER", ["away-1"], "SINGLE_AGENT", "CHECKPOINT", ["ATTACKER"], { minimumSuccessRateLowerBound: 0.50 }),
     stage("ELEVEN_V_ELEVEN", ["home-1", ...HOME_FIELD], "SHARED_TEAM", "HEURISTIC", ["ATTACKER", "GOALKEEPER"], { minimumEpisodes: 200, minimumSuccessRateLowerBound: 0.45 }),
     stage("COLLECTIVE_POLICY", ["home-1", ...HOME_FIELD], "SHARED_TEAM", "CHECKPOINT", ["ATTACKER", "GOALKEEPER"], { minimumEpisodes: 250, minimumSuccessRateLowerBound: 0.45 }),

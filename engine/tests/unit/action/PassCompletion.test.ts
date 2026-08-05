@@ -152,8 +152,11 @@ describe("authoritative pass flow", () => {
       expect(acquisition).toMatchObject({
         playerId: interceptor.player.id,
         reason: "INTERCEPTION",
+        wasLoose: true,
       });
-      expect(acquisition.distanceToBall).toBeLessThan(.001);
+      // Segment interception preserves the real perpendicular contact
+      // distance; it must be inside the physical radius, not rewritten to 0.
+      expect(acquisition.distanceToBall).toBeLessThanOrEqual(.85);
       expect(match.ball.drainPassResolutions()[0]?.success).toBe(false);
       intercepted = true;
     }

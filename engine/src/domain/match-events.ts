@@ -214,6 +214,43 @@ export interface TackleEvent extends BaseMatchEvent {
   readonly successful: boolean;
 }
 
+/** A pass trajectory physically cut out by an opponent. This is deliberately
+ * separate from both a loose-ball recovery and the resulting possession. */
+export interface InterceptionEvent extends BaseMatchEvent {
+  readonly type: "INTERCEPTION";
+  readonly teamId: TeamId;
+  readonly playerId: PlayerId;
+  readonly passerId: PlayerId | null;
+  readonly positionX: number;
+  readonly positionY: number;
+}
+
+/** Control established while the ball had no owner. Tackles and interceptions
+ * are not recoveries merely because they also result in possession. */
+export interface BallRecoveryEvent extends BaseMatchEvent {
+  readonly type: "BALL_RECOVERY";
+  readonly teamId: TeamId;
+  readonly playerId: PlayerId;
+  readonly previousTouchPlayerId: PlayerId | null;
+  readonly recoveryKind: "LOOSE_BALL" | "REBOUND" | "DRIBBLE";
+  readonly positionX: number;
+  readonly positionY: number;
+}
+
+/** One causal contest between two opponents. The event is recorded once and
+ * analytics attribute an attempt to both participants and a win to winnerId. */
+export interface DuelEvent extends BaseMatchEvent {
+  readonly type: "DUEL";
+  readonly teamId: TeamId;
+  readonly playerId: PlayerId;
+  readonly opponentId: PlayerId;
+  readonly winnerId: PlayerId;
+  readonly loserId: PlayerId;
+  readonly duelKind: "GROUND_TACKLE" | "LOOSE_BALL" | "AERIAL" | "SHOULDER";
+  readonly positionX: number;
+  readonly positionY: number;
+}
+
 /** Optional competition events are part of the normalized contract even when a
  * particular match configuration has no substitutions, VAR or penalties. */
 export interface NamedMatchEvent extends BaseMatchEvent {
@@ -251,6 +288,9 @@ export type MatchEvent =
   | CarryEndedEvent
   | PossessionChangedEvent
   | TackleEvent
+  | InterceptionEvent
+  | BallRecoveryEvent
+  | DuelEvent
   | NamedMatchEvent
   | CardEvent
   | GoalEvent

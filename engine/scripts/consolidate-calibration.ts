@@ -24,7 +24,9 @@ const samples = documents.flatMap(document => document.samples) as MatchSample[]
 const seeds = samples.map(sample => sample.seed);
 if (new Set(seeds).size !== seeds.length) throw new Error("Calibration inputs contain duplicate seeds");
 const result = calibrationResultFromSamples(samples, Math.min(...samples.map(sample => sample.seed)));
-const sum = (key: keyof MatchSample): number => samples.reduce((total, sample) => total + Number(sample[key]), 0);
+// Older persisted shards predate some operational fields. They remain
+// readable, while new runs populate every member of the current ontology.
+const sum = (key: keyof MatchSample): number => samples.reduce((total, sample) => total + Number(sample[key] ?? 0), 0);
 const perMatch = (key: keyof MatchSample): number => sum(key) / samples.length;
 const passes = sum("passes");
 const operational = {
@@ -33,6 +35,7 @@ const operational = {
   passAccuracyPercent: passes ? sum("passesCompleted") / passes * 100 : 0,
   tacklesPerMatch: perMatch("tackles"),
   tacklesWonPerMatch: perMatch("tacklesWon"),
+  interceptionsPerMatch: perMatch("interceptions"),
   recoveriesPerMatch: perMatch("recoveries"),
   duelsPerMatch: perMatch("duels"),
   duelsWonPerMatch: perMatch("duelsWon"),

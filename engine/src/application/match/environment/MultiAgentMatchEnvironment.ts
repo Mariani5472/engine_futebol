@@ -107,7 +107,7 @@ export class MultiAgentMatchEnvironment {
     let reason: MultiAgentTransitionInfo["reason"] = "RUNNING";
     while (!session.isFinished() && physicalTicks < this.stepLimit()) {
       session.advance(ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds);
-      events.push(...session.snapshot().events);
+      events.push(...session.latestEvents());
       physicalTicks++;
       this.totalPhysicalTicks++;
       if (this.totalPhysicalTicks >= (this.options.maxEpisodePhysicalTicks ?? Number.POSITIVE_INFINITY)) {
@@ -179,7 +179,7 @@ export class MultiAgentMatchEnvironment {
         jointDecisionStep: this.jointDecisionSteps,
         physicalTicks,
         totalPhysicalTicks: this.totalPhysicalTicks,
-        matchSecond: this.requireSession().snapshot().matchSecond,
+        matchSecond: this.requireSession().matchSecond(),
         events: Object.freeze([...events]),
         reason,
       }),

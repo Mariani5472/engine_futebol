@@ -53,6 +53,7 @@ export interface MatchSample {
   readonly passAccuracy: number;
   readonly tackles: number;
   readonly tacklesWon: number;
+  readonly interceptions: number;
   readonly recoveries: number;
   readonly duels: number;
   readonly duelsWon: number;
@@ -152,6 +153,7 @@ export class CalibrationRunner {
         passAccuracy: passes > 0 ? passesCompleted / passes * 100 : 0,
         tackles: eventTotal("tackles"),
         tacklesWon: eventTotal("tacklesWon"),
+        interceptions: eventTotal("interceptions"),
         recoveries: eventTotal("recoveries"),
         duels: eventTotal("duels"),
         duelsWon: eventTotal("duelsWon"),

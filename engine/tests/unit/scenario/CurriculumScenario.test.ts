@@ -4,7 +4,7 @@ import { buildSimulationConfig } from "../../helpers/builders";
 
 describe("curriculum scenarios", () => {
   it("builds every expansion stage with explicit participants and objective", () => {
-    const stages = ["PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "LEARNED_GOALKEEPER", "ELEVEN_V_ELEVEN", "COLLECTIVE_POLICY", "SELF_PLAY"] as const;
+    const stages = ["PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "SEVEN_V_SEVEN", "LEARNED_GOALKEEPER", "ELEVEN_V_ELEVEN", "COLLECTIVE_POLICY", "SELF_PLAY"] as const;
     for (const stage of stages) {
       const scenario = createCurriculumScenarioPreset(stage);
       expect(scenario.stage).toBe(stage);
@@ -20,7 +20,7 @@ describe("curriculum scenarios", () => {
     });
   });
 
-  it.each(["TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "ELEVEN_V_ELEVEN", "COLLECTIVE_POLICY", "SELF_PLAY"] as const)(
+  it.each(["TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "SEVEN_V_SEVEN", "ELEVEN_V_ELEVEN", "COLLECTIVE_POLICY", "SELF_PLAY"] as const)(
     "initializes %s with every declared participant active",
     stage => {
       const scenario = createCurriculumScenarioPreset(stage);
@@ -70,5 +70,15 @@ describe("curriculum scenarios", () => {
     expect(frozen.scenarioDecisionDisabled).toBe(true);
     expect(learned.scenarioMovementFrozen).toBe(false);
     expect(learned.scenarioDecisionDisabled).toBe(false);
+  });
+
+  it("applies independent tactical parameters in reduced football", () => {
+    const scenario = createCurriculumScenarioPreset("SEVEN_V_SEVEN");
+    const state = new MatchInitializer().initialize({ ...buildSimulationConfig(71), scenario }).state;
+    expect(state.home.tactic.inPossession).toMatchObject({ tempo: "HIGH", width: "WIDE", passingStyle: "DIRECT" });
+    expect(state.home.tactic.transition).toMatchObject({ counterAttack: true, regroup: true, counterPress: false });
+    expect(state.away.tactic.outOfPossession).toMatchObject({ defensiveLine: "STANDARD", pressLine: "MID", intensity: "NORMAL" });
+    expect([...state.home.players, ...state.away.players]
+      .filter(player => !player.scenarioDecisionDisabled)).toHaveLength(14);
   });
 });

@@ -1,6 +1,6 @@
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import { BallState } from "../../../../core/movement/BallMatchState";
-import { FoulEvent, Milliseconds, PlayerId, TeamId, type TackleEvent } from "../../../../domain";
+import { FoulEvent, Milliseconds, PlayerId, TeamId, type DuelEvent, type TackleEvent } from "../../../../domain";
 import { ActionContext } from "../ActionContext";
 import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
@@ -125,13 +125,39 @@ export class TackleAction {
       match.ball.acquirePossession(player, "TACKLE", matchSecond, false, context.actionId);
       match.ball.state = BallState.CONTROLLED;
     }
-    events.push(this.tackleEvent(player, ballOwner, tacklerTeamId, matchSecond, period, success && physicalContact));
+    const won = success && physicalContact;
+    events.push(this.tackleEvent(player, ballOwner, tacklerTeamId, matchSecond, period, won));
+    if (physicalContact) {
+      events.push(this.duelEvent(player, ballOwner, tacklerTeamId, matchSecond, period, won, match.ball.position.x, match.ball.position.y));
+    }
 
     return {
       actorId: player.player.id,
       type: DecisionType.TACKLE,
       success: success && physicalContact,
       events,
+    };
+  }
+
+  private duelEvent(
+    player: PlayerMatchState,
+    opponent: PlayerMatchState,
+    teamId: string,
+    second: number,
+    period: "FIRST_HALF" | "SECOND_HALF",
+    won: boolean,
+    positionX: number,
+    positionY: number,
+  ): DuelEvent {
+    const winner = won ? player : opponent;
+    const loser = won ? opponent : player;
+    return {
+      id: `duel-tackle-${player.player.id}-${second.toFixed(2)}`,
+      type: "DUEL", timestamp: (second * 1000) as Milliseconds, period,
+      teamId: teamId as TeamId, playerId: player.player.id as PlayerId,
+      opponentId: opponent.player.id as PlayerId,
+      winnerId: winner.player.id as PlayerId, loserId: loser.player.id as PlayerId,
+      duelKind: "GROUND_TACKLE", positionX, positionY,
     };
   }
 

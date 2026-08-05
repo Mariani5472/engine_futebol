@@ -25,6 +25,7 @@ describe("CurriculumPlan", () => {
     expect(plan.find(stage => stage.id === "TWO_V_ONE")?.controlledPlayerIds).toHaveLength(2);
     expect(plan.find(stage => stage.id === "THREE_V_TWO")?.controlledPlayerIds).toHaveLength(3);
     expect(plan.find(stage => stage.id === "FIVE_V_FIVE")?.controlledPlayerIds).toHaveLength(5);
+    expect(plan.find(stage => stage.id === "SEVEN_V_SEVEN")?.controlledPlayerIds).toHaveLength(7);
     expect(plan.find(stage => stage.id === "ELEVEN_V_ELEVEN")?.controlledPlayerIds).toHaveLength(11);
     expect(plan.find(stage => stage.id === "SELF_PLAY")?.controlledPlayerIds).toHaveLength(22);
     expect(plan.find(stage => stage.id === "COLLECTIVE_POLICY")?.policyMode).toBe("SHARED_TEAM");
@@ -35,11 +36,11 @@ describe("CurriculumPlan", () => {
     const plan = buildCurriculumPlan();
     const goalkeeper = plan.find(stage => stage.id === "LEARNED_GOALKEEPER")!;
     expect(evaluateCurriculumGate(goalkeeper, new Set(), [])).toMatchObject({ state: "LOCKED" });
-    expect(evaluateCurriculumGate(goalkeeper, new Set(["FIVE_V_FIVE"]), [])).toMatchObject({
+    expect(evaluateCurriculumGate(goalkeeper, new Set(["SEVEN_V_SEVEN"]), [])).toMatchObject({
       state: "BLOCKED",
       reasons: ["missing ATTACKER checkpoint"],
     });
-    expect(evaluateCurriculumGate(goalkeeper, new Set(["FIVE_V_FIVE"]), [checkpoint("ATTACKER")])).toMatchObject({ state: "READY" });
+    expect(evaluateCurriculumGate(goalkeeper, new Set(["SEVEN_V_SEVEN"]), [checkpoint("ATTACKER")])).toMatchObject({ state: "READY" });
   });
 
   it("promotes only from held-out evidence whose confidence bounds pass", () => {

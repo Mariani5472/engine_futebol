@@ -3,6 +3,7 @@ import { createCurriculumScenarioPreset } from "../../../src/application/match/s
 import type { PlayerActionCommand } from "../../../src/application/match/policy/PlayerPolicy";
 import type { PlayerActionMask } from "../../../src/application/match/policy/PlayerActionSpace";
 import { buildSimulationConfig } from "../../helpers/builders";
+import { MatchSession } from "../../../src/application/match/engine/MatchSession";
 
 function create(seed = 71) {
   return new MultiAgentMatchEnvironment({
@@ -56,6 +57,18 @@ describe("MultiAgentMatchEnvironment", () => {
       playerIds: ["home-10", "home-10"],
       configFactory: buildSimulationConfig,
     })).toThrow(/unique controlled players/);
+  });
+
+  it("does not materialize UI snapshots inside the physical-tick hot path", () => {
+    const snapshot = jest.spyOn(MatchSession.prototype, "snapshot");
+    try {
+      const environment = create(105);
+      const boundary = environment.reset(105);
+      environment.step(commands(boundary.actionMasks));
+      expect(snapshot).not.toHaveBeenCalled();
+    } finally {
+      snapshot.mockRestore();
+    }
   });
 });
 

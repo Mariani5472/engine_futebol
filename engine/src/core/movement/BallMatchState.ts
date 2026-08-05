@@ -33,6 +33,10 @@ export interface PossessionAcquisitionRecord {
   readonly matchSecond: number;
   readonly playerId: string;
   readonly previousPlayerId: string | null;
+  /** Opponent who physically contested this acquisition, when known. */
+  readonly opponentId?: string | null;
+  /** The ball had no authoritative owner immediately before control. */
+  readonly wasLoose: boolean;
   readonly distanceToBall: number;
   readonly ballSpeed: number;
   readonly reason: PossessionAcquisitionReason;
@@ -124,12 +128,14 @@ export class BallMatchState {
     matchSecond: number,
     contested = false,
     actionId?: ActionId,
+    opponentId: string | null = null,
   ): void {
     // During a pass or loose-ball phase owner is null, but the last physical
     // touch still identifies which team relinquished the ball. Keeping that
     // provenance lets analytics distinguish a true recovery from a harmless
     // same-team reception without inventing possession.
-    const previousPlayerId = this.owner?.player.id ?? this.lastTouchedPlayerId ?? null;
+    const previousOwner = this.owner;
+    const previousPlayerId = previousOwner?.player.id ?? this.lastTouchedPlayerId ?? null;
     if (this.lastCompletedPass && player.player.id !== this.lastCompletedPass.receiverId
       && !this.lastCompletedPass.interventions.includes("CONTROL_CHANGE")) {
       this.lastCompletedPass.interventions.push("CONTROL_CHANGE");
@@ -138,6 +144,8 @@ export class BallMatchState {
       this.possessionAcquisitions.push({
         type: "POSSESSION_CHANGED", matchSecond, playerId: player.player.id,
         previousPlayerId,
+        opponentId,
+        wasLoose: previousOwner === null,
         distanceToBall: player.position.distanceTo(this.position),
         ballSpeed: Math.max(this.velocity.magnitude(), this.visualVelocity.magnitude()),
         reason, previousAction: player.lastActionType === undefined ? null : String(player.lastActionType), contested,

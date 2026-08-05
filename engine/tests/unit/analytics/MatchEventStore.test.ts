@@ -64,7 +64,9 @@ describe("MatchEventStore", () => {
       { id:"shot-1-on",type:"SHOT_ON_TARGET",timestamp:2300 as any,period:"FIRST_HALF",shotId:"shot-1",teamId:state.home.team.id as any,playerId:state.home.players[9].player.id as any,positionX:105,positionY:34,height:1,outcome:"GOAL" },
       { id:"goal-1",type:"GOAL",timestamp:2300 as any,period:"FIRST_HALF",teamId:state.home.team.id as any,scorerId:state.home.players[9].player.id as any,assistId:state.home.players[1].player.id as any },
       { id:"tackle-1",type:"TACKLE",timestamp:2500 as any,period:"FIRST_HALF",teamId:state.home.team.id as any,playerId:state.home.players[3].player.id as any,opponentId:state.away.players[3].player.id as any,successful:true },
-      { id:"recovery-1",type:"POSSESSION_CHANGED",timestamp:2600 as any,period:"FIRST_HALF",teamId:state.home.team.id as any,playerId:state.home.players[3].player.id as any,previousPlayerId:state.away.players[3].player.id as any,reason:"INTERCEPTION",positionX:72,positionY:34,ballSpeed:4 },
+      { id:"interception-1",type:"INTERCEPTION",timestamp:2600 as any,period:"FIRST_HALF",teamId:state.home.team.id as any,playerId:state.home.players[3].player.id as any,passerId:state.away.players[3].player.id as any,positionX:72,positionY:34 },
+      { id:"recovery-1",type:"BALL_RECOVERY",timestamp:2700 as any,period:"FIRST_HALF",teamId:state.home.team.id as any,playerId:state.home.players[3].player.id as any,previousTouchPlayerId:state.away.players[3].player.id as any,recoveryKind:"LOOSE_BALL",positionX:72,positionY:34 },
+      { id:"duel-1",type:"DUEL",timestamp:2800 as any,period:"FIRST_HALF",teamId:state.home.team.id as any,playerId:state.home.players[3].player.id as any,opponentId:state.away.players[3].player.id as any,winnerId:state.home.players[3].player.id as any,loserId:state.away.players[3].player.id as any,duelKind:"GROUND_TACKLE",positionX:72,positionY:34 },
     ];
     store.append(events);
     state.currentSecond = 3;
@@ -80,6 +82,11 @@ describe("MatchEventStore", () => {
     expect(report.teams[state.home.team.id].assists).toBe(1);
     expect(report.teams[state.home.team.id].tacklesWon).toBe(1);
     expect(report.teams[state.home.team.id].interceptions).toBe(1);
+    expect(report.teams[state.home.team.id].recoveries).toBe(1);
+    expect(report.teams[state.home.team.id].duels).toBe(1);
+    expect(report.teams[state.home.team.id].duelsWon).toBe(1);
+    expect(report.teams[state.away.team.id].duels).toBe(1);
+    expect(report.teams[state.away.team.id].duelsWon).toBe(0);
     expect(report.teams[state.home.team.id].byPeriod.FIRST_HALF.goals).toBe(1);
     expect(report.players[state.home.players[1].player.id].passesCompleted).toBe(1);
     expect(report.players[state.home.players[9].player.id].goals).toBe(1);

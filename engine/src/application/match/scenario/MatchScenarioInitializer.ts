@@ -3,7 +3,8 @@ import { BallPlacement } from "../../../core/movement/BallPlacement";
 import type { MatchState } from "../../../core/movement/MatchState";
 import type { PlayerMatchState } from "../../../core/movement/PlayerMatchState";
 import type { TeamMatchState } from "../../../core/movement/TeamMatchState";
-import type { MatchScenarioConfig } from "./MatchScenario";
+import { Tactic } from "../../../domain/tactics";
+import type { MatchScenarioConfig, ReducedTacticalParameters } from "./MatchScenario";
 
 export class MatchScenarioInitializer {
   public apply(state: MatchState, scenario: MatchScenarioConfig): void {
@@ -172,6 +173,39 @@ export class MatchScenarioInitializer {
     state.pendingGoalRestart = null;
     state.attackingTeam = attackingTeam;
     state.defendingTeam = defendingTeam;
+    if (scenario.attackingTactics) this.applyReducedTactics(attackingTeam, scenario.attackingTactics);
+    if (scenario.defendingTactics) this.applyReducedTactics(defendingTeam, scenario.defendingTactics);
+  }
+
+  private applyReducedTactics(team: TeamMatchState, parameters: ReducedTacticalParameters): void {
+    const current = team.tactic;
+    team.tactic = Tactic.create({
+      defensiveShape: current.defensiveShape,
+      attackingShape: current.attackingShape,
+      teamInstructions: current.teamInstructions,
+      playerInstructions: current.playerInstructions,
+      familiarity: current.familiarity,
+      inPossession: {
+        ...current.inPossession,
+        tempo: parameters.tempo,
+        width: parameters.width,
+        passingStyle: parameters.passingStyle,
+      },
+      outOfPossession: {
+        ...current.outOfPossession,
+        defensiveLine: parameters.defensiveLine,
+        pressLine: parameters.pressLine,
+        intensity: parameters.pressingIntensity,
+      },
+      transition: {
+        ...current.transition,
+        counterPress: parameters.counterPress,
+        counterAttack: parameters.counterAttack,
+        regroup: parameters.regroup,
+        holdShape: parameters.regroup && !parameters.counterAttack,
+      },
+      opposition: current.opposition,
+    });
   }
 
   private applyAttackerVsGoalkeeper(

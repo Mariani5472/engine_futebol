@@ -30,7 +30,7 @@ export const INDIVIDUAL_TRAINING_STAGE_ORDER: readonly FundamentalScenarioSkill[
 ]);
 
 export const LEGACY_CURRICULUM_STAGE_ORDER: readonly CurriculumScenarioStage[] = Object.freeze([
-  "PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "LEARNED_GOALKEEPER",
+  "PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "SEVEN_V_SEVEN", "LEARNED_GOALKEEPER",
   "ELEVEN_V_ELEVEN", "COLLECTIVE_POLICY", "SELF_PLAY",
 ]);
 
@@ -130,6 +130,12 @@ const CATALOG: readonly TrainingScenarioDefinition[] = Object.freeze([
     difficulty: { teamSize: 5, goalkeepers: true }, decisionIntervalTicks: 20, timeLimitSeconds: 300,
     terminationRules: ["MATCH_FINISHED", "TIME_LIMIT"], successRules: ["POSITIVE_GOAL_DIFFERENCE"],
     rewardProfileId: "SMALL_SIDED_V1", requiredCapabilities: ["MULTI_AGENT", "GOALKEEPER", "RESTARTS"],
+  }),
+  curriculum({
+    id: "SEVEN_V_SEVEN", family: "SMALL_SIDED_GAME", controlledAgentIds: ["home-1", "home-2", "home-3", "home-6", "home-7", "home-9", "home-10"], policyMode: "SHARED_TEAM", opponentMode: "CHECKPOINT",
+    difficulty: { teamSize: 7, goalkeepers: true, tacticalTransitions: true }, decisionIntervalTicks: 20, timeLimitSeconds: 420,
+    terminationRules: ["MATCH_FINISHED", "TIME_LIMIT"], successRules: ["POSITIVE_GOAL_DIFFERENCE"],
+    rewardProfileId: "SMALL_SIDED_V1", requiredCapabilities: ["MULTI_AGENT", "GOALKEEPER", "RESTARTS", "CHECKPOINT_LOADING"],
   }),
   curriculum({
     id: "LEARNED_GOALKEEPER", family: "GOALKEEPER", controlledAgentIds: ["away-1"], policyMode: "SINGLE_AGENT", opponentMode: "CHECKPOINT",

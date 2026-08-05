@@ -51,6 +51,10 @@ export class PossessionSystem {
       candidates.length === 1
         ? candidates[0].player
         : this.resolveDuel(candidates[0], candidates[1]);
+    const winnerTeam = state.home.players.includes(winner) ? state.home : state.away;
+    const opponent = candidates
+      .map(candidate => candidate.player)
+      .find(candidate => candidate !== winner && !winnerTeam.players.includes(candidate)) ?? null;
 
     if (ball.state === BallState.IN_FLIGHT) {
       ball.position = this.closestPointOnSegment(winner.position, ball.previousPosition, ball.position);
@@ -78,7 +82,7 @@ export class PossessionSystem {
     const reason: PossessionAcquisitionReason = intendedReceiverId === winner.player.id
       ? "INTENDED_RECEPTION"
       : ball.state === BallState.IN_FLIGHT ? "INTERCEPTION" : "PHYSICAL_CLAIM";
-    this.givePossession(state, winner, reason, candidates.length > 1);
+    this.givePossession(state, winner, reason, opponent !== null, opponent?.player.id ?? null);
   }
 
   private givePossession(
@@ -86,6 +90,7 @@ export class PossessionSystem {
     player: PlayerMatchState,
     reason: PossessionAcquisitionReason,
     contested: boolean,
+    opponentId: string | null,
   ): void {
     this.syncOwnerFlags(state, player);
 
@@ -96,7 +101,7 @@ export class PossessionSystem {
       : undefined;
     const causalActionId = state.ball.pendingPass?.actionId;
     state.ball.resolvePendingPass(player.player.id,state.currentSecond,intended?.position.distanceTo(state.ball.position)??null);
-    state.ball.acquirePossession(player, reason, state.currentSecond, contested, causalActionId);
+    state.ball.acquirePossession(player, reason, state.currentSecond, contested, causalActionId, opponentId);
     player.possessionControlUntil = state.currentSecond + controlSeconds;
     player.possessionProtectedUntil = state.currentSecond + Math.min(.65, controlSeconds * .7);
     player.actionLockUntil = Math.max(player.actionLockUntil, player.possessionControlUntil);

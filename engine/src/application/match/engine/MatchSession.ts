@@ -170,6 +170,9 @@ export class MatchSession {
   public pause(): void { this.paused = true; }
   public resume(): void { this.paused = false; }
   public isPaused(): boolean { return this.paused; }
+  /** Training hot-path accessors avoid materializing the network/UI snapshot. */
+  public latestEvents(): readonly MatchEvent[] { return this.latestFrame?.events ?? []; }
+  public matchSecond(): number { return this.latestFrame?.state.currentSecond ?? this.finalResult?.matchDurationSeconds ?? 0; }
   public setSpeed(speed: number): void {
     if (![1, 2, 4, 8, 50].includes(speed)) throw new Error("Speed must be 1, 2, 4, 8 or 50");
     this.speed = speed as MatchSpeed;

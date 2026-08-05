@@ -11,7 +11,7 @@ from .client import PROTOCOL_VERSION, ProtocolError, TrainingProcessClient
 from .env import ACTION_COUNT, OBSERVATION_SIZE
 
 CURRICULUM_STAGES = (
-    "PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "LEARNED_GOALKEEPER",
+    "PASS", "TWO_V_ONE", "THREE_V_TWO", "FIVE_V_FIVE", "SEVEN_V_SEVEN", "LEARNED_GOALKEEPER",
     "ELEVEN_V_ELEVEN", "COLLECTIVE_POLICY", "SELF_PLAY",
 )
 
@@ -137,4 +137,3 @@ class ParallelCurriculumEnv:
 
     def __exit__(self, *_: object) -> None:
         self.close()
-
