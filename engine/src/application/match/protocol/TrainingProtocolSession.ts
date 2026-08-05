@@ -1,16 +1,35 @@
 import { ACTOR_OBSERVATION_VERSION } from "../observation/ObservationSpace";
 import { PLAYER_ACTION_SPACE_VERSION } from "../policy/PlayerActionSpace";
 import { REWARD_VERSION } from "../reward/RewardV1";
+import { FUNDAMENTAL_REWARD_VERSION } from "../reward/FundamentalReward";
 import { AttackerVsGoalkeeperEnvironment } from "../scenario/AttackerVsGoalkeeperEnvironment";
-import { ATTACKER_VS_GOALKEEPER_SCENARIO_VERSION } from "../scenario/MatchScenario";
+import {
+  BallControlScenarioEnvironment,
+  MovementScenarioEnvironment,
+  PassingScenarioEnvironment,
+  ShootingScenarioEnvironment,
+  type FundamentalScenarioEnvironmentOptions,
+} from "../scenario/FundamentalScenarioEnvironment";
+import { ATTACKER_VS_GOALKEEPER_SCENARIO_VERSION, FUNDAMENTAL_SCENARIO_VERSION } from "../scenario/MatchScenario";
 import { PURE_MATCH_ENVIRONMENT_VERSION } from "../environment/PureMatchEnvironment";
 import { MULTI_AGENT_MATCH_ENVIRONMENT_VERSION, MultiAgentMatchEnvironment } from "../environment/MultiAgentMatchEnvironment";
 import { CURRICULUM_SCENARIO_VERSION, createCurriculumScenarioPreset } from "../scenario/MatchScenario";
+import { trainingScenarioDefinition } from "../scenario/TrainingScenarioRegistry";
+import {
+  buildFundamentalReportFromEvidence,
+  createFundamentalSeedPartitions,
+  evaluateFundamentalPromotionGate,
+  fundamentalPromotionCriteria,
+  sampleFundamentalDifficulty,
+  selectFundamentalCurriculumLevel,
+} from "../curriculum/FundamentalTraining";
 import { createDefaultTrainingConfig } from "./DefaultTrainingConfig";
 import {
   TRAINING_PROTOCOL_VERSION,
   type CreateEnvironmentPayload,
   type EnvironmentPayload,
+  type FundamentalGatePayload,
+  type FundamentalPlanPayload,
   type ResetEnvironmentPayload,
   type StepEnvironmentPayload,
   type TrainingErrorResponse,
@@ -21,12 +40,15 @@ import {
 } from "./TrainingProtocol";
 
 export interface TrainingProtocolSessionOptions {
-  readonly createEnvironment?: (payload: CreateEnvironmentPayload, environmentId: string) => AttackerVsGoalkeeperEnvironment | MultiAgentMatchEnvironment;
+  readonly createEnvironment?: (payload: CreateEnvironmentPayload, environmentId: string) => TrainingEnvironment;
 }
+
+type FundamentalEnvironment = MovementScenarioEnvironment | BallControlScenarioEnvironment | PassingScenarioEnvironment | ShootingScenarioEnvironment;
+type TrainingEnvironment = AttackerVsGoalkeeperEnvironment | FundamentalEnvironment | MultiAgentMatchEnvironment;
 
 export class TrainingProtocolSession {
   private readonly environments = new Map<string, {
-    readonly environment: AttackerVsGoalkeeperEnvironment | MultiAgentMatchEnvironment;
+    readonly environment: TrainingEnvironment;
     readonly kind: CreateEnvironmentPayload["kind"];
     readonly wireFormat: "FULL" | "COMPACT";
   }>();
@@ -48,6 +70,8 @@ export class TrainingProtocolSession {
         case "CREATE": return this.create(request as TrainingRequest<CreateEnvironmentPayload>);
         case "RESET": return this.reset(request as TrainingRequest<ResetEnvironmentPayload>);
         case "STEP": return this.step(request as TrainingRequest<StepEnvironmentPayload>);
+        case "FUNDAMENTAL_PLAN": return this.fundamentalPlan(request as TrainingRequest<FundamentalPlanPayload>);
+        case "FUNDAMENTAL_GATE": return this.fundamentalGate(request as TrainingRequest<FundamentalGatePayload>);
         case "CLOSE_ENV": return this.closeEnvironment(request as TrainingRequest<EnvironmentPayload>);
         case "SHUTDOWN":
           this.environments.clear();
@@ -67,7 +91,7 @@ export class TrainingProtocolSession {
   private create(request: TrainingRequest<CreateEnvironmentPayload>): TrainingResponse {
     const object = this.objectPayload(request.payload);
     const payload = object as unknown as CreateEnvironmentPayload;
-    if (payload.kind !== "ATTACKER_VS_GOALKEEPER" && payload.kind !== "CURRICULUM") {
+    if (payload.kind !== "ATTACKER_VS_GOALKEEPER" && payload.kind !== "FUNDAMENTAL" && payload.kind !== "CURRICULUM") {
       return this.failure(request.requestId, "INVALID_REQUEST", `Unsupported environment kind: ${String(payload.kind)}`, true);
     }
     const environmentId = this.optionalString(payload.environmentId, "environmentId") ?? `environment-${this.nextEnvironmentId++}`;
@@ -104,7 +128,7 @@ export class TrainingProtocolSession {
     try {
       const result = record.kind === "CURRICULUM"
         ? (record.environment as MultiAgentMatchEnvironment).step(requireActions(payload.actions))
-        : (record.environment as AttackerVsGoalkeeperEnvironment).step(requireAction(payload.action));
+        : (record.environment as AttackerVsGoalkeeperEnvironment | FundamentalEnvironment).step(requireAction(payload.action));
       return this.success(request, record.wireFormat === "COMPACT" ? compactAnyResult(result) : result);
     } catch (error) {
       return this.environmentFailure(request.requestId, error);
@@ -117,17 +141,34 @@ export class TrainingProtocolSession {
     return this.success(request, { environmentId, closed: true });
   }
 
+  private fundamentalPlan(request: TrainingRequest<FundamentalPlanPayload>): TrainingResponse {
+    const payload = this.objectPayload(request.payload) as unknown as FundamentalPlanPayload;
+    return this.success(request, createFundamentalSeedPartitions(payload.rootSeed, payload.counts));
+  }
+
+  private fundamentalGate(request: TrainingRequest<FundamentalGatePayload>): TrainingResponse {
+    const payload = this.objectPayload(request.payload) as unknown as FundamentalGatePayload;
+    const report = buildFundamentalReportFromEvidence(payload);
+    const gate = evaluateFundamentalPromotionGate(
+      report,
+      payload.criteria ?? fundamentalPromotionCriteria(payload.skill),
+    );
+    return this.success(request, Object.freeze({ report, gate }));
+  }
+
   private hello(): unknown {
     return Object.freeze({
       protocolVersion: TRAINING_PROTOCOL_VERSION,
       observationVersion: ACTOR_OBSERVATION_VERSION,
       actionSpaceVersion: PLAYER_ACTION_SPACE_VERSION,
       rewardVersion: REWARD_VERSION,
+      fundamentalRewardVersion: FUNDAMENTAL_REWARD_VERSION,
       environmentVersion: PURE_MATCH_ENVIRONMENT_VERSION,
       scenarioVersion: ATTACKER_VS_GOALKEEPER_SCENARIO_VERSION,
+      fundamentalScenarioVersion: FUNDAMENTAL_SCENARIO_VERSION,
       curriculumScenarioVersion: CURRICULUM_SCENARIO_VERSION,
       multiAgentEnvironmentVersion: MULTI_AGENT_MATCH_ENVIRONMENT_VERSION,
-      capabilities: Object.freeze(["persistent_process", "multiple_environments", "attacker_vs_goalkeeper", "curriculum", "multi_agent", "shared_policy", "self_play", "action_mask", "reward_breakdown", "compact_wire_format"]),
+      capabilities: Object.freeze(["persistent_process", "multiple_environments", "attacker_vs_goalkeeper", "fundamental_skills", "curriculum", "multi_agent", "shared_policy", "self_play", "action_mask", "reward_breakdown", "compact_wire_format"]),
     });
   }
 
@@ -229,7 +270,7 @@ function compactAnyResult(result: any): unknown {
   return compactResult(result);
 }
 
-function defaultEnvironment(payload: CreateEnvironmentPayload, environmentId: string): AttackerVsGoalkeeperEnvironment | MultiAgentMatchEnvironment {
+function defaultEnvironment(payload: CreateEnvironmentPayload, environmentId: string): TrainingEnvironment {
   const seed = payload.seed ?? 1;
   if (payload.kind === "CURRICULUM") {
     if (!payload.stage) throw new Error("CURRICULUM requires a stage");
@@ -243,6 +284,46 @@ function defaultEnvironment(payload: CreateEnvironmentPayload, environmentId: st
       maxEpisodePhysicalTicks: payload.maxEpisodePhysicalTicks ?? 108_000,
       maxPhysicalTicksPerStep: payload.maxPhysicalTicksPerStep ?? 2_000,
     });
+  }
+  if (payload.kind === "FUNDAMENTAL") {
+    if (!payload.skill) throw new Error("FUNDAMENTAL requires a skill");
+    const definition = trainingScenarioDefinition(payload.skill);
+    if (definition.scenario.kind !== "FUNDAMENTAL") throw new Error(`${payload.skill} is not a fundamental scenario`);
+    const fundamentalScenario = definition.scenario;
+    const level = payload.difficultyLevel ?? 0.6;
+    const rehearsalLevels = payload.rehearsalLevels ?? [];
+    const rehearsalRate = payload.rehearsalRate ?? 0;
+    const initialLevel = selectFundamentalCurriculumLevel(level, rehearsalLevels, rehearsalRate, seed);
+    const sampled = sampleFundamentalDifficulty(payload.skill, initialLevel, seed);
+    const scenario = { ...definition.scenario, ...sampled.scenario };
+    const options: FundamentalScenarioEnvironmentOptions = {
+      playerId: scenario.playerId,
+      playerPosition: scenario.playerPosition,
+      targetPosition: scenario.targetPosition,
+      receiverId: scenario.receiverId,
+      receiverPosition: scenario.receiverPosition,
+      ballPosition: scenario.ballPosition,
+      targetRadius: scenario.targetRadius,
+      scenarioFactory: value => ({
+        ...fundamentalScenario,
+        ...sampleFundamentalDifficulty(
+          payload.skill!,
+          selectFundamentalCurriculumLevel(level, rehearsalLevels, rehearsalRate, value),
+          value,
+        ).scenario,
+      }),
+      initialSeed: seed,
+      configFactory: value => createDefaultTrainingConfig(`training:${environmentId}:${value}`, value),
+      maxDecisionSteps: payload.maxDecisionSteps ?? 20,
+      maxEpisodePhysicalTicks: payload.maxEpisodePhysicalTicks ?? Math.ceil(definition.timeLimitSeconds / 0.05),
+      maxPhysicalTicksPerStep: payload.maxPhysicalTicksPerStep ?? 1_000,
+    };
+    switch (payload.skill) {
+      case "MOVEMENT": return new MovementScenarioEnvironment(options);
+      case "BALL_CONTROL": return new BallControlScenarioEnvironment(options);
+      case "PASSING": return new PassingScenarioEnvironment(options);
+      case "SHOOTING_EMPTY_GOAL": return new ShootingScenarioEnvironment(options);
+    }
   }
   return new AttackerVsGoalkeeperEnvironment({
     attackerId: payload.attackerId ?? "home-10",

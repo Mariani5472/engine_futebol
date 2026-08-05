@@ -29,6 +29,8 @@ class AttackerVsGoalkeeperEnv(gym.Env[np.ndarray, int]):
         environment_options: Mapping[str, Any] | None = None,
         episode_seeds: Sequence[int] | None = None,
         wire_format: str = "COMPACT",
+        _environment_kind: str = "ATTACKER_VS_GOALKEEPER",
+        _environment_payload: Mapping[str, Any] | None = None,
     ) -> None:
         super().__init__()
         self.observation_space = gym.spaces.Box(-1.0, 1.0, shape=(OBSERVATION_SIZE,), dtype=np.float32)
@@ -46,6 +48,8 @@ class AttackerVsGoalkeeperEnv(gym.Env[np.ndarray, int]):
         if wire_format not in {"FULL", "COMPACT"}:
             raise ValueError("wire_format must be FULL or COMPACT")
         self._wire_format = wire_format
+        self._environment_kind = _environment_kind
+        self._environment_payload = dict(_environment_payload or {})
         self._environment_id = f"gym-{uuid.uuid4().hex}"
         self._client: TrainingProcessClient | None = None
         self._created = False
@@ -115,9 +119,10 @@ class AttackerVsGoalkeeperEnv(gym.Env[np.ndarray, int]):
             raise ProtocolError("SCHEMA_VERSION_MISMATCH", f"Incompatible TypeScript environment: {mismatches}")
         payload = {
             "environmentId": self._environment_id,
-            "kind": "ATTACKER_VS_GOALKEEPER",
+            "kind": self._environment_kind,
             "seed": self._initial_seed if seed is None else int(seed),
             "wireFormat": self._wire_format,
+            **self._environment_payload,
             **self._options,
         }
         self._client.request("CREATE", payload)

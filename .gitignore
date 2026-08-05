@@ -2,3 +2,5 @@ node_modules
 **/dist/
 .pnpm-store/
 engine/artifacts/
+**/__pycache__/
+*.py[cod]

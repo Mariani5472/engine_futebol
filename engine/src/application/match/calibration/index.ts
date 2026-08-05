@@ -15,7 +15,7 @@ export type {
   MetricComparison,
 } from "./CalibrationReport";
 
-export { CalibrationRunner, averageShotOutcomes, calibrationDistribution } from "./CalibrationRunner";
+export { CalibrationRunner, averageShotOutcomes, calibrationDistribution, calibrationResultFromSamples } from "./CalibrationRunner";
 export type {
   CalibrationRunOptions,
   CalibrationBatchResult,

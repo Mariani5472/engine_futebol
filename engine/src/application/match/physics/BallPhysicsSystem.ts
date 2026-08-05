@@ -118,7 +118,12 @@ export class BallPhysicsSystem {
 
     const interruptedShot = ball.activeShot;
     const shotEvents: MatchEvent[] = [];
-    if (interruptedShot && interruptedShot.lifecycle !== "RESOLVED") {
+    if (interruptedShot?.lifecycle === "DEFLECTED") {
+      interruptedShot.lifecycle = "RESOLVED";
+      interruptedShot.outcome = "BLOCKED";
+      shotEvents.push(this.shotResolvedEvent(state, interruptedShot, ball.position, ball.height));
+      ball.activeShot = null;
+    } else if (interruptedShot && interruptedShot.lifecycle !== "RESOLVED") {
       interruptedShot.lifecycle = "RESOLVED";
       interruptedShot.outcome = "OFF_TARGET";
       shotEvents.push(this.shotOutcomeEvent(
@@ -222,7 +227,10 @@ export class BallPhysicsSystem {
     previousHeight: number,
   ): ShotInteractionResult {
     const shot = state.ball.activeShot;
-    if (!shot || shot.lifecycle === "RESOLVED") return { events: [], stopPhysics: false };
+    // A defender block is already the terminal semantic outcome of the shot.
+    // Its deflected ball remains physical and may be contested, but must not
+    // create another shot outcome while that rebound is travelling.
+    if (!shot || shot.lifecycle !== "IN_FLIGHT") return { events: [], stopPhysics: false };
     const currentPosition = state.ball.position;
     const currentHeight = state.ball.height;
 

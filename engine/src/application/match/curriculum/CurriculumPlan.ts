@@ -1,6 +1,6 @@
 import { meanConfidenceInterval, wilsonInterval } from "../evaluation/ConfidenceIntervals";
 import type { CurriculumScenarioConfig, CurriculumScenarioStage } from "../scenario/MatchScenario";
-import { trainingScenarioDefinition } from "../scenario/TrainingScenarioRegistry";
+import { curriculumTrainingScenarioDefinition } from "../scenario/TrainingScenarioRegistry";
 import { ACTOR_OBSERVATION_VERSION } from "../observation/ObservationSpace";
 import { PLAYER_ACTION_SPACE_VERSION } from "../policy/PlayerActionSpace";
 
@@ -86,7 +86,7 @@ export function buildCurriculumPlan(): readonly CurriculumStageDefinition[] {
   ): CurriculumStageDefinition => Object.freeze({
     index: CURRICULUM_STAGE_ORDER.indexOf(id),
     id,
-    scenario: trainingScenarioDefinition(id).scenario,
+    scenario: curriculumTrainingScenarioDefinition(id).scenario,
     controlledPlayerIds: Object.freeze([...controlledPlayerIds]),
     policyMode,
     opponentMode,

@@ -44,6 +44,29 @@ Um processo pode hospedar vários ambientes. Requisições v1 são síncronas e 
 
 `CREATE` também aceita `wireFormat: "FULL" | "COMPACT"`. O formato compacto mantém vetor, máscara, reward e término, omitindo entidades estruturadas e histórico de eventos que o PPO não consome.
 
+Treinos individuais usam `kind: "FUNDAMENTAL"` e um dos skills versionados:
+
+```json
+{
+  "kind": "FUNDAMENTAL",
+  "skill": "MOVEMENT | BALL_CONTROL | PASSING | SHOOTING_EMPTY_GOAL"
+}
+```
+
+O `HELLO` anuncia `fundamental_skills`, `fundamentalScenarioVersion` e
+`fundamentalRewardVersion`. Python expõe esses ambientes por `FundamentalSkillEnv`.
+
+O curriculum manager não replica seeds nem estatística. Ele usa:
+
+- `FUNDAMENTAL_PLAN`: recebe `rootSeed` e contagens e retorna cinco partições
+  determinísticas e disjuntas;
+- `CREATE` fundamental com `difficultyLevel`: a engine amostra a configuração;
+- `FUNDAMENTAL_GATE`: recebe evidências brutas pareadas e devolve relatório e gate
+  calculados pela engine.
+
+Seeds enviadas ao gate precisam ser exatamente as retornadas pelo plano, na mesma
+ordem. Divergência ou sobreposição é rejeitada.
+
 ## Gymnasium
 
 O pacote está em `engine/python`:

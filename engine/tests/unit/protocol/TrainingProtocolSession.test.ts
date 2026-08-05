@@ -106,6 +106,66 @@ describe("TrainingProtocolSession", () => {
     expect(transition.info.jointDecisionStep).toBe(1);
   });
 
+  it.each([
+    ["MOVEMENT", "MOVE", undefined],
+    ["BALL_CONTROL", "CONTROL", undefined],
+    ["PASSING", "PASS", "home-9"],
+    ["SHOOTING_EMPTY_GOAL", "SHOT", undefined],
+  ] as const)("exposes fundamental skill %s over the persistent protocol", (skill, actionId, targetId) => {
+    const session = new TrainingProtocolSession();
+    const hello = successful<any>(session.handle(request("HELLO")));
+    expect(hello).toMatchObject({ fundamentalScenarioVersion: 1, fundamentalRewardVersion: 1 });
+    expect(hello.capabilities).toContain("fundamental_skills");
+    successful(session.handle(request("CREATE", {
+      environmentId: `fundamental-${skill}`,
+      kind: "FUNDAMENTAL",
+      skill,
+      wireFormat: "COMPACT",
+      seed: 81,
+    })));
+    const reset = successful<any>(session.handle(request("RESET", { environmentId: `fundamental-${skill}`, seed: 81 })));
+    const action = reset.actionMask.entries.find((entry: any) => entry.id === actionId);
+    expect(action.enabled).toBe(true);
+    const transition = successful<any>(session.handle(request("STEP", {
+      environmentId: `fundamental-${skill}`,
+      action: { actionId, ...(targetId ? { targetId } : {}) },
+    })));
+    expect(transition.rewardBreakdown.version).toBe(1);
+    expect(transition.reward).toBe(transition.rewardBreakdown.total);
+  });
+
+  it("keeps seed planning and promotion gates authoritative in TypeScript", () => {
+    const session = new TrainingProtocolSession();
+    const counts = { training: 2, selection: 2, evaluation: 2, generalization: 2, regression: 2 };
+    const seedPartitions = successful<any>(session.handle(request("FUNDAMENTAL_PLAN", { rootSeed: 700, counts })));
+    expect(new Set(Object.values(seedPartitions).flat() as number[]).size).toBe(10);
+    const evidence = Object.entries(seedPartitions).map(([name, seeds]) => ({
+      partition: name.toUpperCase(), seeds, successes: (seeds as number[]).length, returns: (seeds as number[]).map(() => 1),
+    }));
+    const promoted = successful<any>(session.handle(request("FUNDAMENTAL_GATE", {
+      skill: "MOVEMENT",
+      baselineId: "SCRIPTED_SKILL",
+      seedPartitions,
+      evidence,
+      criteria: {
+        minimumEvaluationEpisodes: 2,
+        minimumEvaluationSuccessLowerBound: 0,
+        minimumGeneralizationSuccessLowerBound: 0,
+        minimumRegressionSuccessLowerBound: 0,
+        minimumEvaluationReturnLowerBound: 0,
+        maximumSelectionEvaluationGap: 0.1,
+      },
+    })));
+    expect(promoted.gate).toEqual({ state: "COMPLETE", reasons: [] });
+    expect(promoted.report.partitions).toHaveLength(5);
+
+    const leaked = session.handle(request("FUNDAMENTAL_GATE", {
+      skill: "MOVEMENT", baselineId: "SCRIPTED_SKILL", seedPartitions,
+      evidence: evidence.map((item, index) => index === 2 ? { ...item, seeds: [...item.seeds].reverse() } : item),
+    }));
+    expect(leaked).toMatchObject({ ok: false, error: { code: "INVALID_REQUEST" } });
+  });
+
   it("returns structured recoverable errors without killing the session", () => {
     const session = new TrainingProtocolSession();
     successful(session.handle(request("CREATE", { environmentId: "safe", kind: "ATTACKER_VS_GOALKEEPER", seed: 2 })));

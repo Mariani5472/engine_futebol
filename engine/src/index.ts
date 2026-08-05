@@ -211,6 +211,10 @@ export type {
 export {
   TRAINING_SCENARIO_CATALOG_VERSION,
   TRAINING_SCENARIO_DEFINITION_VERSION,
+  INDIVIDUAL_TRAINING_STAGE_ORDER,
+  LEGACY_CURRICULUM_STAGE_ORDER,
+  SELF_TRAINING_STAGE_ORDER,
+  curriculumTrainingScenarioDefinition,
   trainingScenarioCatalog,
   trainingScenarioDefinition,
 } from "./application/match/scenario/TrainingScenarioRegistry";
@@ -219,4 +223,5 @@ export type {
   TrainingPolicyMode,
   TrainingScenarioDefinition,
   TrainingScenarioFamily,
+  TrainingScenarioId,
 } from "./application/match/scenario/TrainingScenarioRegistry";

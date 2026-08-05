@@ -16,23 +16,27 @@ import {
   suggestAdjustments,
 } from "../src/application/match/calibration";
 import { buildSimulationConfig } from "../tests/helpers/builders";
+import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
-function parseArgs(argv: string[]): { matches: number; seed: number; tick: number } {
+function parseArgs(argv: string[]): { matches: number; seed: number; tick: number; output?: string } {
   let matches = 50;
   let seed = 1;
   let tick = ENGINE_CALIBRATION_PARAMETERS.officialTickSeconds;
+  let output: string | undefined;
 
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--matches" && argv[i + 1]) matches = Number(argv[++i]);
     if (argv[i] === "--seed" && argv[i + 1]) seed = Number(argv[++i]);
     if (argv[i] === "--tick" && argv[i + 1]) tick = Number(argv[++i]);
+    if (argv[i] === "--output" && argv[i + 1]) output = argv[++i];
   }
 
-  return { matches, seed, tick };
+  return { matches, seed, tick, output };
 }
 
 function main(): void {
-  const { matches, seed, tick } = parseArgs(process.argv.slice(2));
+  const { matches, seed, tick, output } = parseArgs(process.argv.slice(2));
   const runner = new CalibrationRunner();
 
   console.log(`Running ${matches} matches (seed ${seed}+, tick ${tick}s)...`);
@@ -42,11 +46,19 @@ function main(): void {
     seedStart: seed,
     tickDeltaSeconds: tick,
     buildConfig: (s) => buildSimulationConfig(s),
-    onMatchComplete: (i, total) => {
+    onMatchComplete: (i, total, _sample, samples) => {
+      if (output) persist(output, {
+        status: "RUNNING", matches, seed, tick, completedMatches: i, samples,
+      });
       if (i % Math.max(1, Math.floor(total / 10)) === 0 || i === total) {
         console.log(`  ${i}/${total}`);
       }
     },
+  });
+
+  if (output) persist(output, {
+    status: "COMPLETE", matches, seed, tick, completedMatches: matches,
+    report: result.report, formatted: result.formatted, samples: result.samples,
   });
 
   console.log("\n" + result.formatted);
@@ -89,6 +101,14 @@ function main(): void {
   }
 
   process.exitCode = result.report.converged ? 0 : 1;
+}
+
+function persist(path: string, value: unknown): void {
+  const destination = resolve(path);
+  mkdirSync(dirname(destination), { recursive: true });
+  const temporary = `${destination}.tmp`;
+  writeFileSync(temporary, JSON.stringify(value, null, 2) + "\n", "utf8");
+  renameSync(temporary, destination);
 }
 
 main();

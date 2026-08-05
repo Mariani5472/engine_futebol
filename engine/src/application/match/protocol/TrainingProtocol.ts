@@ -1,9 +1,16 @@
 import type { PlayerActionCommand } from "../policy/PlayerPolicy";
-import type { AttackerVsGoalkeeperScenarioConfig, CurriculumScenarioStage } from "../scenario/MatchScenario";
+import type { AttackerVsGoalkeeperScenarioConfig, CurriculumScenarioStage, FundamentalScenarioSkill } from "../scenario/MatchScenario";
+import type {
+  FundamentalBaselineId,
+  FundamentalPartitionEvidence,
+  FundamentalPromotionCriteria,
+  FundamentalSeedPartitionCounts,
+  FundamentalSeedPartitions,
+} from "../curriculum/FundamentalTraining";
 
 export const TRAINING_PROTOCOL_VERSION = 1 as const;
 
-export type TrainingRequestType = "HELLO" | "CREATE" | "RESET" | "STEP" | "CLOSE_ENV" | "SHUTDOWN";
+export type TrainingRequestType = "HELLO" | "CREATE" | "RESET" | "STEP" | "FUNDAMENTAL_PLAN" | "FUNDAMENTAL_GATE" | "CLOSE_ENV" | "SHUTDOWN";
 
 export interface TrainingRequest<T = unknown> {
   readonly protocolVersion: number;
@@ -14,7 +21,7 @@ export interface TrainingRequest<T = unknown> {
 
 export interface CreateEnvironmentPayload {
   readonly environmentId?: string;
-  readonly kind: "ATTACKER_VS_GOALKEEPER" | "CURRICULUM";
+  readonly kind: "ATTACKER_VS_GOALKEEPER" | "FUNDAMENTAL" | "CURRICULUM";
   readonly seed?: number;
   readonly attackerId?: string;
   readonly goalkeeperId?: string;
@@ -24,8 +31,26 @@ export interface CreateEnvironmentPayload {
   readonly maxPhysicalTicksPerStep?: number;
   readonly wireFormat?: "FULL" | "COMPACT";
   readonly stage?: CurriculumScenarioStage;
+  readonly skill?: FundamentalScenarioSkill;
   readonly playerIds?: readonly string[];
   readonly maxJointDecisionSteps?: number;
+  readonly difficultyLevel?: number;
+  readonly rehearsalLevels?: readonly number[];
+  readonly rehearsalRate?: number;
+}
+
+export interface FundamentalPlanPayload {
+  readonly rootSeed: number;
+  readonly counts?: FundamentalSeedPartitionCounts;
+}
+
+export interface FundamentalGatePayload {
+  readonly skill: FundamentalScenarioSkill;
+  readonly baselineId: FundamentalBaselineId;
+  readonly seedPartitions: FundamentalSeedPartitions;
+  readonly evidence: readonly FundamentalPartitionEvidence[];
+  readonly confidence?: number;
+  readonly criteria?: FundamentalPromotionCriteria;
 }
 
 export interface EnvironmentPayload {

@@ -6,10 +6,12 @@ import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 import { BallMotionPlanner } from "../../physics/BallMotionPlanner";
 import { Milliseconds, PlayerId, TeamId, type PassAttemptedEvent } from "../../../../domain";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
 
 const MAX_PASS_SPEED = 30;
 const MIN_PASS_SPEED = 11;
 const MAX_RECEIVER_LEAD = 5;
+const PASS_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.passing;
 
 export class PassAction {
 
@@ -34,7 +36,8 @@ export class PassAction {
     const accuracy = this.calculateSuccessProb(context, player, target);
     const receptionPoint = this.predictReceptionPoint(context, origin, target);
     const distance = origin.distanceTo(receptionPoint);
-    const errorRadius = Math.pow(1 - accuracy, 2) * Math.min(6, distance * .15);
+    const errorRadius = Math.pow(1 - accuracy, PASS_CALIBRATION.executionErrorExponent)
+      * Math.min(PASS_CALIBRATION.maximumExecutionErrorMeters, distance * PASS_CALIBRATION.executionErrorDistanceScale);
     const errorAngle = random.nextFloat(-Math.PI, Math.PI);
     const errorDistance = random.nextFloat(0, errorRadius);
     const destination = this.clampToPitch(

@@ -237,6 +237,12 @@ export class MatchEventStore {
       const opponentPhysicalClaims = teamEvents.filter(event=>event.type==="POSSESSION_CHANGED"
         && event.metadata.reason==="PHYSICAL_CLAIM"
         && this.previousPlayerBelongsToOpponent(state,teamId,event));
+      const contestedWins = teamEvents.filter(event=>event.type==="POSSESSION_CHANGED"
+        && event.metadata.contested===true);
+      const contestedLosses = this.stored.filter(event=>event.type==="POSSESSION_CHANGED"
+        && event.teamId!==teamId
+        && event.metadata.contested===true
+        && this.previousPlayerBelongsToOpponent(state,String(event.teamId),event));
       const possessionSeconds = this.intervals.filter(interval => interval.teamId === teamId)
         .reduce((sum, interval) => sum + interval.endedAt - interval.startedAt, 0);
       const passesAttempted = teamEvents.filter(event => event.type === "PASS_ATTEMPTED").length;
@@ -299,8 +305,8 @@ export class MatchEventStore {
         interceptions:teamEvents.filter(event=>event.type==="POSSESSION_CHANGED"&&event.metadata.reason==="INTERCEPTION").length,
         recoveries:teamEvents.filter(event=>event.type==="POSSESSION_CHANGED"&&["INTERCEPTION","TACKLE"].includes(String(event.metadata.reason))).length+opponentPhysicalClaims.length,
         possessionLosses:this.intervals.filter(interval=>interval.teamId===teamId&&interval.endReason==="TEAM_CHANGE").length,
-        duels:teamEvents.filter(event=>event.type==="TACKLE").length+opponentPhysicalClaims.filter(event=>event.metadata.contested===true).length,
-        duelsWon:teamEvents.filter(event=>event.type==="TACKLE"&&event.metadata.successful===true).length+opponentPhysicalClaims.filter(event=>event.metadata.contested===true).length,
+        duels:teamEvents.filter(event=>event.type==="TACKLE").length+contestedWins.length+contestedLosses.length,
+        duelsWon:teamEvents.filter(event=>event.type==="TACKLE"&&event.metadata.successful===true).length+contestedWins.length,
         highPressRecoveries:teamEvents.filter(event=>event.type==="POSSESSION_CHANGED"&&this.eventProgress(state,event,teamId)>=state.pitch.length*2/3).length,
         attacks:this.intervals.filter(interval=>interval.teamId===teamId).length,
         distanceTravelled: Object.values(playerReports).filter(player => player.teamId === teamId).reduce((sum, player) => sum + player.distanceTravelled, 0),
@@ -328,8 +334,13 @@ export class MatchEventStore {
       if (event.type === "POSSESSION_CHANGED"&&event.metadata.reason==="INTERCEPTION") player.interceptions++;
       if (event.type === "POSSESSION_CHANGED"&&(["INTERCEPTION","TACKLE"].includes(String(event.metadata.reason))
         || event.metadata.reason==="PHYSICAL_CLAIM"&&event.teamId&&this.previousPlayerBelongsToOpponent(state,event.teamId,event))) player.recoveries++;
-      if (event.type === "POSSESSION_CHANGED"&&event.metadata.reason==="PHYSICAL_CLAIM"&&event.metadata.contested===true&&event.teamId
-        &&this.previousPlayerBelongsToOpponent(state,event.teamId,event)) {player.duels++;player.duelsWon++;}
+      if (event.type === "POSSESSION_CHANGED"&&event.metadata.contested===true) {
+        player.duels++;
+        player.duelsWon++;
+        const previousPlayerId=String(event.metadata.previousPlayerId??"");
+        if(previousPlayerId&&previousPlayerId!==event.playerId&&playerReports[previousPlayerId]
+          &&playerReports[previousPlayerId].teamId!==player.teamId) playerReports[previousPlayerId].duels++;
+      }
       const zone=event.metadata.zone;
       if(zone==="OWN_THIRD"||zone==="MIDDLE_THIRD"||zone==="FINAL_THIRD") player.actionsByZone[zone]++;
     }

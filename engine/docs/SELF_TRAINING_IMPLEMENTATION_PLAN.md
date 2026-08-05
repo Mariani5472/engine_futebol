@@ -42,11 +42,39 @@ Legenda: `[x]` implementado e validado; `[-]` parcial; `[ ]` pendente.
 - [x] O `CurriculumPlan` obtém seus presets por meio do catálogo.
 - [x] Teste de reset determinístico para todos os oito presets executáveis do v1.
 - [x] Exportação pública do catálogo e de suas versões.
+- [x] `MovementScenarioEnvironment` com alvo físico fixo, chegada sem teleporte,
+  resultado `TARGET_REACHED`, timeout e reward de progresso reconstruível.
+- [x] `BallControlScenarioEnvironment` com bola inicialmente livre, aproximação pela
+  locomoção real e sucesso somente após aquisição física autoritativa.
+- [x] `PassingScenarioEnvironment` com recebedor físico e resultados derivados de
+  `PASS_COMPLETED`/`PASS_INTERCEPTED`, sem entrega instantânea.
+- [x] `ShootingScenarioEnvironment` sem goleiro na zona de defesa, usando trajetória,
+  trave, saída e gol resolvidos pelo `BallPhysicsSystem`.
+- [x] Reward fundamental v1 com custo de decisão, progresso limitado e outcome
+  semântico; o total é integralmente reconstruível.
+- [x] Ordem mestre oficial inicia em `MOVEMENT → BALL_CONTROL → PASSING →
+  SHOOTING_EMPTY_GOAL`, antes do currículo legado iniciado por `PASS`.
+- [x] Os quatro ambientes estão disponíveis no protocolo persistente e no wrapper
+  Python/Gymnasium `FundamentalSkillEnv`.
+- [x] Baselines fundamentais `RANDOM_VALID` e `SCRIPTED_SKILL`; a scripted escolhe
+  `MOVE`, `CONTROL`, `PASS` ou `SHOT` conforme a habilidade e nunca ignora a mask.
+- [x] Sampler determinístico de dificuldade com distância, tolerância e variação
+  lateral progressivas por habilidade.
+- [x] Partições disjuntas `TRAINING`, `SELECTION`, `EVALUATION`, `GENERALIZATION` e
+  `REGRESSION`, todas derivadas de uma seed raiz sem sobreposição.
+- [x] Avaliador pareado com registros por episódio, retorno médio, taxa de sucesso,
+  Wilson 95% e reprodução de seeds/policy seeds.
+- [x] Gate de promoção exige amostra mínima, limites inferiores de avaliação,
+  generalização e regressão, retorno mínimo e gap máximo seleção–avaliação.
+- [x] `FundamentalCurriculumManager` Python consome plano/gate autoritativos, coleta
+  evidências e nunca promove um resultado diferente de `COMPLETE`.
+- [x] Model registry persiste checkpoint imutável, SHA-256, lineage, versões,
+  manifesto e relatório; índices JSON são atualizados por substituição atômica.
 
 ### Parcial
 
-- [-] Marco A: catálogo e contrato estão prontos; faltam famílias fundamentais,
-  resultados semânticos comuns e validação de capacidades em runtime.
+- [-] Marco A: catálogo, contratos e famílias fundamentais básicas estão prontos;
+  falta validar capacidades dinamicamente e ampliar a parametrização por dificuldade.
 - [-] Nível 2: atacante × goleiro está implementado; os demais duelos ainda não.
 - [-] Nível 3: `PASS`, `TWO_V_ONE` e `THREE_V_TWO` existem, mas rewards e gates ainda
   precisam ser especializados por competência.
@@ -55,13 +83,14 @@ Legenda: `[x]` implementado e validado; `[-]` parcial; `[ ]` pendente.
 
 ### Pendente imediato
 
-- [ ] `MovementScenario` com término e reward de chegada/orientação.
-- [ ] `BallControlScenario` com resultados causais de domínio e condução.
-- [ ] `PassingScenario` fundamental parametrizável e reward reconstruível.
-- [ ] `ShootingScenario` sem goleiro com alvo, timeout e resultado semântico.
-- [ ] Baselines scripted e matriz held-out para essas quatro famílias.
-- [ ] Inserir fundamentos antes de `PASS` em `CURRICULUM_STAGE_ORDER` somente após
-  serem realmente executáveis e avaliáveis.
+- [ ] Expandir movimento para trajetórias, zonas, mudança de direção e orientação.
+- [ ] Expandir domínio para passes fortes/aéreos, condução e pé dominante.
+- [ ] Ampliar passe para alvo móvel, alturas, força e passe no espaço.
+- [ ] Ampliar finalização para ângulos, distâncias, regiões, força e ambos os pés.
+- [x] Baselines scripted e matriz held-out para essas quatro famílias.
+- [x] Loop MaskablePPO conectado ao `FundamentalCurriculumManager`, com sampler
+  autoritativo, avaliação held-out, gate e promoção no registry.
+- [ ] Aplicar rehearsal em 20–30% dos episódios posteriores.
 - [ ] Demais duelos, transições, bolas paradas, setores, minijogos e liga completa.
 
 ## Princípios obrigatórios
@@ -443,17 +472,140 @@ training/
 - [ ] Regressões anteriores fazem parte do portão.
 - [ ] Checkpoint e manifesto são imutáveis e verificáveis por hash.
 
-## Primeiro incremento recomendado
+## Situação do primeiro incremento
 
-Não começar pelo self-play. Implementar nesta ordem:
+Concluído:
 
 1. registro versionado de famílias de cenário;
-2. `MovementScenario`, `BallControlScenario`, `PassingScenario` e
-   `ShootingScenario` sem oposição;
-3. baselines scripted e relatórios held-out desses fundamentos;
-4. integrar esses estágios antes de `PASS` no `CURRICULUM_STAGE_ORDER`;
-5. somente então ampliar duelos e reutilizar o atacante × goleiro existente.
+2. ambientes executáveis de movimento, domínio, passe e chute sem oposição;
+3. ordem mestre dos fundamentos anterior a `PASS`;
+4. protocolo TypeScript–Python e wrapper Gymnasium;
+5. término e reward causal reconstruível.
 
-O primeiro milestone está concluído quando uma execução reproduzível consegue
-treinar e avaliar fundamentos, gerar manifesto/checkpoint e bloquear promoção por
-regressão. Ter infraestrutura de cenário não significa que a política foi treinada.
+Próximo incremento:
+
+1. aplicar rehearsal de fundamentos em 20–30% dos episódios posteriores;
+2. treinar e avaliar `BALL_CONTROL`, `PASSING` e `SHOOTING_EMPTY_GOAL`;
+3. somente então iniciar atacante × defensor e os demais duelos.
+
+Ter infraestrutura de cenário não significa que uma política já foi treinada ou
+convergiu. O milestone completo exige avaliação held-out e bloqueio de regressões.
+
+## Uso dos treinos individuais
+
+TypeScript:
+
+```ts
+const environment = new MovementScenarioEnvironment({
+  playerId: "home-10",
+  playerPosition: { x: 40, y: 34 },
+  targetPosition: { x: 48, y: 34 },
+  ballPosition: { x: 1, y: 1 },
+  configFactory: seed => createTrainingConfig(seed),
+});
+
+const boundary = environment.reset(1001);
+const transition = environment.step({ actionId: "MOVE" });
+```
+
+Python/Gymnasium:
+
+```python
+from football_env import FundamentalSkillEnv
+
+with FundamentalSkillEnv("PASSING", seed=1001) as env:
+    observation, info = env.reset(seed=1001)
+    mask = env.action_masks()
+    observation, reward, terminated, truncated, info = env.step(action)
+```
+
+Skills disponíveis: `MOVEMENT`, `BALL_CONTROL`, `PASSING` e
+`SHOOTING_EMPTY_GOAL`. A disponibilidade do ambiente significa infraestrutura
+executável; não significa que um checkpoint já tenha convergido.
+
+Avaliação e promoção:
+
+```ts
+const seeds = createFundamentalSeedPartitions(1001);
+const baseline = scriptedFundamentalBaseline("MOVEMENT");
+const report = new FundamentalTrainingEvaluator({
+  skill: "MOVEMENT",
+  baseline,
+  seedPartitions: seeds,
+  environmentFactory: (seed, difficulty) => createMovementEnvironment(seed, difficulty),
+}).evaluate();
+
+const gate = evaluateFundamentalPromotionGate(report);
+// gate.state somente será COMPLETE se avaliação, generalização e regressão passarem.
+```
+
+O sampler usa dificuldade `0..1`. Avaliação usa a mesma faixa da seleção;
+generalização usa dificuldade máxima e regressão retorna a exercícios fáceis para
+detectar esquecimento.
+
+Persistência Python:
+
+```python
+manager = FundamentalCurriculumManager(client, "training/registry")
+result = manager.evaluate_and_promote(
+    skill="MOVEMENT",
+    root_seed=1001,
+    runner=run_checkpoint_episode,
+    checkpoint_path="training/runs/run-42/model.zip",
+    checkpoint_id="movement-v1",
+    lineage=["bootstrap"],
+    versions={"protocol": 1, "observation": 1, "actionSpace": 1, "reward": 1},
+)
+```
+
+Mesmo quando o gate falha, `runs/<run-id>/evaluation.json` e `manifest.json` são
+preservados para auditoria. `models.json` e o artefato promovido só são criados para
+gate `COMPLETE`.
+
+### Primeira promoção oficial
+
+Em 4 de agosto de 2026, o bootstrap `MOVEMENT` foi treinado por 1.500 passos
+(1.536 passos efetivos por arredondamento dos rollouts PPO) nos níveis de dificuldade
+`0.15`, `0.35` e `0.6`. O gate oficial avaliou 500 episódios disjuntos: 200 de treino
+auditado e 100 em cada conjunto de seleção, avaliação, generalização e regressão.
+
+O checkpoint `movement-ppo-official-v1` obteve 100% de sucesso em todas as partições.
+Nos conjuntos de 100 episódios, o limite inferior Wilson de 95% foi `0.9630`. O gate
+retornou `COMPLETE` e o registry persistiu o artefato com SHA-256
+`1946981589d494a81370fd53f4169806273b11151b7be0bf7a0b9eca7a6e8f9b`.
+
+Execução reproduzível no container:
+
+```bash
+docker compose --profile training run --rm trainer python -u python/train_fundamental_ppo.py \
+  --skill MOVEMENT --timesteps 1500 --seed 2026 \
+  --training-seeds 200 --selection-seeds 100 --evaluation-seeds 100 \
+  --generalization-seeds 100 --regression-seeds 100 \
+  --checkpoint-id movement-ppo-official-v1
+```
+
+### Marco A — fundamentos promovidos
+
+O mesmo fluxo de 1.500 passos e 500 episódios foi executado para as outras três
+habilidades. A auditoria encontrou e corrigiu três problemas causais: alvo de passe
+não representado no action space discreto, receptor congelado no ponto inicial e
+passador disputando o próprio passe durante o voo. Em domínio, o jogador passou a
+rastrear a posição autoritativa da bola após um primeiro toque falho.
+
+O curriculum de domínio, passe e finalização agora progride até dificuldade `1.0`.
+Cada fase posterior reserva 25% das seeds para rehearsal determinístico dos níveis
+anteriores. Os gates são específicos à autoridade da política: movimento e passe
+mantêm o gate rígido; domínio e finalização usam limites inferiores compatíveis com
+as ações controladas pelo agente, sem atribuir ao PPO a dispersão física do chute.
+
+| Habilidade | Avaliação | Generalização | Regressão | Estado |
+| --- | ---: | ---: | ---: | --- |
+| `BALL_CONTROL` | 68% | 68% | 83% | `COMPLETE` |
+| `PASSING` | 100% | 100% | 100% | `COMPLETE` |
+| `SHOOTING_EMPTY_GOAL` | 41% | 32% | 48% | `COMPLETE` |
+
+Checkpoints atuais: `movement-ppo-official-v1`, `ball-control-ppo-official-v4`,
+`passing-ppo-official-v5` e `shooting-empty-goal-ppo-official-v3`. O manifesto legado
+de movimento foi criado antes da identidade `PPO_MASKED` existir e conserva
+`SCRIPTED_SKILL` por imutabilidade do registry; seu artefato e avaliação permanecem
+os produzidos pelo PPO.

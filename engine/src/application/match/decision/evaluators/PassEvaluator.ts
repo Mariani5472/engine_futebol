@@ -7,6 +7,9 @@ import { PositionInfluenceCalculator } from "../../position/PositionInfluenceCal
 import { PassingLane } from "../../awareness/WorldAwareness";
 import { ActionReadiness } from "./ActionReadiness";
 import { GoalOpportunityAnalyzer } from "../GoalOpportunityAnalyzer";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
+
+const PASS_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.passing;
 
 export class PassEvaluator implements ActionEvaluator {
   private readonly goalOpportunity = new GoalOpportunityAnalyzer();
@@ -17,22 +20,18 @@ export class PassEvaluator implements ActionEvaluator {
     const lanes = context.world.passingLanes;
     if (lanes.length === 0) return [];
 
-    const tacticallySafe = lanes.filter(lane => {
-      const future = context.teamTacticalContext?.passingLanes.find(item =>
-        item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
-      );
-      return lane.clear && (!future || future.clearAtArrival);
-    });
     const viableOutlets = lanes.filter(lane => {
       const future = context.teamTacticalContext?.passingLanes.find(item =>
         item.fromPlayerId === context.player.player.id && item.toPlayerId === lane.targetId,
       );
-      return lane.clear && (!future || future.arrivalMargin > 0);
+      // A currently covered lane remains playable when the receiver is still
+      // projected to compete at arrival. Excluding every such lane made the
+      // engine choose only near-certain passes and produced 96% completion.
+      return future
+        ? future.arrivalMargin > PASS_CALIBRATION.minimumArrivalMarginSeconds
+        : lane.clear;
     });
-    // When a safe outlet exists, risky lanes are not merely assigned a lower
-    // score: they are excluded. Otherwise large progression bonuses could
-    // still select a visibly blocked pass hundreds of times per match.
-    const candidateLanes = tacticallySafe.length > 0 ? tacticallySafe : viableOutlets;
+    const candidateLanes = viableOutlets;
     if (candidateLanes.length === 0) return [];
 
     const bestForward = Math.max(...candidateLanes.map((l) => l.forwardProgress));
@@ -49,7 +48,7 @@ export class PassEvaluator implements ActionEvaluator {
       // Ordinary ground passes should not become hopeful clearances across
       // half the pitch. Crosses and goalkeeper distribution have evaluators
       // and execution profiles of their own.
-      if (lane.distance > 42) continue;
+      if (lane.distance > PASS_CALIBRATION.maximumGroundPassMeters) continue;
       let score = this.scoreLane(
         context,
         lane,
@@ -149,9 +148,11 @@ export class PassEvaluator implements ActionEvaluator {
     const receiverCongestion = nearbyOpponents * -8 + nearbyTeammates * -4;
     const progressBonus = Math.max(-12, Math.min(30, lane.forwardProgress * 1.15));
     const certaintyBonus = lane.certainty * 6;
-    const clearanceBonus = lane.clear ? 12 : -42;
+    // Covered passes should be exceptional, not impossible. Their execution
+    // is resolved by the authoritative ball/interception model.
+    const clearanceBonus = lane.clear ? 10 : -20;
     const arrivalValue = futureLane
-      ? Math.max(-30, Math.min(18, futureLane.arrivalMargin * 14)) + (futureLane.clearAtArrival ? 8 : -18)
+      ? Math.max(-30, Math.min(18, futureLane.arrivalMargin * 14)) + (futureLane.clearAtArrival ? 8 : -10)
       : 0;
 
     const desiredDirection = lane.targetPosition.subtract(context.player.position);
@@ -217,7 +218,8 @@ export class PassEvaluator implements ActionEvaluator {
       PRESSURE: pressureRelief * scale,
       ROLE: roleQuality * 12 * bodyExecutionQuality * 0.35,
       BODY: bodyQuality * 8 * roleQuality * 0.3,
-      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4 + phaseRisk * scale + shotOpportunityCost * scale,
+      TACTICAL: progressiveFloor * scale + Math.max(0, lane.forwardProgress) * 0.4
+        + phaseRisk * scale + shotOpportunityCost * scale + PASS_CALIBRATION.utilityBoost,
       ARRIVAL_MARGIN: arrivalValue * scale,
     });
   }

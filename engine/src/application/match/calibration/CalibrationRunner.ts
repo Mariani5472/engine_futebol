@@ -22,7 +22,12 @@ export interface CalibrationRunOptions {
   /** Base SimulationConfig factory (teams, tactics, pitch). */
   readonly buildConfig: (seed: number) => SimulationConfig;
   /** Optional progress callback after each match. */
-  readonly onMatchComplete?: (index: number, total: number) => void;
+  readonly onMatchComplete?: (
+    index: number,
+    total: number,
+    sample: MatchSample,
+    completedSamples: readonly MatchSample[],
+  ) => void;
 }
 
 export interface CalibrationBatchResult {
@@ -44,6 +49,13 @@ export interface MatchSample {
   readonly xG: number;
   readonly averageShotDistance: number;
   readonly passes: number;
+  readonly passesCompleted: number;
+  readonly passAccuracy: number;
+  readonly tackles: number;
+  readonly tacklesWon: number;
+  readonly recoveries: number;
+  readonly duels: number;
+  readonly duelsWon: number;
   readonly progressivePasses: number;
   readonly highPressRecoveries: number;
   readonly attacks: number;
@@ -121,7 +133,9 @@ export class CalibrationRunner {
         unresolved: unresolvedShotIds.length,
       };
 
-      samples.push({
+      const passes = eventTotal("passesAttempted");
+      const passesCompleted = eventTotal("passesCompleted");
+      const sample: MatchSample = {
         seed,
         goals: eventTotal("goals"),
         shots: eventTotal("shots"),
@@ -133,27 +147,40 @@ export class CalibrationRunner {
         xG:eventTotal("xG"),
         averageShotDistance:eventTotal("shots")
           ? (homeEventReport.averageShotDistance*homeEventReport.shots+awayEventReport.averageShotDistance*awayEventReport.shots)/eventTotal("shots") : 0,
-        passes: eventTotal("passesAttempted"),
+        passes,
+        passesCompleted,
+        passAccuracy: passes > 0 ? passesCompleted / passes * 100 : 0,
+        tackles: eventTotal("tackles"),
+        tacklesWon: eventTotal("tacklesWon"),
+        recoveries: eventTotal("recoveries"),
+        duels: eventTotal("duels"),
+        duelsWon: eventTotal("duelsWon"),
         progressivePasses: eventTotal("progressivePasses"),
         highPressRecoveries:eventTotal("highPressRecoveries"),
         attacks:eventTotal("attacks"),
         possessionHome: homeEventReport.possessionPercent,
         shotOutcomes,
         unresolvedShotIds,
-      });
+      };
+      samples.push(sample);
 
-      options.onMatchComplete?.(i + 1, matchCount);
+      options.onMatchComplete?.(i + 1, matchCount, sample, samples);
     }
 
-    const averages = averageSamples(samples);
-    const report = buildCalibrationReport(averages, matchCount, seedStart);
-
-    return {
-      report,
-      formatted: formatCalibrationReport(report),
-      samples,
-    };
+    return calibrationResultFromSamples(samples, seedStart);
   }
+}
+
+export function calibrationResultFromSamples(
+  samples: readonly MatchSample[],
+  seedStart = samples[0]?.seed ?? 1,
+): CalibrationBatchResult {
+  if (samples.length === 0) throw new Error("Calibration consolidation requires at least one sample");
+  const seeds = samples.map(sample => sample.seed);
+  if (new Set(seeds).size !== seeds.length) throw new Error("Calibration samples contain duplicate seeds");
+  const ordered = Object.freeze([...samples].sort((a, b) => a.seed - b.seed));
+  const report = buildCalibrationReport(averageSamples(ordered), ordered.length, seedStart);
+  return Object.freeze({ report, formatted: formatCalibrationReport(report), samples: ordered });
 }
 
 export function averageShotOutcomes(samples: readonly MatchSample[]): AverageShotOutcomes {

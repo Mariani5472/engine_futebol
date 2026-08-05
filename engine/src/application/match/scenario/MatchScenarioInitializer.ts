@@ -38,6 +38,7 @@ export class MatchScenarioInitializer {
       candidate.scenarioMovementFrozen = false;
       candidate.scenarioDecisionDisabled = false;
       candidate.scenarioTargetPosition = null;
+      candidate.scenarioTrackBall = false;
       candidate.activeAction = undefined;
       candidate.activePipeline = undefined;
       candidate.activeCarry = null;
@@ -58,7 +59,9 @@ export class MatchScenarioInitializer {
         : playerPosition.add(new Vector2(team.attackingDirection * 10, 0));
       this.assertOnPitch(point, state, "receiverPosition");
       this.place(receiver, point, new Vector2(team.attackingDirection, 0));
-      receiver.scenarioMovementFrozen = true;
+      // A receiver is decision-disabled, but must remain physically able to
+      // adjust to the causal reception point selected by PassAction.
+      receiver.scenarioMovementFrozen = scenario.skill !== "PASSING";
       receiver.scenarioDecisionDisabled = true;
     }
 
@@ -73,7 +76,10 @@ export class MatchScenarioInitializer {
 
     if (scenario.skill === "MOVEMENT" || scenario.skill === "BALL_CONTROL") {
       BallPlacement.freeForScenario(state.ball, ballPosition);
-      if (scenario.skill === "BALL_CONTROL") player.scenarioTargetPosition = ballPosition;
+      if (scenario.skill === "BALL_CONTROL") {
+        player.scenarioTargetPosition = ballPosition;
+        player.scenarioTrackBall = true;
+      }
     } else {
       BallPlacement.forScenario(state.ball, player, playerPosition);
     }

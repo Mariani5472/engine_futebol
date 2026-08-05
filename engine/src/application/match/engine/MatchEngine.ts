@@ -284,7 +284,8 @@ export class MatchEngine {
       const passEvents = passResolutions
         .filter(resolution => resolution.statisticalAttemptRecorded)
         .map(resolution => this.makePassResolutionEvent(resolution, state, period));
-      const possessionEvents = acquisitions.map(acquisition => this.makePossessionChangedEvent(acquisition, state, period));
+      const possessionEvents = acquisitions.map((acquisition, index) =>
+        this.makePossessionChangedEvent(acquisition, state, period, index));
       if (instrumentation.eventHistory) allEvents.push(...passEvents, ...possessionEvents);
       frameEvents.push(...passEvents, ...possessionEvents);
       if (instrumentation.diagnostics) {
@@ -741,13 +742,14 @@ export class MatchEngine {
     acquisition: PossessionAcquisitionRecord,
     state: MatchState,
     period: MatchPeriod,
+    acquisitionIndex: number,
   ): MatchEvent {
     const player = this.allPlayers(state).find(candidate=>candidate.player.id===acquisition.playerId);
     const team = player && state.home.players.includes(player) ? state.home : state.away;
     return {
       id:acquisition.actionId
         ? `${acquisition.actionId}:possession:${acquisition.playerId}`
-        : `possession-${acquisition.playerId}-${acquisition.matchSecond.toFixed(6)}`,
+        : `possession-${acquisition.playerId}-${acquisition.matchSecond.toFixed(6)}-${acquisitionIndex}`,
       actionId:acquisition.actionId as ActionId|undefined,
       type:"POSSESSION_CHANGED", timestamp:(acquisition.matchSecond*1000) as Milliseconds,
       period, teamId:team.team.id as TeamId, playerId:acquisition.playerId as PlayerId,

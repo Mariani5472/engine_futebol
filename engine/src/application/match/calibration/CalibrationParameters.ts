@@ -2,11 +2,24 @@
 export const ENGINE_CALIBRATION_PARAMETERS = {
   /** Official simulation timestep: 20 updates per simulated second. */
   officialTickSeconds: 0.05,
+  passing: {
+    maximumGroundPassMeters: 44,
+    utilityBoost: 7,
+    executionErrorExponent: 0.65,
+    executionErrorDistanceScale: 0.90,
+    maximumExecutionErrorMeters: 16,
+    minimumArrivalMarginSeconds: -0.45,
+  },
+  defending: {
+    tackleCooldownSeconds: 3.75,
+    tackleContactRadiusMeters: 1.60,
+    tackleUtilityFloor: 48,
+  },
   shot: {
     cooldownSeconds: 105,
     cornerFromMissRate: 0.58,
     cornerFromParryRate: 0.30,
-    goalkeeperSaveBonus: 0.15,
+    goalkeeperSaveBonus: 0.26,
     goalkeeperSaveFloor: 0.55,
     goalkeeperSaveCap: 0.90,
     onTargetProbabilityScale: 1.18,
@@ -24,9 +37,9 @@ export const ENGINE_CALIBRATION_PARAMETERS = {
     placedErrorMeters: 1.65,
     powerErrorMeters: 2.55,
     chipErrorMeters: 1.80,
-    lateralErrorMultiplier: 6.00,
+    lateralErrorMultiplier: 7.20,
     heightErrorMultiplier: 1.60,
-    goalkeeperBodyReachMeters: 2.45,
+    goalkeeperBodyReachMeters: 2.60,
     goalkeeperAerialReachScaleMeters: 0.70,
     goalkeeperCatchSpeedMetersPerSecond: 34,
     goalkeeperReactionBaseSeconds: 0.32,

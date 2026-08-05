@@ -1,6 +1,7 @@
 import { Decision } from "./Decision";
 import { DecisionContext } from "./DecisionContext";
 import { DecisionType } from "./DecisionType";
+import { BallState } from "../../../core/movement/BallMatchState";
 
 /** Maximum reach distance for a tackle attempt (metres). */
 const TACKLE_REACH_METRES = 3;
@@ -44,7 +45,6 @@ export class DecisionFilter {
       case DecisionType.HOLD_BALL:
       case DecisionType.CLEAR:
       case DecisionType.HEADER:
-      case DecisionType.CONTROL:
       case DecisionType.SKILL_MOVE:
       case DecisionType.RECEIVE:
       case DecisionType.SET_PIECE:
@@ -52,6 +52,11 @@ export class DecisionFilter {
       case DecisionType.GK_DISTRIBUTE:
       case DecisionType.FAKE:
         return hasBall;
+
+      case DecisionType.CONTROL:
+        return !hasBall
+          && (context.match.ball.state === BallState.FREE || context.match.ball.state === BallState.IN_FLIGHT)
+          && context.player.position.distanceTo(context.match.ball.position) <= 3.5;
 
       // Defensive actions — only when you don't have the ball.
       case DecisionType.TACKLE:

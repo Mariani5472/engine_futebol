@@ -5,6 +5,9 @@ import { DecisionType } from "../DecisionType";
 import { UtilityScore } from "../UtilityScore";
 import { PlayerMatchState } from "../../../../core/movement/PlayerMatchState";
 import { ActionReadiness } from "./ActionReadiness";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
+
+const DEFENDING_CALIBRATION = ENGINE_CALIBRATION_PARAMETERS.defending;
 
 export class TackleEvaluator implements ActionEvaluator {
   public evaluate(context: DecisionContext): Decision[] {
@@ -26,10 +29,10 @@ export class TackleEvaluator implements ActionEvaluator {
     const distance = context.player.position.distanceTo(context.match.ball.position);
     // Do not start impossible remote tackles that only pull more players into
     // an already congested ball zone. The action itself uses a 1.5m contact cap.
-    if (distance > 1.45) return [];
+    if (distance > DEFENDING_CALIBRATION.tackleContactRadiusMeters) return [];
 
     const score = this.calculateUtility(context, ballOwner, distance);
-    if (score.total < 58) return [];
+    if (score.total < DEFENDING_CALIBRATION.tackleUtilityFloor) return [];
 
     return [
       new Decision(

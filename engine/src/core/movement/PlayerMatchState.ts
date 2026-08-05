@@ -11,6 +11,7 @@ export class PlayerMatchState {
   public scenarioDecisionDisabled = false;
   /** Fixed scenario target consumed by locomotion even if tactical systems update their own target. */
   public scenarioTargetPosition: Vector2 | null = null;
+  public scenarioTrackBall = false;
   public tacticalAnchorPosition: Vector2;
 
   public activeAction?: ActionExecution;

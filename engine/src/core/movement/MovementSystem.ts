@@ -32,7 +32,9 @@ export class MovementSystem {
     const movementMultiplier = this.getMovementMultiplier(player);
     if (movementMultiplier === 0) return { position: player.position, velocity: Vector2.zero(), facing: player.facingDirection };
 
-    const targetPosition = player.scenarioTargetPosition ?? player.targetPosition;
+    const targetPosition = player.scenarioTrackBall
+      ? state.ball.position
+      : player.scenarioTargetPosition ?? player.targetPosition;
     const toTarget = targetPosition.subtract(player.position);
     const distance = toTarget.magnitude();
     const physicalMaximum = this.calculateMaxSpeed(player) * movementMultiplier;
@@ -47,7 +49,7 @@ export class MovementSystem {
       const brakingSpeed = Math.sqrt(2 * deceleration * Math.max(0, distance - ARRIVAL_RADIUS));
       const arrivalFactor = Math.min(1, distance / slowdownRadius);
       const desiredSpeed = Math.min(maxSpeed, brakingSpeed, maxSpeed * Math.max(.18, arrivalFactor));
-      const corridorDirection = player.scenarioTargetPosition
+      const corridorDirection = player.scenarioTargetPosition || player.scenarioTrackBall
         ? toTarget.normalize()
         : this.corridorDirection(player, toTarget);
       desiredVelocity = corridorDirection.multiply(desiredSpeed);

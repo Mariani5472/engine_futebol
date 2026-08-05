@@ -12,10 +12,12 @@
     "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "calibrate": "npx --yes tsx scripts/calibrate.ts",
+    "calibrate:consolidate": "npx --yes tsx scripts/consolidate-calibration.ts",
     "check:authoritative-ball": "npx --yes tsx scripts/check-authoritative-ball.ts",
     "diagnose:offense": "npx --yes tsx scripts/diagnose-offensive-funnel.ts",
     "protocol:stdio": "npx --yes tsx scripts/training-protocol-server.ts",
     "profile:training": "npx --yes tsx scripts/profile-training.ts",
+    "train:fundamental": "python python/train_fundamental_ppo.py",
     "calibrate:quick": "npx --yes tsx scripts/calibrate.ts --matches 10 --tick 5"
   },
   "devDependencies": {

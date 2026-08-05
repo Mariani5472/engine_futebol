@@ -6,10 +6,11 @@ import { ActionResult } from "../ActionResult";
 import { DecisionType } from "../../decision/DecisionType";
 import { RefereeSystem } from "../../referee/RefereeSystem";
 import { ActionEvent } from "../ActionResult";
+import { ENGINE_CALIBRATION_PARAMETERS } from "../../calibration/CalibrationParameters";
 
 export class TackleAction {
-  private static readonly TACKLE_COOLDOWN_SECONDS = 8;
-  private static readonly CONTACT_RADIUS_METRES = 1.45;
+  private static readonly TACKLE_COOLDOWN_SECONDS = ENGINE_CALIBRATION_PARAMETERS.defending.tackleCooldownSeconds;
+  private static readonly CONTACT_RADIUS_METRES = ENGINE_CALIBRATION_PARAMETERS.defending.tackleContactRadiusMeters;
 
   constructor(private readonly referee: RefereeSystem) {}
 
