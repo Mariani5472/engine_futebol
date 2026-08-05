@@ -1,5 +1,5 @@
 import type { PlayerActionCommand } from "../policy/PlayerPolicy";
-import type { AttackerVsGoalkeeperScenarioConfig, CurriculumScenarioStage, FundamentalScenarioSkill } from "../scenario/MatchScenario";
+import type { AttackerVsGoalkeeperScenarioConfig, CurriculumScenarioStage, FundamentalScenarioSkill, ReducedTacticalParameters } from "../scenario/MatchScenario";
 import type {
   FundamentalBaselineId,
   FundamentalPartitionEvidence,
@@ -37,6 +37,8 @@ export interface CreateEnvironmentPayload {
   readonly difficultyLevel?: number;
   readonly rehearsalLevels?: readonly number[];
   readonly rehearsalRate?: number;
+  readonly attackingTactics?: ReducedTacticalParameters;
+  readonly defendingTactics?: ReducedTacticalParameters;
 }
 
 export interface FundamentalPlanPayload {

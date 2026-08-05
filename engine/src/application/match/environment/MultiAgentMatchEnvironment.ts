@@ -8,7 +8,7 @@ import { PLAYER_ACTION_SPACE, type PlayerActionMask } from "../policy/PlayerActi
 import { DecisionGatePlayerPolicy } from "../policy/PlayerPolicies";
 import type { CurriculumScenarioConfig } from "../scenario/MatchScenario";
 
-export const MULTI_AGENT_MATCH_ENVIRONMENT_VERSION = 1 as const;
+export const MULTI_AGENT_MATCH_ENVIRONMENT_VERSION = 2 as const;
 
 export interface MultiAgentMatchEnvironmentOptions {
   readonly playerIds: readonly string[];
@@ -20,7 +20,8 @@ export interface MultiAgentMatchEnvironmentOptions {
 }
 
 export interface MultiAgentRewardComponent {
-  readonly id: "DECISION_COST" | "PASS_COMPLETED" | "GOAL" | "DRILL_SUCCESS" | "POSSESSION_LOST";
+  readonly id: "DECISION_COST" | "PASS_COMPLETED" | "GOAL" | "DRILL_SUCCESS" | "POSSESSION_LOST"
+    | "PROGRESSIVE_PASS" | "INTERCEPTION" | "BALL_RECOVERY" | "DUEL_WON";
   readonly value: number;
   readonly eventId?: string;
 }
@@ -188,21 +189,46 @@ export class MultiAgentMatchEnvironment {
 
   private rewards(events: readonly MatchEvent[], objectiveComplete: boolean) {
     const breakdowns: Record<string, MultiAgentRewardComponent[]> = Object.fromEntries(
-      this.options.playerIds.map(id => [id, [{ id: "DECISION_COST" as const, value: -0.001 }]]),
+      this.options.playerIds.map(id => [id, [{ id: "DECISION_COST" as const, value: -0.0002 }]]),
     );
-    const addTeam = (teamId: string, id: MultiAgentRewardComponent["id"], value: number, eventId?: string) => {
-      for (const playerId of this.options.playerIds) {
-        const signed = this.teamByPlayerId.get(playerId) === teamId ? value : -value;
-        breakdowns[playerId].push({ id, value: signed, eventId });
+    const addTeam = (teamId: string, id: MultiAgentRewardComponent["id"], value: number,
+      eventId?: string, actorId?: string) => {
+      const allies = this.options.playerIds.filter(playerId => this.teamByPlayerId.get(playerId) === teamId);
+      const opponents = this.options.playerIds.filter(playerId => this.teamByPlayerId.get(playerId) !== teamId);
+      const controlledActor = actorId && allies.includes(actorId) ? actorId : null;
+      for (const playerId of allies) {
+        const share = controlledActor
+          ? (playerId === controlledActor ? 0.65 : 0.35 / Math.max(1, allies.length - 1))
+          : 1 / Math.max(1, allies.length);
+        breakdowns[playerId].push({ id, value: value * share, eventId });
+      }
+      for (const playerId of opponents) {
+        breakdowns[playerId].push({ id, value: -value / Math.max(1, opponents.length), eventId });
       }
     };
     for (const event of events) {
-      if (event.type === "GOAL") addTeam(String(event.teamId), "GOAL", 1, String(event.id));
-      if (event.type === "PASS_COMPLETED") addTeam(String(event.teamId), "PASS_COMPLETED", 0.02, String(event.id));
+      if (event.type === "GOAL") addTeam(String(event.teamId), "GOAL", 3, String(event.id), String(event.scorerId));
+      if (event.type === "PASS_COMPLETED") {
+        addTeam(String(event.teamId), "PASS_COMPLETED", 0.04, String(event.id), String(event.playerId));
+        const progressiveValue = Math.min(0.12, Math.max(0, event.forwardGain - 4) * 0.006);
+        if (progressiveValue > 0) {
+          addTeam(String(event.teamId), "PROGRESSIVE_PASS", progressiveValue, String(event.id), String(event.playerId));
+        }
+      }
+      if (event.type === "INTERCEPTION") {
+        addTeam(String(event.teamId), "INTERCEPTION", 0.12, String(event.id), String(event.playerId));
+      }
+      if (event.type === "BALL_RECOVERY") {
+        addTeam(String(event.teamId), "BALL_RECOVERY", 0.06, String(event.id), String(event.playerId));
+      }
+      if (event.type === "DUEL") {
+        const winnerTeamId = this.teamByPlayerId.get(String(event.winnerId));
+        if (winnerTeamId) addTeam(winnerTeamId, "DUEL_WON", 0.04, String(event.id), String(event.winnerId));
+      }
     }
     if (objectiveComplete && this.scenario?.objective === "COMPLETE_PASS") {
       const teamId = this.teamByPlayerId.get(this.scenario.primaryBallCarrierId)!;
-      addTeam(teamId, "DRILL_SUCCESS", 1);
+      addTeam(teamId, "DRILL_SUCCESS", 2, undefined, this.scenario.primaryBallCarrierId);
     }
     if (objectiveComplete && this.scenario?.objective === "SCORE_GOAL"
       && !events.some(event => event.type === "GOAL")) {

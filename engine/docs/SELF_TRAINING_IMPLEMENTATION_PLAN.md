@@ -452,11 +452,60 @@ training/
 - [x] Liga inicial por divisão, checkpoints coletivos imutáveis, ida/volta e rating Elo.
 - [x] Hot path de treino não materializa snapshots de frontend a cada tick físico.
 - [x] 5×5 precede 7×7 nos gates; 7×7 precede goleiro aprendido.
-- [ ] Treinar e promover checkpoints reais de 5×5 e 7×7.
+- [x] Treinar e promover checkpoints reais iniciais de 5×5 e 7×7 (`five-v-five-shared-v1` e `seven-v-seven-shared-v1`).
 - [x] Persistir resultados/standings da liga atomicamente no model registry Python.
-- [ ] Adicionar adversários de estilos congelados e torneio held-out oficial.
-- [ ] Medir throughput em múltiplos workers e definir gate mínimo de performance.
-- [ ] Implementar duelos aéreos e ombro a ombro antes de usá-los em rewards coletivos.
+- [x] Adicionar adversários `HIGH_PRESS`, `LOW_BLOCK`, `TRANSITION` e `POSSESSION` e torneio held-out versionado.
+- [x] Medir throughput em 1/2 workers e definir gate inicial de 15 agent-steps/s.
+- [x] Implementar duelos `AERIAL` e `SHOULDER` e rewards coletivos causais.
+
+Os checkpoints `v1` acima validam o pipeline completo, mas não convergência: cada um
+usou 2 episódios de treino e 2 de avaliação. A promoção esportiva seguinte deve
+ampliar seeds, exigir intervalo de confiança e superar baselines/versões anteriores;
+o limiar permissivo da integração não deve ser reutilizado como gate de produção.
+
+#### Gate estatístico ampliado (v2)
+
+- [x] Mínimo padrão de 20 seeds held-out no gate de promoção.
+- [x] IC95% da média de retorno.
+- [x] IC95% da diferença pareada contra `RANDOM_VALID` nas mesmas seeds.
+- [x] IC95% da diferença pareada contra o checkpoint anterior.
+- [x] Torneio com 8 seeds por estilo e superioridade exigida em todos os estilos.
+- [x] Candidato bloqueado permanece no diretório de run e nunca entra no registry/liga.
+
+Campanhas `v2` executadas em 2026-08-05:
+
+- `FIVE_V_FIVE`: 8 episódios de treino + 20 seeds held-out; bloqueado contra
+  `RANDOM_VALID` e `five-v-five-shared-v1`.
+- `SEVEN_V_SEVEN`: 8 episódios de treino + 20 seeds held-out; bloqueado contra
+  `RANDOM_VALID` e `seven-v-seven-shared-v1`.
+- Torneios estritos: ambos bloqueados por ausência de superioridade em todos os
+  estilos congelados.
+
+Conclusão: ampliar amostras eliminou a falsa promoção, mas revelou que o learner
+linear/reward atual quase não altera a política. Antes de uma campanha `v3`, melhorar
+crédito temporal, escala dos rewards de processo e o algoritmo de atualização.
+
+#### Learner coletivo v2 (base para campanha v3)
+
+- [x] Separar trajetórias por `agentId`; reward futuro de outro jogador não atravessa
+  a fronteira de crédito temporal.
+- [x] Substituir REINFORCE linear por ator-crítico mascarado com GAE (lambda 0,95),
+  baseline de valor e quatro epochs por episódio.
+- [x] Aumentar a taxa efetiva de aprendizado e persistir os pesos do crítico.
+- [x] Manter leitura retrocompatível dos checkpoints v1 sem `value_weights`.
+- [x] Distribuir reward coletivo como soma conservada: 65% para o autor causal,
+  35% entre companheiros controlados e penalidade total dividida entre adversários.
+- [x] Reescalar gol, passe progressivo, interceptação, recuperação e duelo; reduzir
+  o custo fixo por decisão para ele não dominar eventos esportivos esparsos.
+- [-] Campanha v3 executada com 32 episódios + 20 seeds e, depois, continuação com
+  mais 32 episódios + 40 seeds held-out. O candidato alterou 3.566/4.536 parâmetros,
+  mas foi corretamente bloqueado: vantagem contra `RANDOM_VALID` IC95%
+  `[-0,000465; 0,000424]` e contra `five-v-five-shared-v1`
+  `[-0,000386; 0,000514]`. Não há superioridade estatística para promoção.
+- [x] Separar checkpoint inicial de treino do checkpoint promovido usado como
+  referência no gate e paralelizar avaliações independentes preservando a ordem das seeds.
+- [ ] Substituir a capacidade linear restante ou revisar o objetivo de otimização antes
+  de uma nova v3; ampliar apenas seeds não corrige vantagem média aproximadamente nula.
 
 ### Marco E — nível 8
 

@@ -10,7 +10,7 @@ import { DecisionType } from "../../application/match/decision/DecisionType";
 const GROUND_CONTROL_RADIUS = 1.15;
 const INTERCEPTION_RADIUS = 0.85;
 const INTENDED_RECEPTION_RADIUS = 1.5;
-const MAX_CONTROL_HEIGHT = 1.5;
+const MAX_CONTROL_HEIGHT = 2.6;
 
 export class PossessionSystem {
 
@@ -82,7 +82,10 @@ export class PossessionSystem {
     const reason: PossessionAcquisitionReason = intendedReceiverId === winner.player.id
       ? "INTENDED_RECEPTION"
       : ball.state === BallState.IN_FLIGHT ? "INTERCEPTION" : "PHYSICAL_CLAIM";
-    this.givePossession(state, winner, reason, opponent !== null, opponent?.player.id ?? null);
+    this.givePossession(
+      state, winner, reason, opponent !== null, opponent?.player.id ?? null,
+      opponent && ball.height > .9 ? "AERIAL" : opponent ? "LOOSE_BALL" : undefined,
+    );
   }
 
   private givePossession(
@@ -91,6 +94,7 @@ export class PossessionSystem {
     reason: PossessionAcquisitionReason,
     contested: boolean,
     opponentId: string | null,
+    duelKind?: "LOOSE_BALL" | "AERIAL" | "SHOULDER",
   ): void {
     this.syncOwnerFlags(state, player);
 
@@ -101,7 +105,7 @@ export class PossessionSystem {
       : undefined;
     const causalActionId = state.ball.pendingPass?.actionId;
     state.ball.resolvePendingPass(player.player.id,state.currentSecond,intended?.position.distanceTo(state.ball.position)??null);
-    state.ball.acquirePossession(player, reason, state.currentSecond, contested, causalActionId, opponentId);
+    state.ball.acquirePossession(player, reason, state.currentSecond, contested, causalActionId, opponentId, duelKind);
     player.possessionControlUntil = state.currentSecond + controlSeconds;
     player.possessionProtectedUntil = state.currentSecond + Math.min(.65, controlSeconds * .7);
     player.actionLockUntil = Math.max(player.actionLockUntil, player.possessionControlUntil);
@@ -127,6 +131,12 @@ export class PossessionSystem {
       if (state.ball.state === BallState.IN_FLIGHT
         && state.ball.pendingPass?.passerId === player.player.id) continue;
       if (state.currentSecond < player.controlAttemptLockUntil) continue;
+      if (state.ball.height > 1.5) {
+        const jumping = Number(player.player.attributes.physical.jumpingReach ?? 10) / 20;
+        const heading = Number(player.player.attributes.technical.heading ?? 10) / 20;
+        const verticalReach = 1.55 + jumping * .75 + heading * .25;
+        if (state.ball.height > verticalReach) continue;
+      }
       const distance = state.ball.state === BallState.IN_FLIGHT
         ? this.distanceToSegment(player.position, state.ball.previousPosition, state.ball.position)
         : player.position.distanceTo(state.ball.position);

@@ -113,6 +113,8 @@ export class TackleAction {
     }
 
     const physicalContact = player.position.distanceTo(match.ball.position) <= TackleAction.CONTACT_RADIUS_METRES;
+    const relativeContactSpeed = player.velocity.subtract(ballOwner.velocity).magnitude();
+    const standingChallenge = ballOwner.bodyState === "BALANCED" && relativeContactSpeed <= 3.5;
     if (success && physicalContact) {
       if (ballOwner.activePipeline?.isBusy()) {
         ballOwner.activePipeline.interrupt("TACKLE", matchSecond);
@@ -128,7 +130,7 @@ export class TackleAction {
     const won = success && physicalContact;
     events.push(this.tackleEvent(player, ballOwner, tacklerTeamId, matchSecond, period, won));
     if (physicalContact) {
-      events.push(this.duelEvent(player, ballOwner, tacklerTeamId, matchSecond, period, won, match.ball.position.x, match.ball.position.y));
+      events.push(this.duelEvent(player, ballOwner, tacklerTeamId, matchSecond, period, won, match.ball.position.x, match.ball.position.y, standingChallenge ? "SHOULDER" : "GROUND_TACKLE"));
     }
 
     return {
@@ -148,6 +150,7 @@ export class TackleAction {
     won: boolean,
     positionX: number,
     positionY: number,
+    duelKind: "GROUND_TACKLE" | "SHOULDER",
   ): DuelEvent {
     const winner = won ? player : opponent;
     const loser = won ? opponent : player;
@@ -157,7 +160,7 @@ export class TackleAction {
       teamId: teamId as TeamId, playerId: player.player.id as PlayerId,
       opponentId: opponent.player.id as PlayerId,
       winnerId: winner.player.id as PlayerId, loserId: loser.player.id as PlayerId,
-      duelKind: "GROUND_TACKLE", positionX, positionY,
+      duelKind, positionX, positionY,
     };
   }
 

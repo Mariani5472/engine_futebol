@@ -35,6 +35,7 @@ export interface PossessionAcquisitionRecord {
   readonly previousPlayerId: string | null;
   /** Opponent who physically contested this acquisition, when known. */
   readonly opponentId?: string | null;
+  readonly duelKind?: "LOOSE_BALL" | "AERIAL" | "SHOULDER";
   /** The ball had no authoritative owner immediately before control. */
   readonly wasLoose: boolean;
   readonly distanceToBall: number;
@@ -129,6 +130,7 @@ export class BallMatchState {
     contested = false,
     actionId?: ActionId,
     opponentId: string | null = null,
+    duelKind?: "LOOSE_BALL" | "AERIAL" | "SHOULDER",
   ): void {
     // During a pass or loose-ball phase owner is null, but the last physical
     // touch still identifies which team relinquished the ball. Keeping that
@@ -145,6 +147,7 @@ export class BallMatchState {
         type: "POSSESSION_CHANGED", matchSecond, playerId: player.player.id,
         previousPlayerId,
         opponentId,
+        duelKind,
         wasLoose: previousOwner === null,
         distanceToBall: player.position.distanceTo(this.position),
         ballSpeed: Math.max(this.velocity.magnitude(), this.visualVelocity.magnitude()),

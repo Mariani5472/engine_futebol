@@ -274,7 +274,12 @@ function defaultEnvironment(payload: CreateEnvironmentPayload, environmentId: st
   const seed = payload.seed ?? 1;
   if (payload.kind === "CURRICULUM") {
     if (!payload.stage) throw new Error("CURRICULUM requires a stage");
-    const scenario = createCurriculumScenarioPreset(payload.stage);
+    const preset = createCurriculumScenarioPreset(payload.stage);
+    const scenario = {
+      ...preset,
+      attackingTactics: payload.attackingTactics ?? preset.attackingTactics,
+      defendingTactics: payload.defendingTactics ?? preset.defendingTactics,
+    };
     const playerIds = payload.playerIds ?? defaultControlledPlayers(scenario);
     return new MultiAgentMatchEnvironment({
       playerIds,

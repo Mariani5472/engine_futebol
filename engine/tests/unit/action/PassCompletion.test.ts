@@ -162,4 +162,36 @@ describe("authoritative pass flow", () => {
     }
     expect(intercepted).toBe(true);
   });
+
+  it("classifies an elevated opponent contest as one aerial duel", () => {
+    let acquisitionFound = false;
+    for (let seed = 1; seed <= 40 && !acquisitionFound; seed++) {
+      const { match, passer, receiver } = buildContext(seed);
+      const opponent = match.away.players[0];
+      for (const player of [...match.home.players, ...match.away.players]) {
+        player.position = new Vector2(0, 0);
+        player.hasBall = false;
+      }
+      receiver.position = new Vector2(16, 34);
+      opponent.position = new Vector2(16.1, 34);
+      match.ball.release();
+      match.ball.state = BallState.IN_FLIGHT;
+      match.ball.previousPosition = new Vector2(15, 34);
+      match.ball.position = new Vector2(17, 34);
+      match.ball.velocity = new Vector2(12, 0);
+      match.ball.height = 1.8;
+      match.ball.intendedReceiverId = receiver.player.id;
+      match.ball.pendingPass = {
+        passerId: passer.player.id, intendedReceiverId: receiver.player.id,
+        teammateIds: [receiver.player.id], startedAtSecond: 0, realForwardGain: 6,
+      };
+      new PossessionSystem(new SeededRandom(seed), new ReachCalculator()).update(match);
+      const acquisition = match.ball.drainPossessionAcquisitions()[0];
+      if (!acquisition) continue;
+      expect(acquisition).toMatchObject({ contested: true, duelKind: "AERIAL" });
+      expect([receiver.player.id, opponent.player.id]).toContain(acquisition.playerId);
+      acquisitionFound = true;
+    }
+    expect(acquisitionFound).toBe(true);
+  });
 });

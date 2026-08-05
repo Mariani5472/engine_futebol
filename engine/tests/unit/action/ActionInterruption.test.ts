@@ -128,6 +128,7 @@ describe("Action interruption — concurrent action and physical state", () => {
     expect(ballOwner.activeAction).toBe(passExecution);
     expect(passExecution?.phase).toBe(ActionExecutionPhase.RECOVERING);
     expect(passExecution?.interruptionReason).toBe("TACKLE");
+    expect(result.events.find(event => event.type === "DUEL")).toMatchObject({ duelKind: "SHOULDER" });
     expect(ballOwner.bodyState).toBe("FALLING");
     expect(passExecution?.isBusy()).toBe(true);
   });

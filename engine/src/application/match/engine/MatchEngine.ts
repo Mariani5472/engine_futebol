@@ -812,13 +812,13 @@ export class MatchEngine {
       }
     }
 
-    if (acquisition.reason === "PHYSICAL_CLAIM" && acquisition.contested && acquisition.opponentId) {
+    if (acquisition.contested && acquisition.opponentId && acquisition.duelKind) {
       events.push({
         ...common, id: `${baseId}:duel`, type: "DUEL",
         opponentId: acquisition.opponentId as PlayerId,
         winnerId: acquisition.playerId as PlayerId,
         loserId: acquisition.opponentId as PlayerId,
-        duelKind: "LOOSE_BALL",
+        duelKind: acquisition.duelKind,
       });
     }
     return events;
