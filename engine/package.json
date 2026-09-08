@@ -1,7 +1,7 @@
 {
-  "name": "match-engine",
-  "version": "0.1.0",
-  "description": "Football match simulation engine — deterministic, testable, frontend-independent",
+  "name": "@match-engine/core",
+  "version": "2.0.0",
+  "description": "Small deterministic football match simulator for web applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -11,14 +11,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
-    "calibrate": "npx --yes tsx scripts/calibrate.ts",
-    "calibrate:consolidate": "npx --yes tsx scripts/consolidate-calibration.ts",
-    "check:authoritative-ball": "npx --yes tsx scripts/check-authoritative-ball.ts",
-    "diagnose:offense": "npx --yes tsx scripts/diagnose-offensive-funnel.ts",
-    "protocol:stdio": "npx --yes tsx scripts/training-protocol-server.ts",
-    "profile:training": "npx --yes tsx scripts/profile-training.ts",
-    "train:fundamental": "python python/train_fundamental_ppo.py",
-    "calibrate:quick": "npx --yes tsx scripts/calibrate.ts --matches 10 --tick 5"
+    "distribution": "npx --yes tsx tests/distribution.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -37,6 +30,9 @@
     "testMatch": [
       "**/*.test.ts"
     ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
     "collectCoverageFrom": [
       "src/**/*.ts"
     ],

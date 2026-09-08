@@ -1,120 +1,55 @@
-📊 Progresso Atual Estimado
-~55-60% concluído (bem mais avançado que os 33% do README antigo).
-Concluídos / Bem Avançados:
+# Match Engine V2
 
-Domínio, Geometria, Movimentação, Percepção, Cognição/Awareness, Decision Layer (core), Action Layer (parcial), Ball Physics (básica), Tactical (básico), Inicialização, Determinismo.
+A small, deterministic football match simulator for web applications. It models ninety abstract minutes: each minute may produce a shot, a yellow card, or a substitution. It is deliberately not a physical football simulation.
 
-Principais Gaps Atuais:
+It does **not** contain ball physics, player movement, collisions, pathfinding, tactical AI, a frame loop, React, HTTP, a database, or browser APIs. The UI receives finished data and decides how to animate or render it.
 
-Decisões ainda muito conservadoras → poucos gols.
-Interação entre sistemas (decisão × tática × física × posse).
-Regras completas do jogo e polish.
+## Install and run
 
+From this repository root:
 
-🗺️ Novo Roadmap Priorizado (Fases Reorganizadas)
-Fase 0: Correções Críticas (1-2 semanas) — Resolver 0x0
-Objetivo: Fazer o jogo produzir gols e progressão razoável consistentemente.
+```bash
+npm install
+npm test
+npm run build
+```
 
-Ajustes urgentes na Decisão:
-Aumentar utilidade de ShotEvaluator em zonas de ataque (attacking third).
-Reduzir bias conservador de PassEvaluator (menos bônus para passes laterais).
-Melhorar HoldBallEvaluator como verdadeiro fallback (baixa utilidade).
-Finalizar PersonalityModifier e integrá-lo melhor.
+The engine package can also be consumed as `@match-engine/core`.
 
-Melhorar Progressão Ofensiva:
-Reforçar TacticalEngine para empurrar jogadores para frente quando em posse.
-Adicionar lógica simples de "support runs" e width/depth dinâmica.
+## Simulate a match
 
-Refinar ShotAction + GK:
-Ajustar probabilidades de on-target/save.
-Garantir que shots de longa distância sejam viáveis para certos perfis.
+```ts
+import { simulateMatch, type Team } from "@match-engine/core";
 
-Limpar Duplicações:
-Unificar movimento da bola (MovementSystem + BallPhysicsSystem).
-Remover redundâncias em velocity/position.
+const homeTeam: Team = {
+  id: "aurora",
+  name: "Aurora FC",
+  formation: "4-3-3",
+  players: [/* 11 starters, then optional substitutes */],
+};
 
-Debug & Telemetria:
-Adicionar logs opcionais de decisões tomadas, utilities, shots gerados vs executados.
-Criar um MatchDebugSummary no resultado.
+const awayTeam: Team = { /* same shape */ };
 
+const result = simulateMatch({ homeTeam, awayTeam, seed: 123456 });
 
-Critério de Sucesso: Média de 2.0–3.5 gols por jogo em 100 simulações com seeds variados.
+console.log(result.score);
+for (const event of result.events) console.log(event);
+```
 
-Fase 1: Action Layer Completa (Alta Prioridade)
+Each player has an `id`, `name`, `position` (`GK`, `DEF`, `MID`, or `FWD`) and integer `mental`, `physical`, and `technical` attributes from 1 to 20. A team supplies at least eleven players; the first eleven start and later players are substitutes.
 
- Completar/implementar ações pendentes com outcomes realistas:
-DribbleAction (progressão com risco de perda de bola).
-TackleAction (melhor integração com Referee).
-HeaderAction, ClearanceAction.
+The same teams and seed always return the identical result. Use a different seed to create another reproducible match. `homeAdvantage` defaults to `1.05` and can be overridden in the input.
 
- Adicionar cooldowns / recuperação pós-ação.
- Integrar melhor ActionResult com eventos e mudanças de estado.
+## Result data
 
+`result.events` contains only `MATCH_STARTED`, `SHOT`, `YELLOW_CARD`, `SUBSTITUTION`, `HALF_TIME`, and `MATCH_FINISHED`. `result.statistics` includes possession, shots, shots on target, goals, yellow cards, and corners. `result.finalState` has the final player statuses, minutes, goals, shots, cards, and ratings.
 
-Fase 2: Ball Physics & Interações Avançadas
+Pass `debug: true` to receive one compact diagnostic entry per shot, including its attack power, defense power, and outcome. It is returned as data; the engine never logs to the console.
 
- Melhorar BallPhysicsSystem:
-Trajetórias mais realistas (curva, swerve básico).
-Colisões com jogadores (interceptions).
-Bounce, wind (futuro), altura variável.
+## React integration
 
- Detecção precisa de gol via física (em vez de "fake" no ShotAction).
- Implementar launch() de forma consistente em Pass/Shot.
+Call `simulateMatch` outside the render body (for example, in an event handler, loader, or memo keyed by the input) and render `result.events` as a timeline. The engine has no React dependency, so the same input also works in Node, tests, workers, and the browser.
 
+## Distribution check
 
-Fase 3: Tactical & Team Behaviour (Core do Realismo)
-
- Expandir TacticalEngine:
-Instruções (Tempo, Counter-Attack, Pressing, Overlap/Underlap).
-Dynamic shapes (defensivo → transição → ataque).
-Width, Depth, Compactness, Defensive Line.
-
- Fortalecer TeamBehaviourSystem:
-Pressing coletivo, marking, cover.
-Support movement quando um jogador tem a bola.
-Overloads numéricos e exploração de espaço.
-
- Integrar Cohesion/Familiarity de forma mais impactante.
-
-
-Fase 4: Regras & Referee
-
- RefereeSystem completo:
-Fouls, cartões, advantage, offside (simplificado), handball.
-Personalidade do árbitro.
-
- Match Flow:
-Kickoff, throw-ins, corners, goal kicks, penalties.
-Stoppage time, substituições.
-Estados de jogo (set pieces).
-
-
-
-Fase 5: Event Engine & Output
-
- Sistema robusto de eventos (fila, prioridade, timestamps).
- Match Report completo:
-Stats (xG básico, possession, passes, tackles, shots on target).
-Ratings de jogadores.
-Timeline serializável.
-
-
-
-Fase 6: Polish & Contexto Avançado
-
- Fatores contextuais: Morale, Crowd, Weather, Big Match, Fatigue mental.
- Psychological dynamics (momentum, panic, concentration).
- Environmental effects.
-
-
-Fase 7: Validação, Testes & Produção
-
- Testes avançados:
-Monte Carlo (distribuição de resultados).
-Scenario-based (ex: "striker 1v1", "counter-attack").
-Regression tests contra versões anteriores.
-
- Replay system (snapshots periódicos).
- Performance (otimizações, parallel sims).
- Serialização completa de estado (para save/load).
- Calibração fina de atributos e weights.
+Run `npm run distribution --workspace @match-engine/core` to simulate 10,000 matches and print win, draw, goal, and shot averages. This is a calibration aid, not a fragile score assertion.
