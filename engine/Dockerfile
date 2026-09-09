@@ -1,16 +1,14 @@
 FROM node:22-alpine
 
-WORKDIR /workspace
+WORKDIR /app
 
-COPY package.json ./
-COPY engine/package.json ./engine/package.json
-COPY api/package.json ./api/package.json
-COPY web/package.json ./web/package.json
+COPY engine/package.json engine/package-lock.json ./
+RUN npm ci
 
-RUN npm install
+COPY engine/src ./src
+COPY engine/scripts ./scripts
+COPY engine/tsconfig.json ./
 
-COPY engine ./engine
+RUN npm run build
 
-WORKDIR /workspace/engine
-
-CMD ["npm", "test", "--", "--runInBand"]
+CMD ["npm", "run", "demo"]

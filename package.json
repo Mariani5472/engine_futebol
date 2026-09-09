@@ -1,12 +1,11 @@
 {
   "name": "engine-futebol-workspace",
   "private": true,
-  "workspaces": ["engine", "api", "web"],
+  "workspaces": ["engine", "web", "scraper"],
   "scripts": {
     "dev": "npm run dev --workspace web",
-    "dev:api": "npm run dev --workspace api",
-    "build": "npm run build --workspace engine && npm run build --workspace web",
-    "test": "npm test --workspace engine",
-    "calibrate": "npm run calibrate --workspace engine"
+    "build": "npm run build --workspace engine && npm run build --workspace scraper && npm run build --workspace web",
+    "test": "npm test --workspace engine && npm test --workspace scraper && npm test --workspace web",
+    "scrape": "npm run scrape --workspace scraper"
   }
 }

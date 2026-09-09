@@ -14,6 +14,14 @@ npm test
 npm run build
 ```
 
+Or start the local manager application:
+
+```bash
+docker compose up
+```
+
+It starts the Vite application at [http://localhost:5173](http://localhost:5173). The manager UI consumes the engine in the browser; the engine itself remains independent of HTTP and React.
+
 The engine package can also be consumed as `@match-engine/core`.
 
 ## Simulate a match

@@ -1,4 +1,6 @@
 packages:
   - engine
-  - api
   - web
+  - scraper
+allowBuilds:
+  esbuild: set this to true or false

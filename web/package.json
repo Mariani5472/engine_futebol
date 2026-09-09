@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsx tests/season.test.ts"
   },
   "dependencies": {
     "@match-engine/core": "file:../engine",
@@ -18,10 +19,12 @@
     "@vitejs/plugin-react": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@types/node": "^22.0.0",
     "autoprefixer": "latest",
     "postcss": "latest",
     "tailwindcss": "^3.4.17",
     "typescript": "latest",
+    "tsx": "^4.20.0",
     "vite": "latest"
   }
 }
