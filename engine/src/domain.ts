@@ -17,7 +17,7 @@ export type Player = {
 export type Team = {
   id: string;
   name: string;
-  /** The first eleven players start. Remaining players are substitutes. */
+  logoUrl: string | null;
   players: Player[];
   formation: Formation;
 };
@@ -59,20 +59,20 @@ export type TeamState = {
 export type MatchEvent =
   | { type: "MATCH_STARTED"; minute: 0 }
   | {
-      type: "SHOT";
-      minute: number;
-      teamId: string;
-      playerId: string;
-      outcome: "GOAL" | "SAVED" | "BLOCKED" | "MISSED";
-    }
+    type: "SHOT";
+    minute: number;
+    teamId: string;
+    playerId: string;
+    outcome: "GOAL" | "SAVED" | "BLOCKED" | "MISSED";
+  }
   | { type: "YELLOW_CARD"; minute: number; teamId: string; playerId: string }
   | {
-      type: "SUBSTITUTION";
-      minute: number;
-      teamId: string;
-      playerInId: string;
-      playerOutId: string;
-    }
+    type: "SUBSTITUTION";
+    minute: number;
+    teamId: string;
+    playerInId: string;
+    playerOutId: string;
+  }
   | { type: "HALF_TIME"; minute: 45 }
   | { type: "MATCH_FINISHED"; minute: 90 };
 

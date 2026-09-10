@@ -1,39 +1,1015 @@
 import { useMemo, useState } from "react";
-import type { Formation, MatchEvent, MatchResult, Player, Team } from "@match-engine/core";
+import type {
+  Formation,
+  MatchEvent,
+  MatchResult,
+  Player,
+  Team,
+} from "@match-engine/core";
+
 import { initialTeams, overall } from "./data/teams";
-import { applyLineup, createSeason, formationSlots, getChampion, isSeasonFinished, selectBestLineup, simulateRound, type Fixture, type SeasonState } from "./domain/season";
+import {
+  applyLineup,
+  createSeason,
+  formationSlots,
+  getChampion,
+  isSeasonFinished,
+  selectBestLineup,
+  simulateRound,
+  type Fixture,
+  type SeasonState,
+} from "./domain/season";
 
 type Page = "squad" | "lineup" | "season" | "league" | "matches";
+
 const positions = ["GK", "DEF", "MID", "FWD"] as const;
-const formations: Formation[] = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2"];
-const positionLabel = { GK: "Goleiro", DEF: "Defesa", MID: "Meio-campo", FWD: "Ataque" };
+
+const formations: Formation[] = [
+  "4-3-3",
+  "4-4-2",
+  "4-2-3-1",
+  "3-5-2",
+];
+
+const positionLabel = {
+  GK: "Goleiro",
+  DEF: "Defesa",
+  MID: "Meio-campo",
+  FWD: "Ataque",
+};
 
 export function App() {
-  const [teams, setTeams] = useState<Team[]>(initialTeams);
+  const [teams, setTeams] = useState<Team[]>(initialTeams.sort());
   const [userTeamId, setUserTeamId] = useState<string | null>(null);
   const [season, setSeason] = useState<SeasonState | null>(null);
   const [page, setPage] = useState<Page>("squad");
-  const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(null);
-  const userTeam = teams.find((team) => team.id === userTeamId);
-  const teamById = (id: string) => (season?.teams ?? teams).find((team) => team.id === id)!;
-  const saveLineup = (next: Team) => { setTeams((current) => current.map((team) => team.id === next.id ? next : team)); setSeason((current) => current ? { ...current, teams: current.teams.map((team) => team.id === next.id ? next : team) } : current); };
+  const [selectedFixture, setSelectedFixture] = useState<Fixture | null>(
+    null,
+  );
 
-  if (!userTeamId || !userTeam) return <TeamSelection teams={teams} onChoose={(id) => { setUserTeamId(id); setPage("squad"); }} />;
-  return <div className="app-shell"><aside className="sidebar"><div className="brand"><span>⚽</span><div><b>TACTIC</b><small>Manager 2026</small></div></div><nav>{(["squad", "lineup", "season", "league", "matches"] as Page[]).map((item) => <button key={item} className={page === item ? "nav-active" : ""} onClick={() => setPage(item)}>{navLabel(item)}</button>)}</nav><div className="club-mini"><small>SEU CLUBE</small><b>{userTeam.name}</b><span>{userTeam.formation}</span></div></aside><main><header className="topbar"><div><p className="eyebrow">TEMPORADA 2026</p><h1>{pageTitle(page)}</h1></div><button className="outline" onClick={() => { setSeason(null); setUserTeamId(null); }}>Trocar clube</button></header>
-    {page === "squad" && <Squad team={userTeam} />}{page === "lineup" && <Lineup team={userTeam} onSave={saveLineup} />}
-    {page === "season" && <SeasonDashboard season={season} teamById={teamById} userTeamId={userTeamId} onStart={() => setSeason(createSeason(teams, userTeamId))} onSimulate={() => setSeason((current) => current && simulateRound(current))} onManage={() => setPage("lineup")} onTable={() => setPage("league")} onOpenMatch={(fixture) => { setSelectedFixture(fixture); setPage("matches"); }} />}
-    {page === "league" && season && <LeagueTable season={season} teamById={teamById} />}{page === "matches" && <MatchHistory fixtures={season?.fixtures.filter((fixture) => fixture.status === "PLAYED") ?? []} teamById={teamById} selected={selectedFixture} onSelect={setSelectedFixture} />}
-  </main></div>;
+  const userTeam = teams.find((team) => team.id === userTeamId);
+
+  const teamById = (id: string) => {
+    return (season?.teams ?? teams).find((team) => team.id === id)!;
+  };
+
+  const saveLineup = (next: Team) => {
+    setTeams((current) =>
+      current.map((team) =>
+        team.id === next.id ? next : team,
+      ),
+    );
+
+    setSeason((current) =>
+      current
+        ? {
+            ...current,
+            teams: current.teams.map((team) =>
+              team.id === next.id ? next : team,
+            ),
+          }
+        : current,
+    );
+  };
+
+  if (!userTeamId || !userTeam) {
+    return (
+      <TeamSelection
+        teams={teams}
+        onChoose={(id) => {
+          setUserTeamId(id);
+          setPage("squad");
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <span>⚽</span>
+
+          <div>
+            <b>TACTIC</b>
+            <small>Manager 2026</small>
+          </div>
+        </div>
+
+        <nav>
+          {(["squad", "lineup", "season", "league", "matches"] as Page[]).map(
+            (item) => (
+              <button
+                key={item}
+                className={page === item ? "nav-active" : ""}
+                onClick={() => setPage(item)}
+              >
+                {navLabel(item)}
+              </button>
+            ),
+          )}
+        </nav>
+
+        <div className="club-mini">
+          <small>SEU CLUBE</small>
+          <b>{userTeam.name}</b>
+          <span>{userTeam.formation}</span>
+        </div>
+      </aside>
+
+      <main>
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">TEMPORADA 2026</p>
+            <h1>{pageTitle(page)}</h1>
+          </div>
+        </header>
+
+        {page === "squad" && <Squad team={userTeam} />}
+
+        {page === "lineup" && (
+          <Lineup
+            team={userTeam}
+            onSave={saveLineup}
+          />
+        )}
+
+        {page === "season" && (
+          <SeasonDashboard
+            season={season}
+            teamById={teamById}
+            userTeamId={userTeamId}
+            onStart={() => setSeason(createSeason(teams, userTeamId))}
+            onSimulate={() =>
+              setSeason((current) =>
+                current ? simulateRound(current) : current,
+              )
+            }
+            onManage={() => setPage("lineup")}
+            onTable={() => setPage("league")}
+            onOpenMatch={(fixture) => {
+              setSelectedFixture(fixture);
+              setPage("matches");
+            }}
+          />
+        )}
+
+        {page === "league" && season && (
+          <LeagueTable
+            season={season}
+            teamById={teamById}
+          />
+        )}
+
+        {page === "matches" && (
+          <MatchHistory
+            fixtures={
+              season?.fixtures.filter(
+                (fixture) => fixture.status === "PLAYED",
+              ) ?? []
+            }
+            teamById={teamById}
+            selected={selectedFixture}
+            onSelect={setSelectedFixture}
+          />
+        )}
+      </main>
+    </div>
+  );
 }
 
-function TeamSelection({ teams, onChoose }: { teams: Team[]; onChoose: (id: string) => void }) { return <section className="welcome"><p className="eyebrow">SEU NOVO DESAFIO</p><h1>Escolha o clube para comandar.</h1><p className="muted">Monte o elenco, defina a escalação e conquiste a liga de oito clubes.</p><div className="team-grid">{teams.map((team) => <button className="team-card" key={team.id} onClick={() => onChoose(team.id)}><Badge name={team.name} /><b>{team.name}</b><span>{team.formation} · {team.players.length} jogadores</span><em>Assumir comando →</em></button>)}</div></section>; }
-function Squad({ team }: { team: Team }) { return <section><SectionTitle title="Elenco" text="Atributos reais consumidos pela engine V2. Overall é calculado somente para visualização." /><div className="panel"><h2>Titulares</h2><PlayerTable players={team.players.slice(0, 11)} /></div><div className="panel"><h2>Reservas</h2><PlayerTable players={team.players.slice(11)} /></div></section>; }
-function Lineup({ team, onSave }: { team: Team; onSave: (team: Team) => void }) { const [formation, setFormation] = useState<Formation>(team.formation); const [starters, setStarters] = useState<string[]>(team.players.slice(0, 11).map((player) => player.id)); const valid = useMemo(() => starters.length === 11 && positions.every((position) => starters.map((id) => team.players.find((player) => player.id === id)!).filter((player) => player.position === position).length === formationSlots[formation][position]), [formation, starters, team.players]); const changeFormation = (next: Formation) => { const optimized = selectBestLineup({ ...team, formation: next }); setFormation(next); setStarters(optimized.players.slice(0, 11).map((player) => player.id)); }; const toggle = (player: Player) => setStarters((current) => { if (current.includes(player.id)) return current.filter((id) => id !== player.id); const same = current.filter((id) => team.players.find((candidate) => candidate.id === id)?.position === player.position); return same.length >= formationSlots[formation][player.position] ? current.filter((id) => id !== same[0]).concat(player.id) : [...current, player.id]; }); return <section><SectionTitle title="Escalação" text="Selecione exatamente as posições exigidas. Os 11 escolhidos são enviados diretamente para a engine." /><div className="formation-row">{formations.map((item) => <button key={item} className={formation === item ? "chip active" : "chip"} onClick={() => changeFormation(item)}>{item}</button>)}<b className={valid ? "valid" : "invalid"}>{starters.length}/11 titulares</b></div><div className="lineup-grid">{positions.map((position) => <div className="panel" key={position}><h2>{position} <small>{positionLabel[position]} · {formationSlots[formation][position]}</small></h2>{team.players.filter((player) => player.position === position).map((player) => <label className="lineup-player" key={player.id}><input type="checkbox" checked={starters.includes(player.id)} onChange={() => toggle(player)} /><span>{player.name}</span><b>{overall(player)}</b></label>)}</div>)}</div><button className="primary" disabled={!valid} onClick={() => onSave(applyLineup(team, formation, starters))}>Salvar escalação e banco</button></section>; }
-function SeasonDashboard({ season, teamById, userTeamId, onStart, onSimulate, onManage, onTable, onOpenMatch }: { season: SeasonState | null; teamById: (id: string) => Team; userTeamId: string; onStart: () => void; onSimulate: () => void; onManage: () => void; onTable: () => void; onOpenMatch: (fixture: Fixture) => void }) { const totalRounds = season?.fixtures.at(-1)?.round ?? initialTeams.length * 2 - 2; if (!season) return <section className="season-hero"><p className="eyebrow">PRONTO PARA A TEMPORADA?</p><h2>Brasileirão Série A · {totalRounds} rodadas</h2><p>Todos contra todos, ida e volta. Sua escalação atual será usada em cada partida.</p><button className="primary" onClick={onStart}>Iniciar campeonato</button></section>; const next = season.fixtures.filter((fixture) => fixture.round === season.round); const position = season.standings.findIndex((row) => row.teamId === userTeamId) + 1; const champion = getChampion(season); if (isSeasonFinished(season)) return <SeasonComplete season={season} teamById={teamById} championId={champion!} userTeamId={userTeamId} />; return <section><div className="season-hero"><p className="eyebrow">RODADA {season.round} / {totalRounds}</p><h2>Posição atual: {position}º</h2><p>Prepare sua equipe ou simule todos os jogos da rodada.</p><div className="actions"><button className="outline" onClick={onManage}>Gerenciar escalação</button><button className="outline" onClick={onTable}>Ver classificação</button><button className="primary" onClick={onSimulate}>Simular próxima rodada</button></div></div><div className="panel"><h2>Próxima rodada</h2>{next.map((fixture) => <FixtureRow key={fixture.id} fixture={fixture} teamById={teamById} onClick={() => onOpenMatch(fixture)} />)}</div></section>; }
-function LeagueTable({ season, teamById }: { season: SeasonState; teamById: (id: string) => Team }) { return <section><SectionTitle title="Classificação" text="Pontos, saldo de gols, gols marcados e vitórias decidem os empates." /><div className="panel table-wrap"><table><thead><tr><th>#</th><th>TIME</th><th>PTS</th><th>PJ</th><th>V</th><th>E</th><th>D</th><th>GF</th><th>GA</th><th>SG</th></tr></thead><tbody>{season.standings.map((row, index) => <tr className={row.teamId === season.userTeamId ? "user-row" : ""} key={row.teamId}><td>{index + 1}</td><td><Badge name={teamById(row.teamId).name} />{teamById(row.teamId).name}</td><td><b>{row.points}</b></td><td>{row.played}</td><td>{row.wins}</td><td>{row.draws}</td><td>{row.losses}</td><td>{row.goalsFor}</td><td>{row.goalsAgainst}</td><td>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td></tr>)}</tbody></table></div></section>; }
-function MatchHistory({ fixtures, teamById, selected, onSelect }: { fixtures: Fixture[]; teamById: (id: string) => Team; selected: Fixture | null; onSelect: (fixture: Fixture) => void }) { return <section><SectionTitle title="Partidas" text="Abra qualquer resultado já disputado para ver eventos, estatísticas e notas." /><div className="history-layout"><div className="panel">{fixtures.length ? fixtures.slice().reverse().map((fixture) => <FixtureRow key={fixture.id} fixture={fixture} teamById={teamById} onClick={() => onSelect(fixture)} />) : <p className="muted">Ainda não há partidas disputadas.</p>}</div>{selected?.result && <MatchResultView fixture={selected} result={selected.result} teamById={teamById} />}</div></section>; }
-function FixtureRow({ fixture, teamById, onClick }: { fixture: Fixture; teamById: (id: string) => Team; onClick: () => void }) { const result = fixture.result; return <button className="fixture" onClick={onClick}><small>RODADA {fixture.round}</small><span>{teamById(fixture.homeTeamId).name}</span><b>{result ? `${result.score.home} - ${result.score.away}` : "vs"}</b><span>{teamById(fixture.awayTeamId).name}</span></button>; }
-function MatchResultView({ fixture, result, teamById }: { fixture: Fixture; result: MatchResult; teamById: (id: string) => Team }) { const playerName = (id: string) => [...teamById(fixture.homeTeamId).players, ...teamById(fixture.awayTeamId).players].find((player) => player.id === id)?.name ?? id; return <article className="result-view"><div className="score-card"><small>FINALIZADO · RODADA {fixture.round}</small><h2>{teamById(fixture.homeTeamId).name} <b>{result.score.home} - {result.score.away}</b> {teamById(fixture.awayTeamId).name}</h2></div><h3>Estatísticas</h3>{([['Posse', 'possession'], ['Finalizações', 'shots'], ['No alvo', 'shotsOnTarget'], ['Escanteios', 'corners'], ['Cartões amarelos', 'yellowCards']] as const).map(([label, key]) => <div className="stat" key={key}><b>{result.statistics[key].home}</b><span>{label}</span><b>{result.statistics[key].away}</b></div>)}<h3>Eventos</h3><div className="timeline">{result.events.map((event, index) => <p key={index}><b>{event.minute}'</b> {eventLabel(event, playerName)}</p>)}</div><h3>Notas dos jogadores</h3><div className="ratings">{[...result.finalState.homeTeam.players, ...result.finalState.awayTeam.players].filter((player) => player.minutesPlayed > 0).sort((a, b) => b.rating - a.rating).map((player) => <span key={player.playerId}>{playerName(player.playerId)} <b>{player.rating}</b>{player.goals ? " ⚽" : ""}</span>)}</div></article>; }
-function SeasonComplete({ season, teamById, championId, userTeamId }: { season: SeasonState; teamById: (id: string) => Team; championId: string; userTeamId: string }) { const names = new Map(season.teams.flatMap((team) => team.players.map((player) => [player.id, player.name]))); const scorers = season.playerStats.filter((stat) => stat.goals > 0).sort((a, b) => b.goals - a.goals || b.shots - a.shots).slice(0, 5); const bestPlayer = season.playerStats.filter((stat) => stat.ratings > 0).sort((a, b) => b.ratingTotal / b.ratings - a.ratingTotal / a.ratings)[0]; const userPosition = season.standings.findIndex((row) => row.teamId === userTeamId) + 1; return <section className="season-complete"><p className="eyebrow">TEMPORADA ENCERRADA</p><div className="trophy">🏆</div><h2>{teamById(championId).name}</h2><p>Campeão nacional. {championId === userTeamId ? "Você conquistou o título!" : `Seu clube terminou em ${userPosition}º lugar.`}</p><div className="panel"><h3>Artilheiros</h3>{scorers.map((stat, index) => <p key={stat.playerId}>{index + 1}. {names.get(stat.playerId)} <b>{stat.goals} gols</b></p>)}</div>{bestPlayer && <div className="panel"><h3>Melhor jogador</h3><p>{names.get(bestPlayer.playerId)} <b>{(bestPlayer.ratingTotal / bestPlayer.ratings).toFixed(1)}</b> de nota média em {bestPlayer.appearances} partidas.</p></div>}<LeagueTable season={season} teamById={teamById} /></section>; }
-function PlayerTable({ players }: { players: Player[] }) { return <div className="table-wrap"><table><thead><tr><th>JOGADOR</th><th>POS.</th><th>MENTAL</th><th>FÍSICO</th><th>TÉCNICO</th><th>OVR</th></tr></thead><tbody>{players.map((player) => <tr key={player.id}><td>{player.name}</td><td><span className="position">{player.position}</span></td><td>{player.attributes.mental}</td><td>{player.attributes.physical}</td><td>{player.attributes.technical}</td><td><b>{overall(player)}</b></td></tr>)}</tbody></table></div>; }
-function SectionTitle({ title, text }: { title: string; text: string }) { return <div className="section-title"><h2>{title}</h2><p>{text}</p></div>; } function Badge({ name }: { name: string }) { return <i className="badge">{name.split(" ").map((word) => word[0]).join("").slice(0, 2)}</i>; } function eventLabel(event: MatchEvent, name: (id: string) => string) { if (event.type === "SHOT") return `${event.outcome === "GOAL" ? "⚽ Gol —" : "Finalização"} ${name(event.playerId)} · ${event.outcome}`; if (event.type === "YELLOW_CARD") return `🟨 ${name(event.playerId)}`; if (event.type === "SUBSTITUTION") return `🔄 ${name(event.playerInId)} entra no lugar de ${name(event.playerOutId)}`; if (event.type === "HALF_TIME") return "Intervalo"; if (event.type === "MATCH_FINISHED") return "Fim de jogo"; return "Início de jogo"; } function navLabel(page: Page) { return ({ squad: "Elenco", lineup: "Escalação", season: "Temporada", league: "Classificação", matches: "Partidas" })[page]; } function pageTitle(page: Page) { return ({ squad: "Meu elenco", lineup: "Definir escalação", season: "Centro da temporada", league: "Tabela da liga", matches: "Histórico de partidas" })[page]; }
+function TeamSelection({
+  teams,
+  onChoose,
+}: {
+  teams: Team[];
+  onChoose: (id: string) => void;
+}) {
+  return (
+    <section className="welcome">
+      <p className="eyebrow">SEU NOVO DESAFIO</p>
+
+      <h1>Escolha o clube para comandar.</h1>
+
+      <p className="muted">
+        Monte o elenco, defina a escalação e conquiste a liga de oito clubes.
+      </p>
+
+      <div className="team-grid">
+        {teams.map((team) => (
+          <button
+            className="team-card"
+            key={team.id}
+            onClick={() => onChoose(team.id)}
+          >
+            <Badge name={team.name} url={team.logoUrl} />
+
+            <b>{team.name}</b>
+
+            <span>
+              {team.formation} · {team.players.length} jogadores
+            </span>
+
+            <em>Assumir comando →</em>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Squad({ team }: { team: Team }) {
+  return (
+    <section>
+      <SectionTitle
+        title="Elenco"
+        text="Atributos reais consumidos pela engine V2. Overall é calculado somente para visualização."
+      />
+
+      <div className="panel">
+        <h2>Titulares</h2>
+
+        <PlayerTable players={team.players.slice(0, 11)} />
+      </div>
+
+      <div className="panel">
+        <h2>Reservas</h2>
+
+        <PlayerTable players={team.players.slice(11)} />
+      </div>
+    </section>
+  );
+}
+
+function Lineup({
+  team,
+  onSave,
+}: {
+  team: Team;
+  onSave: (team: Team) => void;
+}) {
+  const [formation, setFormation] = useState<Formation>(
+    team.formation,
+  );
+
+  const [starters, setStarters] = useState<string[]>(
+    team.players.slice(0, 11).map((player) => player.id),
+  );
+
+  const valid = useMemo(() => {
+    return (
+      starters.length === 11 &&
+      positions.every((position) => {
+        const playersInPosition = starters
+          .map((id) =>
+            team.players.find((player) => player.id === id),
+          )
+          .filter(
+            (player): player is Player =>
+              player !== undefined &&
+              player.position === position,
+          );
+
+        return (
+          playersInPosition.length ===
+          formationSlots[formation][position]
+        );
+      })
+    );
+  }, [formation, starters, team.players]);
+
+  const changeFormation = (next: Formation) => {
+    const optimized = selectBestLineup({
+      ...team,
+      formation: next,
+    });
+
+    setFormation(next);
+
+    setStarters(
+      optimized.players
+        .slice(0, 11)
+        .map((player) => player.id),
+    );
+  };
+
+  const toggle = (player: Player) => {
+    setStarters((current) => {
+      if (current.includes(player.id)) {
+        return current.filter((id) => id !== player.id);
+      }
+
+      const samePosition = current.filter(
+        (id) =>
+          team.players.find(
+            (candidate) => candidate.id === id,
+          )?.position === player.position,
+      );
+
+      if (
+        samePosition.length >=
+        formationSlots[formation][player.position]
+      ) {
+        return current
+          .filter((id) => id !== samePosition[0])
+          .concat(player.id);
+      }
+
+      return [...current, player.id];
+    });
+  };
+
+  return (
+    <section>
+      <SectionTitle
+        title="Escalação"
+        text="Selecione exatamente as posições exigidas. Os 11 escolhidos são enviados diretamente para a engine."
+      />
+
+      <div className="formation-row">
+        {formations.map((item) => (
+          <button
+            key={item}
+            className={
+              formation === item
+                ? "chip active"
+                : "chip"
+            }
+            onClick={() => changeFormation(item)}
+          >
+            {item}
+          </button>
+        ))}
+
+        <b className={valid ? "valid" : "invalid"}>
+          {starters.length}/11 titulares
+        </b>
+      </div>
+
+      <div className="lineup-grid">
+        {positions.map((position) => (
+          <div className="panel" key={position}>
+            <h2>
+              {position}
+
+              <small>
+                {positionLabel[position]} ·{" "}
+                {formationSlots[formation][position]}
+              </small>
+            </h2>
+
+            {team.players
+              .filter((player) => player.position === position)
+              .map((player) => (
+                <label
+                  className="lineup-player"
+                  key={player.id}
+                >
+                  <input
+                    type="checkbox"
+                    checked={starters.includes(player.id)}
+                    onChange={() => toggle(player)}
+                  />
+
+                  <span>{player.name}</span>
+
+                  <b>{overall(player)}</b>
+                </label>
+              ))}
+          </div>
+        ))}
+      </div>
+
+      <button
+        className="primary"
+        disabled={!valid}
+        onClick={() =>
+          onSave(
+            applyLineup(
+              team,
+              formation,
+              starters,
+            ),
+          )
+        }
+      >
+        Salvar escalação e banco
+      </button>
+    </section>
+  );
+}
+
+function SeasonDashboard({
+  season,
+  teamById,
+  userTeamId,
+  onStart,
+  onSimulate,
+  onManage,
+  onTable,
+  onOpenMatch,
+}: {
+  season: SeasonState | null;
+  teamById: (id: string) => Team;
+  userTeamId: string;
+  onStart: () => void;
+  onSimulate: () => void;
+  onManage: () => void;
+  onTable: () => void;
+  onOpenMatch: (fixture: Fixture) => void;
+}) {
+  const totalRounds =
+    season?.fixtures.at(-1)?.round ??
+    initialTeams.length * 2 - 2;
+
+  if (!season) {
+    return (
+      <section className="season-hero">
+        <p className="eyebrow">
+          PRONTO PARA A TEMPORADA?
+        </p>
+
+        <h2>
+          Brasileirão Série A · {totalRounds} rodadas
+        </h2>
+
+        <p>
+          Todos contra todos, ida e volta. Sua escalação atual
+          será usada em cada partida.
+        </p>
+
+        <button
+          className="primary"
+          onClick={onStart}
+        >
+          Iniciar campeonato
+        </button>
+      </section>
+    );
+  }
+
+  const next = season.fixtures.filter(
+    (fixture) => fixture.round === season.round,
+  );
+
+  const position =
+    season.standings.findIndex(
+      (row) => row.teamId === userTeamId,
+    ) + 1;
+
+  const champion = getChampion(season);
+
+  if (isSeasonFinished(season)) {
+    return (
+      <SeasonComplete
+        season={season}
+        teamById={teamById}
+        championId={champion!}
+        userTeamId={userTeamId}
+      />
+    );
+  }
+
+  return (
+    <section>
+      <div className="season-hero">
+        <p className="eyebrow">
+          RODADA {season.round} / {totalRounds}
+        </p>
+
+        <h2>Posição atual: {position}º</h2>
+
+        <p>
+          Prepare sua equipe ou simule todos os jogos da rodada.
+        </p>
+
+        <div className="actions">
+          <button
+            className="outline"
+            onClick={onManage}
+          >
+            Gerenciar escalação
+          </button>
+
+          <button
+            className="outline"
+            onClick={onTable}
+          >
+            Ver classificação
+          </button>
+
+          <button
+            className="primary"
+            onClick={onSimulate}
+          >
+            Simular próxima rodada
+          </button>
+        </div>
+      </div>
+
+      <div className="panel">
+        <h2>Próxima rodada</h2>
+
+        {next.map((fixture) => (
+          <FixtureRow
+            key={fixture.id}
+            fixture={fixture}
+            teamById={teamById}
+            onClick={() => onOpenMatch(fixture)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LeagueTable({
+  season,
+  teamById,
+}: {
+  season: SeasonState;
+  teamById: (id: string) => Team;
+}) {
+  return (
+    <section>
+      <SectionTitle
+        title="Classificação"
+        text="Pontos, saldo de gols, gols marcados e vitórias decidem os empates."
+      />
+
+      <div className="panel table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>TIME</th>
+              <th>PTS</th>
+              <th>PJ</th>
+              <th>V</th>
+              <th>E</th>
+              <th>D</th>
+              <th>GF</th>
+              <th>GA</th>
+              <th>SG</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {season.standings.map((row, index) => {
+              const team = teamById(row.teamId);
+
+              return (
+                <tr
+                  className={
+                    row.teamId === season.userTeamId
+                      ? "user-row"
+                      : ""
+                  }
+                  key={row.teamId}
+                >
+                  <td>{index + 1}</td>
+
+                  <td>
+                    <Badge name={team.name} url={team.logoUrl} />
+                    {team.name}
+                  </td>
+
+                  <td>
+                    <b>{row.points}</b>
+                  </td>
+
+                  <td>{row.played}</td>
+                  <td>{row.wins}</td>
+                  <td>{row.draws}</td>
+                  <td>{row.losses}</td>
+                  <td>{row.goalsFor}</td>
+                  <td>{row.goalsAgainst}</td>
+
+                  <td>
+                    {row.goalDifference > 0
+                      ? `+${row.goalDifference}`
+                      : row.goalDifference}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function MatchHistory({
+  fixtures,
+  teamById,
+  selected,
+  onSelect,
+}: {
+  fixtures: Fixture[];
+  teamById: (id: string) => Team;
+  selected: Fixture | null;
+  onSelect: (fixture: Fixture) => void;
+}) {
+  return (
+    <section>
+      <SectionTitle
+        title="Partidas"
+        text="Abra qualquer resultado já disputado para ver eventos, estatísticas e notas."
+      />
+
+      <div className="history-layout">
+        <div className="panel">
+          {fixtures.length ? (
+            fixtures
+              .slice()
+              .reverse()
+              .map((fixture) => (
+                <FixtureRow
+                  key={fixture.id}
+                  fixture={fixture}
+                  teamById={teamById}
+                  onClick={() => onSelect(fixture)}
+                />
+              ))
+          ) : (
+            <p className="muted">
+              Ainda não há partidas disputadas.
+            </p>
+          )}
+        </div>
+
+        {selected?.result && (
+          <MatchResultView
+            fixture={selected}
+            result={selected.result}
+            teamById={teamById}
+          />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function FixtureRow({
+  fixture,
+  teamById,
+  onClick,
+}: {
+  fixture: Fixture;
+  teamById: (id: string) => Team;
+  onClick: () => void;
+}) {
+  const result = fixture.result;
+
+  return (
+    <button
+      className="fixture"
+      onClick={onClick}
+    >
+      <small>RODADA {fixture.round}</small>
+
+      <span>
+        {teamById(fixture.homeTeamId).name}
+      </span>
+
+      <b>
+        {result
+          ? `${result.score.home} - ${result.score.away}`
+          : "vs"}
+      </b>
+
+      <span>
+        {teamById(fixture.awayTeamId).name}
+      </span>
+    </button>
+  );
+}
+
+function MatchResultView({
+  fixture,
+  result,
+  teamById,
+}: {
+  fixture: Fixture;
+  result: MatchResult;
+  teamById: (id: string) => Team;
+}) {
+  const playerName = (id: string) => {
+    const players = [
+      ...teamById(fixture.homeTeamId).players,
+      ...teamById(fixture.awayTeamId).players,
+    ];
+
+    return (
+      players.find((player) => player.id === id)?.name ??
+      id
+    );
+  };
+
+  return (
+    <article className="result-view">
+      <div className="score-card">
+        <small>
+          FINALIZADO · RODADA {fixture.round}
+        </small>
+
+        <h2>
+          {teamById(fixture.homeTeamId).name}
+
+          <b>
+            {result.score.home} - {result.score.away}
+          </b>
+
+          {teamById(fixture.awayTeamId).name}
+        </h2>
+      </div>
+
+      <h3>Estatísticas</h3>
+
+      {(
+        [
+          ["Posse", "possession"],
+          ["Finalizações", "shots"],
+          ["No alvo", "shotsOnTarget"],
+          ["Escanteios", "corners"],
+          ["Cartões amarelos", "yellowCards"],
+        ] as const
+      ).map(([label, key]) => (
+        <div className="stat" key={key}>
+          <b>{result.statistics[key].home}</b>
+
+          <span>{label}</span>
+
+          <b>{result.statistics[key].away}</b>
+        </div>
+      ))}
+
+      <h3>Eventos</h3>
+
+      <div className="timeline">
+        {result.events.map((event, index) => (
+          <p key={index}>
+            <b>{event.minute}'</b>{" "}
+            {eventLabel(event, playerName)}
+          </p>
+        ))}
+      </div>
+
+      <h3>Notas dos jogadores</h3>
+
+      <div className="ratings">
+        {[
+          ...result.finalState.homeTeam.players,
+          ...result.finalState.awayTeam.players,
+        ]
+          .filter(
+            (player) => player.minutesPlayed > 0,
+          )
+          .sort(
+            (a, b) => b.rating - a.rating,
+          )
+          .map((player) => (
+            <span key={player.playerId}>
+              {playerName(player.playerId)}{" "}
+              <b>{player.rating}</b>
+
+              {player.goals ? " ⚽" : ""}
+            </span>
+          ))}
+      </div>
+    </article>
+  );
+}
+
+function SeasonComplete({
+  season,
+  teamById,
+  championId,
+  userTeamId,
+}: {
+  season: SeasonState;
+  teamById: (id: string) => Team;
+  championId: string;
+  userTeamId: string;
+}) {
+  const names = new Map(
+    season.teams.flatMap((team) =>
+      team.players.map((player) => [
+        player.id,
+        player.name,
+      ]),
+    ),
+  );
+
+  const scorers = season.playerStats
+    .filter((stat) => stat.goals > 0)
+    .sort(
+      (a, b) =>
+        b.goals - a.goals ||
+        b.shots - a.shots,
+    )
+    .slice(0, 5);
+
+  const bestPlayer = season.playerStats
+    .filter((stat) => stat.ratings > 0)
+    .sort(
+      (a, b) =>
+        b.ratingTotal / b.ratings -
+        a.ratingTotal / a.ratings,
+    )[0];
+
+  const userPosition =
+    season.standings.findIndex(
+      (row) => row.teamId === userTeamId,
+    ) + 1;
+
+  return (
+    <section className="season-complete">
+      <p className="eyebrow">
+        TEMPORADA ENCERRADA
+      </p>
+
+      <div className="trophy">🏆</div>
+
+      <h2>{teamById(championId).name}</h2>
+
+      <p>
+        Campeão nacional.{" "}
+        {championId === userTeamId
+          ? "Você conquistou o título!"
+          : `Seu clube terminou em ${userPosition}º lugar.`}
+      </p>
+
+      <div className="panel">
+        <h3>Artilheiros</h3>
+
+        {scorers.map((stat, index) => (
+          <p key={stat.playerId}>
+            {index + 1}. {names.get(stat.playerId)}{" "}
+            <b>{stat.goals} gols</b>
+          </p>
+        ))}
+      </div>
+
+      {bestPlayer && (
+        <div className="panel">
+          <h3>Melhor jogador</h3>
+
+          <p>
+            {names.get(bestPlayer.playerId)}{" "}
+            <b>
+              {(
+                bestPlayer.ratingTotal /
+                bestPlayer.ratings
+              ).toFixed(1)}
+            </b>{" "}
+            de nota média em{" "}
+            {bestPlayer.appearances} partidas.
+          </p>
+        </div>
+      )}
+
+      <LeagueTable
+        season={season}
+        teamById={teamById}
+      />
+    </section>
+  );
+}
+
+function PlayerTable({
+  players,
+}: {
+  players: Player[];
+}) {
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>JOGADOR</th>
+            <th>POS.</th>
+            <th>MENTAL</th>
+            <th>FÍSICO</th>
+            <th>TÉCNICO</th>
+            <th>OVR</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {players.map((player) => (
+            <tr key={player.id}>
+              <td>{player.name}</td>
+
+              <td>
+                <span className="position">
+                  {player.position}
+                </span>
+              </td>
+
+              <td>{player.attributes.mental}</td>
+              <td>{player.attributes.physical}</td>
+              <td>{player.attributes.technical}</td>
+
+              <td>
+                <b>{overall(player)}</b>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SectionTitle({
+  title,
+  text,
+}: {
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="section-title">
+      <h2>{title}</h2>
+      <p>{text}</p>
+    </div>
+  );
+}
+
+function Badge({
+  name,
+  url,
+}: {
+  name: string,
+  url: string | null;
+}) {
+  if (url) {
+    return (
+      <i className="badge">
+        <img src={url} alt="" />
+      </i>
+    )
+  }
+  return (
+    <i className="badge">
+      {name
+        .split(" ")
+        .map((word) => word[0])
+        .join("")
+        .slice(0, 2)}
+    </i>
+  );
+}
+
+function eventLabel(
+  event: MatchEvent,
+  name: (id: string) => string,
+) {
+  if (event.type === "SHOT") {
+    return `${
+      event.outcome === "GOAL"
+        ? "⚽ Gol —"
+        : "Finalização"
+    } ${name(event.playerId)} · ${event.outcome}`;
+  }
+
+  if (event.type === "YELLOW_CARD") {
+    return `🟨 ${name(event.playerId)}`;
+  }
+
+  if (event.type === "SUBSTITUTION") {
+    return `🔄 ${name(event.playerInId)} entra no lugar de ${name(event.playerOutId)}`;
+  }
+
+  if (event.type === "HALF_TIME") {
+    return "Intervalo";
+  }
+
+  if (event.type === "MATCH_FINISHED") {
+    return "Fim de jogo";
+  }
+
+  return "Início de jogo";
+}
+
+function navLabel(page: Page) {
+  return {
+    squad: "Elenco",
+    lineup: "Escalação",
+    season: "Temporada",
+    league: "Classificação",
+    matches: "Partidas",
+  }[page];
+}
+
+function pageTitle(page: Page) {
+  return {
+    squad: "Meu elenco",
+    lineup: "Definir escalação",
+    season: "Centro da temporada",
+    league: "Tabela da liga",
+    matches: "Histórico de partidas",
+  }[page];
+}
