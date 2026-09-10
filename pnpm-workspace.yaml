@@ -1,6 +1,0 @@
-packages:
-  - engine
-  - web
-  - scraper
-allowBuilds:
-  esbuild: set this to true or false
