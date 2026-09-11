@@ -4,6 +4,7 @@ import { PlayerDetails } from "@/components/squad/PlayerDetails";
 import { SquadTable, type SortKey } from "@/components/squad/SquadTable";
 import { useGame } from "@/context/GameContext";
 import { getTeamById } from "@/domain/team/teams";
+import type { Athlete } from "@/domain/team/teams";
 import { getPositionOverall } from "@/domain/tactic/playerOverall";
 
 const POSITION_FILTERS = [
@@ -16,15 +17,15 @@ const POSITION_FILTERS = [
 
 type PositionFilter = (typeof POSITION_FILTERS)[number]["value"];
 
-function getSquadAverageOverall(positionPlayers: { position: string }[], playersById: Map<string, Parameters<typeof getPositionOverall>[0]>) {
-  if (positionPlayers.length === 0) return 0;
+function getSquadAverageOverall(players: Athlete[]) {
+  if (players.length === 0) return 0;
 
-  const total = positionPlayers.reduce((sum, player) => {
-    const fullPlayer = playersById.get((player as { id: string }).id);
-    return sum + (fullPlayer ? getPositionOverall(fullPlayer, fullPlayer.position) : 0);
-  }, 0);
+  const total = players.reduce(
+    (sum, player) => sum + getPositionOverall(player, player.position),
+    0,
+  );
 
-  return Math.round(total / positionPlayers.length);
+  return Math.round(total / players.length);
 }
 
 export function SquadPage() {
@@ -48,8 +49,8 @@ export function SquadPage() {
   const selectedPlayer = selectedPlayerId ? playersById.get(selectedPlayerId) : undefined;
 
   const averageOverall = useMemo(
-    () => getSquadAverageOverall(filteredPlayers, playersById),
-    [filteredPlayers, playersById],
+    () => getSquadAverageOverall(filteredPlayers),
+    [filteredPlayers],
   );
 
   const counts = useMemo(() => {
@@ -73,19 +74,17 @@ export function SquadPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Elenco
-          </p>
-          <div className="mt-1 flex items-center gap-3">
-            <img src={team.logoUrl} alt="" className="h-10 w-10 object-contain" />
-            <h1 className="text-3xl font-bold">{team.name}</h1>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Consulte os jogadores do clube e suas informações principais.
-          </p>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          Elenco
+        </p>
+        <div className="mt-1 flex items-center gap-3">
+          <img src={team.logoUrl} alt="" className="h-10 w-10 object-contain" />
+          <h1 className="text-3xl font-bold">{team.name}</h1>
         </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Consulte os jogadores do clube e suas informações principais.
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
