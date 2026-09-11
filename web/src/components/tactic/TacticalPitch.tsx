@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import type { DragEvent } from "react";
 import type { Athlete } from "@/domain/team/teams";
 import type { TacticalPosition } from "@/context/GameState";
 import { TacticalPlayer } from "./TacticalPlayer";
@@ -9,7 +10,7 @@ export function TacticalPitch({ positions, playersById, selectedPlayerId, onSele
   const pitchRef = useRef<HTMLDivElement>(null);
   const [draggingPlayerId, setDraggingPlayerId] = useState<string | null>(null);
 
-  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     if (!draggingPlayerId || !pitchRef.current) return;
     const rect = pitchRef.current.getBoundingClientRect();
