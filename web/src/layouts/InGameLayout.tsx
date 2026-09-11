@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useGame } from "@/context/GameContext";
+import { getTeamById } from "@/domain/team/teams";
 
 const navigation = [
   {
@@ -33,6 +35,13 @@ export function InGameLayout() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { gameState } = useGame();
+  const teamId = gameState.player.teamId;
+
+  const team = teamId ? getTeamById(teamId) : undefined;  
+  if (!team) {
+    return null;
+  }
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -151,19 +160,21 @@ export function InGameLayout() {
               Seu clube
             </span>
 
-            <div className="mt-2 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background">
-                ⚽
-              </div>
+            <div className="flex items-center gap-3">
+              <img
+                src={team.logoUrl}
+                alt={team.name}
+                className="h-10 w-10 object-contain"
+              />
 
-              <div>
-                <strong className="block text-sm">
-                  Palmeiras
-                </strong>
+              <div className="min-w-0">
+                <p className="truncate font-semibold">
+                  {team.name}
+                </p>
 
-                <span className="text-xs text-muted-foreground">
-                  Brasileirão 2026
-                </span>
+                <p className="text-xs text-muted-foreground">
+                  Brasileirão Série A
+                </p>
               </div>
             </div>
           </div>

@@ -1,21 +1,100 @@
-import { createContext, useContext, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  INITIAL_GAME_STATE,
+  type GameState,
+} from "./GameState";
+
 type GameContextData = {
-  teamId: string | null;
-  setTeamId: (teamId: string) => void;
+  gameState: GameState;
+  setTeam: (teamId: string) => void;
+  setFormation: (formation: GameState["tactic"]["formation"]) => void;
+  setSquad: (starters: string[], bench: string[]) => void;
+  startGame: () => void;
+  resetGame: () => void;
 };
+
 const GameContext = createContext<GameContextData | null>(null);
-export function GameProvider({ children }: { children: React.ReactNode }) {
-  const [teamId, setTeamId] = useState<string | null>(null);
+
+export function GameProvider({ children }: { children: ReactNode }) {
+  const [gameState, setGameState] = useState<GameState>(
+    INITIAL_GAME_STATE,
+  );
+
+  function setTeam(teamId: string) {
+    setGameState((current) => ({
+      ...current,
+      player: {
+        ...current.player,
+        teamId,
+      },
+      status: "playing",
+    }));
+  }
+
+  function setFormation(
+    formation: GameState["tactic"]["formation"],
+  ) {
+    setGameState((current) => ({
+      ...current,
+      tactic: {
+        ...current.tactic,
+        formation,
+      },
+    }));
+  }
+
+  function setSquad(
+    starters: string[],
+    bench: string[],
+  ) {
+    setGameState((current) => ({
+      ...current,
+      squad: {
+        starters,
+        bench,
+      },
+    }));
+  }
+
+  function startGame() {
+    setGameState((current) => ({
+      ...current,
+      status: "playing",
+    }));
+  }
+
+  function resetGame() {
+    setGameState(INITIAL_GAME_STATE);
+  }
+
   return (
-    <GameContext.Provider value={{ teamId, setTeamId }}>
+    <GameContext.Provider
+      value={{
+        gameState,
+        setTeam,
+        setFormation,
+        setSquad,
+        startGame,
+        resetGame,
+      }}
+    >
       {children}
     </GameContext.Provider>
   );
 }
+
 export function useGame() {
   const context = useContext(GameContext);
   if (!context) {
-    throw new Error("useGame must be used inside GameProvider");
+    throw new Error(
+      "useGame must be used inside GameProvider",
+    );
   }
   return context;
 }

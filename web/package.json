@@ -34,9 +34,7 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
-    "autoprefixer": "latest",
-    "postcss": "latest",
-    "tailwindcss": "^3.4.19",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.20.0",
     "typescript": "latest",
     "vite": "latest"

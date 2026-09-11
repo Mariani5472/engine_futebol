@@ -22,11 +22,11 @@ export function RouteLoadingFallback() {
 export function AppRoutes() {
   return (
     <BrowserRouter>
-      <Suspense>
+      <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route path="/" element={<StartPage />} />
+          <Route path="/game" element={<TeamSelectionPage />} />
           <Route path="/game" element={<InGameLayout/>}>
-            <Route index={true} element={<TeamSelectionPage />}/>
             <Route path="season" element={<SeasonPage  />}/>
             <Route path="squad" element={<SquadPage  />}/>
             <Route path="tactic" element={<TacticPage  />}/>
