@@ -10,6 +10,7 @@ import {
   type GameState,
   type TacticalPosition,
 } from "./GameState";
+import { createFormationPositions } from "@/domain/tactic/formations";
 
 type GameContextData = {
   gameState: GameState;
@@ -24,29 +25,22 @@ type GameContextData = {
 const GameContext = createContext<GameContextData | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [gameState, setGameState] = useState<GameState>(
-    INITIAL_GAME_STATE,
-  );
+  const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
 
   function setTeam(teamId: string) {
     setGameState((current) => ({
       ...current,
-      player: {
-        ...current.player,
-        teamId,
-      },
+      player: { ...current.player, teamId },
       status: "playing",
     }));
   }
 
-  function setFormation(
-    formation: GameState["tactic"]["formation"],
-  ) {
+  function setFormation(formation: GameState["tactic"]["formation"]) {
     setGameState((current) => ({
       ...current,
       tactic: {
-        ...current.tactic,
         formation,
+        positions: createFormationPositions(formation, current.squad.starters),
       },
     }));
   }
@@ -54,28 +48,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
   function setTacticalPositions(positions: TacticalPosition[]) {
     setGameState((current) => ({
       ...current,
-      tactic: {
-        ...current.tactic,
-        positions,
-      },
+      tactic: { ...current.tactic, positions },
     }));
   }
 
   function setSquad(starters: string[], bench: string[]) {
     setGameState((current) => ({
       ...current,
-      squad: {
-        starters,
-        bench,
-      },
+      squad: { starters, bench },
     }));
   }
 
   function startGame() {
-    setGameState((current) => ({
-      ...current,
-      status: "playing",
-    }));
+    setGameState((current) => ({ ...current, status: "playing" }));
   }
 
   function resetGame() {
@@ -84,15 +69,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   return (
     <GameContext.Provider
-      value={{
-        gameState,
-        setTeam,
-        setFormation,
-        setTacticalPositions,
-        setSquad,
-        startGame,
-        resetGame,
-      }}
+      value={{ gameState, setTeam, setFormation, setTacticalPositions, setSquad, startGame, resetGame }}
     >
       {children}
     </GameContext.Provider>
@@ -101,9 +78,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
 export function useGame() {
   const context = useContext(GameContext);
-  if (!context) {
-    throw new Error("useGame must be used inside GameProvider");
-  }
-
+  if (!context) throw new Error("useGame must be used inside GameProvider");
   return context;
 }
