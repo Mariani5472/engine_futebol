@@ -16,7 +16,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "paths": {
-      "@match-engine/core": ["../engine/src/index.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src", "vite.config.ts"]

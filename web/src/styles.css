@@ -1,24 +1,88 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Manrope:wght@400;500;700;800&display=swap');
-*{box-sizing:border-box}body{margin:0;background:#101716;color:#edf4f0;font:14px Manrope,Arial,sans-serif}button{font:inherit;cursor:pointer}.app-shell{min-height:100vh;display:grid;grid-template-columns:235px 1fr}.sidebar{background:#0a100f;padding:28px 16px;border-right:1px solid #283531;display:flex;flex-direction:column}.brand{display:flex;gap:10px;align-items:center;margin:0 10px 42px}.brand span{font-size:27px}.brand b{display:block;font-size:17px;letter-spacing:2px}.brand small,.club-mini small,.fixture small{display:block;color:#8a9a94;font:10px 'DM Mono';letter-spacing:1px}.sidebar nav{display:grid;gap:5px}.sidebar nav button{background:transparent;border:0;color:#b9c7c1;text-align:left;padding:12px 14px;border-radius:8px;font-weight:700}.sidebar nav button:hover,.sidebar .nav-active{background:#193c32;color:#9cf0c6}.club-mini{margin-top:auto;padding:16px 12px;background:#14201d;border-radius:10px}.club-mini b{display:block;margin:7px 0}.club-mini span{color:#9cf0c6;font:12px 'DM Mono'}main{max-width:1250px;width:100%;margin:auto;padding:38px 48px 60px}.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px}.topbar h1{font-size:30px;margin:4px 0}.eyebrow{color:#72d8a4;font:11px 'DM Mono';letter-spacing:2px;margin:0}.outline,.primary,.chip{border-radius:7px;padding:10px 14px;font-weight:800;border:1px solid #39574b;background:transparent;color:#dceae4}.primary{border-color:#70dba7;background:#70dba7;color:#092117}.primary:disabled{opacity:.4}.panel,.season-hero{background:#18221f;border:1px solid #2a3b35;border-radius:12px;padding:22px;margin:16px 0}.panel h2{font-size:16px;margin:0 0 15px}.panel h2 small{font-size:11px;color:#91a19a;font-weight:500}.welcome{max-width:980px;margin:7vh auto}.welcome h1{font-size:40px;max-width:590px;margin:12px 0}.muted,.section-title p,.season-hero p{color:#a4b3ad;line-height:1.6}.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:35px}.team-card{border:1px solid #2b4239;text-align:left;padding:18px;background:#18221f;color:#eef5f1;border-radius:10px;display:grid;gap:9px}.team-card:hover{border-color:#70dba7;transform:translateY(-2px)}.team-card span{color:#a8b6b0;font-size:12px}.team-card em{color:#78dca8;font-style:normal;font-weight:700;margin-top:8px}.badge{font-style:normal;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#2c6954;color:#bcffdc;font:11px 'DM Mono';margin-right:9px}.section-title{margin-bottom:24px}.section-title h2{font-size:26px;margin:0 0 5px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:580px}th{font:10px 'DM Mono';letter-spacing:1px;color:#91a19a;text-align:left;padding:10px;border-bottom:1px solid #34443e}td{padding:11px 10px;border-bottom:1px solid #25342f}td .badge{vertical-align:middle}.user-row{background:#1c4034}.position{font:11px 'DM Mono';color:#88e6b3}.formation-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}.chip.active{background:#2a614d;border-color:#72d8a4}.valid{color:#80e4ad;margin-left:auto}.invalid{color:#ff9b83;margin-left:auto}.lineup-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 16px}.lineup-player{display:flex;align-items:center;gap:9px;border-top:1px solid #2b3a34;padding:9px 0}.lineup-player span{flex:1}.lineup-player b{color:#79dba6}.season-hero{padding:34px;background:linear-gradient(135deg,#193d31,#16231f)}.season-hero h2{font-size:30px;margin:9px 0}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.fixture{border:0;border-bottom:1px solid #2a3a34;background:transparent;color:#e7f0eb;width:100%;display:grid;grid-template-columns:85px 1fr 55px 1fr;gap:10px;align-items:center;text-align:left;padding:14px 4px}.fixture small{grid-row:1/3}.fixture b{text-align:center}.history-layout{display:grid;grid-template-columns:minmax(330px,.8fr) minmax(410px,1.2fr);gap:18px}.result-view{background:#18221f;border:1px solid #2a3b35;padding:22px;border-radius:12px}.score-card{text-align:center;border-bottom:1px solid #34453e;padding:12px}.score-card h2{font-size:17px}.score-card h2 b{display:block;font-size:36px;margin:8px;color:#8befb7}.result-view h3{margin-top:22px}.stat{display:grid;grid-template-columns:35px 1fr 35px;gap:10px;text-align:center;align-items:center;margin:8px 0}.stat span{font-size:12px;color:#a6b4ae;background:#21332c;padding:6px;border-radius:4px}.timeline{border-left:2px solid #4c906f;padding-left:12px}.timeline p{margin:9px 0}.timeline b{color:#8befb7}.ratings{display:grid;gap:7px}.ratings span{display:flex;justify-content:space-between;border-bottom:1px solid #293a33;padding-bottom:5px}.season-complete{max-width:760px;margin:auto;text-align:center}.season-complete .panel{text-align:left}.trophy{font-size:70px}.season-complete h2{font-size:38px;margin:0}.season-complete>p{color:#aab9b3}.season-complete .table-wrap{text-align:left}.season-complete table{margin-top:25px}@media(max-width:760px){.app-shell{display:block}.sidebar{padding:12px;position:sticky;top:0;z-index:2;display:flex;flex-direction:row;align-items:center;gap:12px}.brand{margin:0}.brand small,.sidebar .club-mini{display:none}.sidebar nav{display:flex;overflow-x:auto}.sidebar nav button{white-space:nowrap;padding:8px}main{padding:24px 16px}.topbar h1{font-size:23px}.team-grid{grid-template-columns:repeat(2,1fr)}.welcome{margin:15px 0}.welcome h1{font-size:30px}.lineup-grid,.history-layout{grid-template-columns:1fr}.fixture{grid-template-columns:65px 1fr 45px 1fr;font-size:12px}.topbar .outline{font-size:11px}.season-hero h2{font-size:24px}}
-.badge {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/noto-sans";
+@import "@fontsource-variable/playfair-display";
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  overflow: hidden;
-}
-
-.badge img {
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-
-  object-fit: contain;
-  display: block;
+@layer base {
+  :root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.147 0.004 49.3);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.147 0.004 49.3);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.147 0.004 49.3);
+    --primary: oklch(0.214 0.009 43.1);
+    --primary-foreground: oklch(0.986 0.002 67.8);
+    --secondary: oklch(0.96 0.002 17.2);
+    --secondary-foreground: oklch(0.214 0.009 43.1);
+    --muted: oklch(0.96 0.002 17.2);
+    --muted-foreground: oklch(0.547 0.021 43.1);
+    --accent: oklch(0.96 0.002 17.2);
+    --accent-foreground: oklch(0.214 0.009 43.1);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0.005 34.3);
+    --input: oklch(0.922 0.005 34.3);
+    --ring: oklch(0.714 0.014 41.2);
+    --chart-1: oklch(0.868 0.007 39.5);
+    --chart-2: oklch(0.547 0.021 43.1);
+    --chart-3: oklch(0.438 0.017 39.3);
+    --chart-4: oklch(0.367 0.016 35.7);
+    --chart-5: oklch(0.268 0.011 36.5);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.986 0.002 67.8);
+    --sidebar-foreground: oklch(0.147 0.004 49.3);
+    --sidebar-primary: oklch(0.214 0.009 43.1);
+    --sidebar-primary-foreground: oklch(0.986 0.002 67.8);
+    --sidebar-accent: oklch(0.96 0.002 17.2);
+    --sidebar-accent-foreground: oklch(0.214 0.009 43.1);
+    --sidebar-border: oklch(0.922 0.005 34.3);
+    --sidebar-ring: oklch(0.714 0.014 41.2)
+  }
+  .dark {
+    --background: oklch(0.147 0.004 49.3);
+    --foreground: oklch(0.986 0.002 67.8);
+    --card: oklch(0.214 0.009 43.1);
+    --card-foreground: oklch(0.986 0.002 67.8);
+    --popover: oklch(0.214 0.009 43.1);
+    --popover-foreground: oklch(0.986 0.002 67.8);
+    --primary: oklch(0.922 0.005 34.3);
+    --primary-foreground: oklch(0.214 0.009 43.1);
+    --secondary: oklch(0.268 0.011 36.5);
+    --secondary-foreground: oklch(0.986 0.002 67.8);
+    --muted: oklch(0.268 0.011 36.5);
+    --muted-foreground: oklch(0.714 0.014 41.2);
+    --accent: oklch(0.268 0.011 36.5);
+    --accent-foreground: oklch(0.986 0.002 67.8);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.547 0.021 43.1);
+    --chart-1: oklch(0.868 0.007 39.5);
+    --chart-2: oklch(0.547 0.021 43.1);
+    --chart-3: oklch(0.438 0.017 39.3);
+    --chart-4: oklch(0.367 0.016 35.7);
+    --chart-5: oklch(0.268 0.011 36.5);
+    --sidebar: oklch(0.214 0.009 43.1);
+    --sidebar-foreground: oklch(0.986 0.002 67.8);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.986 0.002 67.8);
+    --sidebar-accent: oklch(0.268 0.011 36.5);
+    --sidebar-accent-foreground: oklch(0.986 0.002 67.8);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.547 0.021 43.1)
+  }
+  .theme {
+    --font-sans: 'Noto Sans Variable', sans-serif;
+    --font-heading: 'Playfair Display Variable', serif
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }
