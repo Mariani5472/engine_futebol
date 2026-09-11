@@ -39,9 +39,6 @@ export function InGameLayout() {
   const teamId = gameState.player.teamId;
 
   const team = teamId ? getTeamById(teamId) : undefined;  
-  if (!team) {
-    return null;
-  }
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -67,6 +64,10 @@ export function InGameLayout() {
     navigate(path);
     setIsSidebarOpen(false);
   };
+  
+    if (!team) {
+      return null;
+    }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-muted/20 text-foreground">
