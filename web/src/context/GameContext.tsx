@@ -28,11 +28,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
 
   function setTeam(teamId: string) {
-    setGameState((current) => ({
-      ...current,
-      player: { ...current.player, teamId },
-      status: "playing",
-    }));
+    setGameState((current) => ({ ...current, player: { ...current.player, teamId }, status: "playing" }));
   }
 
   function setFormation(formation: GameState["tactic"]["formation"]) {
@@ -46,16 +42,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
 
   function setTacticalPositions(positions: TacticalPosition[]) {
-    setGameState((current) => ({
-      ...current,
-      tactic: { ...current.tactic, positions },
-    }));
+    setGameState((current) => ({ ...current, tactic: { ...current.tactic, positions } }));
   }
 
   function setSquad(starters: string[], bench: string[]) {
     setGameState((current) => ({
       ...current,
       squad: { starters, bench },
+      tactic: {
+        ...current.tactic,
+        positions:
+          current.tactic.positions.length === 0 && starters.length === 11
+            ? createFormationPositions(current.tactic.formation, starters)
+            : current.tactic.positions,
+      },
     }));
   }
 
@@ -68,9 +68,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <GameContext.Provider
-      value={{ gameState, setTeam, setFormation, setTacticalPositions, setSquad, startGame, resetGame }}
-    >
+    <GameContext.Provider value={{ gameState, setTeam, setFormation, setTacticalPositions, setSquad, startGame, resetGame }}>
       {children}
     </GameContext.Provider>
   );
