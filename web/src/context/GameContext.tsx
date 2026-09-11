@@ -8,12 +8,15 @@ import {
 import {
   INITIAL_GAME_STATE,
   type GameState,
+  type TacticalPosition,
 } from "./GameState";
+import { createFormationPositions } from "@/domain/tactic/formations";
 
 type GameContextData = {
   gameState: GameState;
   setTeam: (teamId: string) => void;
   setFormation: (formation: GameState["tactic"]["formation"]) => void;
+  setTacticalPositions: (positions: TacticalPosition[]) => void;
   setSquad: (starters: string[], bench: string[]) => void;
   startGame: () => void;
   resetGame: () => void;
@@ -22,51 +25,42 @@ type GameContextData = {
 const GameContext = createContext<GameContextData | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [gameState, setGameState] = useState<GameState>(
-    INITIAL_GAME_STATE,
-  );
+  const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
 
   function setTeam(teamId: string) {
-    setGameState((current) => ({
-      ...current,
-      player: {
-        ...current.player,
-        teamId,
-      },
-      status: "playing",
-    }));
+    setGameState((current) => ({ ...current, player: { ...current.player, teamId }, status: "playing" }));
   }
 
-  function setFormation(
-    formation: GameState["tactic"]["formation"],
-  ) {
+  function setFormation(formation: GameState["tactic"]["formation"]) {
     setGameState((current) => ({
       ...current,
       tactic: {
-        ...current.tactic,
         formation,
+        positions: createFormationPositions(formation, current.squad.starters),
       },
     }));
   }
 
-  function setSquad(
-    starters: string[],
-    bench: string[],
-  ) {
+  function setTacticalPositions(positions: TacticalPosition[]) {
+    setGameState((current) => ({ ...current, tactic: { ...current.tactic, positions } }));
+  }
+
+  function setSquad(starters: string[], bench: string[]) {
     setGameState((current) => ({
       ...current,
-      squad: {
-        starters,
-        bench,
+      squad: { starters, bench },
+      tactic: {
+        ...current.tactic,
+        positions:
+          current.tactic.positions.length === 0 && starters.length === 11
+            ? createFormationPositions(current.tactic.formation, starters)
+            : current.tactic.positions,
       },
     }));
   }
 
   function startGame() {
-    setGameState((current) => ({
-      ...current,
-      status: "playing",
-    }));
+    setGameState((current) => ({ ...current, status: "playing" }));
   }
 
   function resetGame() {
@@ -74,16 +68,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <GameContext.Provider
-      value={{
-        gameState,
-        setTeam,
-        setFormation,
-        setSquad,
-        startGame,
-        resetGame,
-      }}
-    >
+    <GameContext.Provider value={{ gameState, setTeam, setFormation, setTacticalPositions, setSquad, startGame, resetGame }}>
       {children}
     </GameContext.Provider>
   );
@@ -91,10 +76,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
 export function useGame() {
   const context = useContext(GameContext);
-  if (!context) {
-    throw new Error(
-      "useGame must be used inside GameProvider",
-    );
-  }
+  if (!context) throw new Error("useGame must be used inside GameProvider");
   return context;
 }

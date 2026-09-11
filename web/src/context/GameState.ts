@@ -12,6 +12,12 @@ export type Formation =
   | "3-4-3"
   | "5-3-2";
 
+export type TacticalPosition = {
+  playerId: string;
+  x: number;
+  y: number;
+};
+
 export type GameState = {
   saveVersion: number;
 
@@ -33,6 +39,7 @@ export type GameState = {
 
   tactic: {
     formation: Formation;
+    positions: TacticalPosition[];
   };
 
   match: {
@@ -65,6 +72,7 @@ export const INITIAL_GAME_STATE: GameState = {
 
   tactic: {
     formation: "4-3-3",
+    positions: [],
   },
 
   match: {
