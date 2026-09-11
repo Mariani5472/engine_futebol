@@ -8,12 +8,14 @@ import {
 import {
   INITIAL_GAME_STATE,
   type GameState,
+  type TacticalPosition,
 } from "./GameState";
 
 type GameContextData = {
   gameState: GameState;
   setTeam: (teamId: string) => void;
   setFormation: (formation: GameState["tactic"]["formation"]) => void;
+  setTacticalPositions: (positions: TacticalPosition[]) => void;
   setSquad: (starters: string[], bench: string[]) => void;
   startGame: () => void;
   resetGame: () => void;
@@ -49,10 +51,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }));
   }
 
-  function setSquad(
-    starters: string[],
-    bench: string[],
-  ) {
+  function setTacticalPositions(positions: TacticalPosition[]) {
+    setGameState((current) => ({
+      ...current,
+      tactic: {
+        ...current.tactic,
+        positions,
+      },
+    }));
+  }
+
+  function setSquad(starters: string[], bench: string[]) {
     setGameState((current) => ({
       ...current,
       squad: {
@@ -79,6 +88,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         gameState,
         setTeam,
         setFormation,
+        setTacticalPositions,
         setSquad,
         startGame,
         resetGame,
@@ -92,9 +102,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 export function useGame() {
   const context = useContext(GameContext);
   if (!context) {
-    throw new Error(
-      "useGame must be used inside GameProvider",
-    );
+    throw new Error("useGame must be used inside GameProvider");
   }
+
   return context;
 }
