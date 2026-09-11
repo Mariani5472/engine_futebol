@@ -7,6 +7,7 @@ import { TacticalPitch } from "@/components/tactic/TacticalPitch";
 import { useGame } from "@/context/GameContext";
 import type { Formation } from "@/context/GameState";
 import { getTeamById } from "@/domain/team/teams";
+import type { Athlete } from "@/domain/team/teams";
 import { getPlayerPositionLabel, getPositionOverall } from "@/domain/tactic/playerOverall";
 import { buildInitialSquad } from "@/domain/tactic/squad";
 
@@ -21,8 +22,13 @@ export function TacticPage() {
 
   const team = gameState.player.teamId ? getTeamById(gameState.player.teamId) : undefined;
   const playersById = useMemo(() => new Map((team?.athletes ?? []).map((player) => [player.id, player])), [team]);
-  const starters = gameState.squad.starters.map((id) => playersById.get(id)).filter(Boolean);
-  const bench = gameState.squad.bench.map((id) => playersById.get(id)).filter(Boolean);
+  const starters = gameState.squad.starters
+    .map((id) => playersById.get(id))
+    .filter((player): player is Athlete => Boolean(player));
+
+  const bench = gameState.squad.bench
+    .map((id) => playersById.get(id))
+    .filter((player): player is Athlete => Boolean(player));
   const selectedPlayer = selectedPlayerId ? playersById.get(selectedPlayerId) : undefined;
 
   useEffect(() => {
@@ -109,7 +115,7 @@ export function TacticPage() {
             {selectedPlayer ? (
               <div className="mt-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  {selectedPlayer.photoUrl ? <img src={selectedPlayer.photoUrl} alt="" className="h-14 w-14 rounded-full object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-lg font-bold">{selectedPlayer.name.charAt(0)}</div>}
+                  <img src={`https://img.sofascore.com/api/v1/player/${selectedPlayer.id}/image`} alt="" className="h-14 w-14 rounded-full object-cover" />                 
                   <div className="min-w-0"><h2 className="truncate font-bold">{selectedPlayer.name}</h2><p className="text-sm text-muted-foreground">{getPlayerPositionLabel(selectedPlayer)}</p></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">

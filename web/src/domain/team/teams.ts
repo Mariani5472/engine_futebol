@@ -20,7 +20,6 @@ export type Athlete = {
   dateOfBirth: string | null;
   heightCm: number | null;
   weightKg: number | null;
-  photoUrl: string | null;
 };
 
 export const teams = data.teams as Team[];

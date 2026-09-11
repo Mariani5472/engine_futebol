@@ -25,11 +25,7 @@ export function TacticalPlayer({ player, x, y, selected, onSelect, onDragStart }
       style={{ left: `${x}%`, top: `${y}%` }}
     >
       <span className={`flex h-11 w-11 items-center justify-center rounded-full border-2 bg-background text-xs font-bold shadow-lg transition ${selected ? "border-primary ring-2 ring-primary/30" : "border-border"}`}>
-        {player.photoUrl ? (
-          <img src={player.photoUrl} alt="" className="h-full w-full rounded-full object-cover" />
-        ) : (
-          player.shortName?.charAt(0) || player.name.charAt(0)
-        )}
+        <img src={`https://img.sofascore.com/api/v1/player/${player.id}/image`} alt="" className="h-full w-full rounded-full object-cover" />
       </span>
       <span className="mt-1 max-w-full truncate rounded bg-background/95 px-1.5 text-[11px] font-semibold shadow-sm">
         {player.shortName || player.name}
