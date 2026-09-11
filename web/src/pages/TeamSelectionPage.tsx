@@ -6,9 +6,12 @@ import { useGame } from "@/context/GameContext";
 
 export function TeamSelectionPage() {
   const navigate = useNavigate();
-  const { gameState, setTeam } = useGame();
+  const { setTeam } = useGame();
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const sortedTeams = [...teams].sort((a, b) =>
+    a.name.localeCompare(b.name, "pt-BR"),
+  );
 
   function handleConfirm() {
     if (!selectedTeamId) {
@@ -37,7 +40,7 @@ export function TeamSelectionPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {teams.map((team) => {
+          {sortedTeams.map((team) => {
             const isSelected = selectedTeamId === team.id;
 
             return (

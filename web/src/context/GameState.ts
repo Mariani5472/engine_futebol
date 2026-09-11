@@ -1,3 +1,10 @@
+import { MatchEvent } from "@/domain/match/types";
+import type {
+  Fixture,
+  PlayerStat,
+  TeamStanding,
+} from "@/domain/season/types";
+
 export type GameStatus =
   | "idle"
   | "team-selection"
@@ -18,6 +25,12 @@ export type TacticalPosition = {
   y: number;
 };
 
+export type MatchPhase =
+  | "idle"
+  | "pre-match"
+  | "playing"
+  | "finished";
+
 export type GameState = {
   saveVersion: number;
 
@@ -30,6 +43,10 @@ export type GameState = {
   season: {
     year: number;
     currentRound: number;
+
+    fixtures: Fixture[];
+    standings: TeamStanding[];
+    playerStats: PlayerStat[];
   };
 
   squad: {
@@ -43,11 +60,19 @@ export type GameState = {
   };
 
   match: {
+    fixtureId: string | null;
+
+    phase: MatchPhase;
+
     homeTeamId: string | null;
     awayTeamId: string | null;
+
     homeScore: number;
     awayScore: number;
+
     minute: number;
+
+    events: MatchEvent[];
   };
 };
 
@@ -63,6 +88,10 @@ export const INITIAL_GAME_STATE: GameState = {
   season: {
     year: 2026,
     currentRound: 1,
+
+    fixtures: [],
+    standings: [],
+    playerStats: [],
   },
 
   squad: {
@@ -76,10 +105,18 @@ export const INITIAL_GAME_STATE: GameState = {
   },
 
   match: {
+    fixtureId: null,
+
+    phase: "idle",
+
     homeTeamId: null,
     awayTeamId: null,
+
     homeScore: 0,
     awayScore: 0,
+
     minute: 0,
+
+    events: [],
   },
 };

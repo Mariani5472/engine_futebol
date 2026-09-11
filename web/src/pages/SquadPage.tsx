@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
-
+import { useMemo, useState, type CSSProperties } from "react";
 import { PlayerDetails } from "@/components/squad/PlayerDetails";
 import { SquadTable, type SortKey } from "@/components/squad/SquadTable";
 import { useGame } from "@/context/GameContext";
 import { getTeamById } from "@/domain/team/teams";
 import type { Athlete } from "@/domain/team/teams";
-import { getPositionOverall } from "@/domain/tactic/playerOverall";
+import { getPlayerOverall } from "@/domain/tactic/playerOverall";
 
 const POSITION_FILTERS = [
   { value: "ALL", label: "Todos" },
@@ -21,7 +20,7 @@ function getSquadAverageOverall(players: Athlete[]) {
   if (players.length === 0) return 0;
 
   const total = players.reduce(
-    (sum, player) => sum + getPositionOverall(player, player.position),
+    (sum, player) => sum + getPlayerOverall(player),
     0,
   );
 
@@ -73,19 +72,52 @@ export function SquadPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Elenco
-        </p>
-        <div className="mt-1 flex items-center gap-3">
-          <img src={team.logoUrl} alt="" className="h-10 w-10 object-contain" />
-          <h1 className="text-3xl font-bold">{team.name}</h1>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Consulte os jogadores do clube e suas informações principais.
-        </p>
+    <div
+      className="space-y-5"
+      style={
+        {
+          "--team-primary":
+            team.colors.primary ?? "#ffffff",
+
+          "--team-secondary":
+            team.colors.secondary ?? "#000000",
+        } as CSSProperties
+      }
+    >
+        <div>
+    <p
+      className="text-xs font-semibold uppercase tracking-[0.2em]"
+      style={{
+        color: "var(--team-primary)",
+      }}
+    >
+      Elenco
+    </p>
+
+    <div className="mt-1 flex items-center gap-3">
+      <div
+        className="rounded-xl p-2"
+        style={{
+          background:
+            "color-mix(in srgb, var(--team-primary) 12%, transparent)",
+        }}
+      >
+        <img
+          src={team.logoUrl}
+          alt=""
+          className="h-10 w-10 object-contain"
+        />
       </div>
+
+      <h1 className="text-3xl font-bold">
+        {team.name}
+      </h1>
+    </div>
+
+    <p className="mt-1 text-sm text-muted-foreground">
+      Consulte os jogadores do clube e suas informações principais.
+    </p>
+  </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
@@ -95,7 +127,9 @@ export function SquadPage() {
           ["Meias", counts.midfielders],
           ["Atacantes", counts.forwards],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-xl border bg-card p-4 shadow-sm">
+          <div key={label} className="rounded-xl border bg-card p-4 shadow-sm" style={{
+            borderColor: "color-mix(in srgb, var(--team-primary) 35%, transparent)",
+          }}>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
             <p className="mt-1 text-2xl font-bold">{value}</p>
           </div>
@@ -112,9 +146,19 @@ export function SquadPage() {
               onClick={() => setPositionFilter(filter.value)}
               className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                 active
-                  ? "border-primary bg-primary text-primary-foreground"
+                  ? "text-white"
                   : "bg-card hover:bg-muted"
               }`}
+              style={
+                active
+                  ? {
+                      backgroundColor:
+                        "var(--team-primary)",
+                      borderColor:
+                        "var(--team-primary)",
+                    }
+                  : undefined
+              }
             >
               {filter.label}
             </button>

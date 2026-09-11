@@ -1,5 +1,5 @@
 import type { Athlete } from "@/domain/team/teams";
-import { getPlayerPositionLabel, getPositionOverall } from "@/domain/tactic/playerOverall";
+import { getPlayerPositionLabel, getPlayerOverall } from "@/domain/tactic/playerOverall";
 
 type Props = {
   player: Athlete | undefined;
@@ -32,7 +32,7 @@ export function PlayerDetails({ player }: Props) {
     );
   }
 
-  const overall = getPositionOverall(player, player.position);
+  const overall = getPlayerOverall(player);
 
   return (
     <section className="overflow-hidden rounded-xl border bg-card shadow-sm">

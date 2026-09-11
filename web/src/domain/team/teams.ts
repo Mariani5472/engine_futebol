@@ -44,7 +44,12 @@ export type Team = {
   id: string;
   name: string;
   abbreviation: string;
+  shortName: string;
   logoUrl: string;
+  colors: {
+    primary: string;
+    secondary: string;
+  };
   athletes: Athlete[];
 };
 
@@ -125,8 +130,13 @@ function mapPlayer({ player }: RawAthlete): Athlete {
 export const teams: Team[] = rawData.rows.map(({ team }) => ({
   id: String(team.id),
   name: team.name,
-  abbreviation: team.nameCode ?? team.shortName,
+  abbreviation: team.nameCode ?? '',
+  shortName: team.shortName,
   logoUrl: `https://img.sofascore.com/api/v1/team/${team.id}/image`,
+  colors: {
+    primary: team.teamColors?.primary ?? "#ffffff",
+    secondary: team.teamColors?.secondary ?? "#000000",
+  },
   athletes: team.athletes.map(mapPlayer),
 }));
 

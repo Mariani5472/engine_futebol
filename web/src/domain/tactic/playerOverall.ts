@@ -37,23 +37,44 @@ function getNaturalRole(player: Athlete): TacticalRole {
 function marketValueOverall(marketValue: number | null) {
   if (!marketValue || marketValue <= 0) return 58;
 
-  // The JSON does not contain technical attributes such as pace, passing,
-  // finishing or tackling. Market value is therefore used as the initial
-  // strength proxy instead of inventing an OVR from the player id.
   const overall = 60 + 11.5 * Math.log10(marketValue / 100_000);
 
   return Math.round(Math.max(45, Math.min(91, overall)));
 }
 
-function positionModifier(player: Athlete, requestedRole: TacticalRole) {
+/**
+ * OVR real/base do jogador.
+ *
+ * Não considera:
+ * - posição em que está sendo utilizado
+ * - forma
+ * - desempenho
+ * - desenvolvimento
+ * - fadiga
+ * - moral
+ */
+export function getPlayerOverall(player: Athlete) {
+  return marketValueOverall(player.marketValue);
+}
+
+/**
+ * Modificador de adequação à posição.
+ *
+ * Esse modificador existe apenas para representar o rendimento
+ * do jogador naquela função específica dentro da tática.
+ */
+function positionModifier(
+  player: Athlete,
+  requestedRole: TacticalRole,
+) {
   const naturalRole = getNaturalRole(player);
 
   if (naturalRole === requestedRole) return 3;
 
-  // Goalkeepers are intentionally penalized heavily outside the goal.
+  // Goleiros fora do gol sofrem uma penalidade pesada.
   if (naturalRole === "GK" || requestedRole === "GK") return -12;
 
-  // D <-> M <-> F is a reasonable positional adaptation for this V1.
+  // Adaptações razoáveis entre D <-> M <-> F nesta V1.
   if (
     (naturalRole === "D" && requestedRole === "M") ||
     (naturalRole === "M" &&
@@ -66,9 +87,24 @@ function positionModifier(player: Athlete, requestedRole: TacticalRole) {
   return -5;
 }
 
-export function getPositionOverall(player: Athlete, role: string) {
+/**
+ * OVR do jogador dentro de uma função tática específica.
+ *
+ * Exemplo:
+ * Carlos Miguel
+ * OVR base: 82
+ * GK: 85
+ * F: 70
+ */
+export function getPositionOverall(
+  player: Athlete,
+  role: string,
+) {
   const requestedRole: TacticalRole =
-    role === "GK" || role === "D" || role === "M" || role === "F"
+    role === "GK" ||
+      role === "D" ||
+      role === "M" ||
+      role === "F"
       ? role
       : "F";
 
@@ -76,8 +112,8 @@ export function getPositionOverall(player: Athlete, role: string) {
     1,
     Math.min(
       99,
-      marketValueOverall(player.marketValue) +
-        positionModifier(player, requestedRole),
+      getPlayerOverall(player) +
+      positionModifier(player, requestedRole),
     ),
   );
 }

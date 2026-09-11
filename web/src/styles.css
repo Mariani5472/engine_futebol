@@ -161,4 +161,32 @@
   html {
     @apply font-sans;
   }
+
+  .match-event {
+    display: flex;
+    gap: 8px;
+  }
+
+  .match-event-home {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  .match-event-away {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .team-card {
+    border-color: var(--team-primary);
+  }
+
+  .team-header {
+    background:
+      linear-gradient(
+        135deg,
+        var(--team-primary),
+        var(--team-secondary)
+      );
+  }
 }

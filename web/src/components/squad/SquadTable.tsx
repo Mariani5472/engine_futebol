@@ -1,5 +1,5 @@
 import type { Athlete } from "@/domain/team/teams";
-import { getPlayerPositionLabel, getPositionOverall } from "@/domain/tactic/playerOverall";
+import { getPlayerOverall } from "@/domain/tactic/playerOverall";
 
 type SortKey = "overall" | "name" | "position" | "age" | "marketValue";
 
@@ -37,7 +37,7 @@ function comparePlayers(a: Athlete, b: Athlete, sortBy: SortKey) {
       return (b.marketValue ?? 0) - (a.marketValue ?? 0);
     case "overall":
     default:
-      return getPositionOverall(b, b.position) - getPositionOverall(a, a.position);
+      return getPlayerOverall(b) - getPlayerOverall(a);
   }
 }
 
@@ -89,7 +89,7 @@ export function SquadTable({ players, sortBy, onSort, selectedPlayerId, onSelect
           <tbody className="divide-y">
             {sortedPlayers.map((player) => {
               const selected = selectedPlayerId === player.id;
-              const overall = getPositionOverall(player, player.position);
+              const overall = getPlayerOverall(player);
 
               return (
                 <tr

@@ -35,8 +35,9 @@ export function InGameLayout() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { gameState } = useGame();
+  const { gameState, getNextMatch } = useGame();
   const teamId = gameState.player.teamId;
+  const match = gameState.match;
 
   const team = teamId ? getTeamById(teamId) : undefined;  
 
@@ -64,10 +65,19 @@ export function InGameLayout() {
     navigate(path);
     setIsSidebarOpen(false);
   };
-  
-    if (!team) {
-      return null;
+
+  function handleNextMatch() {
+    if (match.phase === "pre-match" || match.phase === "playing") {
+      return;
     }
+
+    getNextMatch();
+    navigate("/game/match");
+  }
+    
+  if (!team) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-muted/20 text-foreground">
@@ -215,7 +225,7 @@ export function InGameLayout() {
           {/* Próximo jogo */}
           <Button
             type="button"
-            onClick={() => navigate("/game/match")}
+            onClick={handleNextMatch}
           >
             Próximo jogo
           </Button>
