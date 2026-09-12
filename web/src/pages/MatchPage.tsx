@@ -253,8 +253,7 @@ export function MatchPage() {
               </p>
             ) : (
               recentEvents.map((event, index) => {
-                const isHome = event.teamId === gameState.match.homeTeamId;
-
+                const isHome = event.teamId == gameState.match.homeTeamId;
                 return (
                   <div
                     key={`${event.minute}-${event.playerId}-${index}`}
@@ -343,8 +342,8 @@ export function MatchPage() {
                   .slice()
                   .reverse()
                   .map((event, index) => {
-                    const isHome = event.teamId === gameState.match.homeTeamId;
-
+                    const isHome = event.teamId == gameState.match.homeTeamId;
+                    console.log(event.teamId)
                     return (
                       <div
                         key={`${event.minute}-${event.playerId}-${index}`}

@@ -164,17 +164,31 @@
 
   .match-event {
     display: flex;
+    align-items: flex-start;
     gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    min-height: 44px;
+    box-sizing: border-box;
   }
 
   .match-event-home {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .match-event-away {
     justify-content: flex-end;
     text-align: right;
   }
 
-  .match-event-away {
-    justify-content: flex-start;
-    text-align: left;
+  .match-event-minute {
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .match-event-text {
+    line-height: 1.4;
   }
 
   .team-card {

@@ -42,11 +42,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const teamIds = teams.map((team) => team.id);
 
     const fixtures = generateFixtures(teamIds);
+
     const standings = calculateStandings(
       teamIds,
       fixtures,
       getTeamNames(),
     );
+
+    const selectedTeam = getTeamById(teamId);
+
+    const starters = selectedTeam
+      ? getDefaultStarters(selectedTeam)
+      : [];
 
     setGameState((current) => ({
       ...current,
@@ -60,14 +67,31 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       season: {
         ...current.season,
-
         year: 2026,
         currentRound: 1,
-
         fixtures,
         standings,
-
         playerStats: [],
+      },
+
+      squad: {
+        starters,
+        bench: selectedTeam
+          ? selectedTeam.athletes
+              .filter((player) => !starters.includes(player.id))
+              .map((player) => player.id)
+          : [],
+      },
+
+      tactic: {
+        ...current.tactic,
+        positions:
+          starters.length === 11
+            ? createFormationPositions(
+                current.tactic.formation,
+                starters,
+              )
+            : [],
       },
     }));
   }
