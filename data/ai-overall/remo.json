@@ -284,7 +284,7 @@
         "DEF": 20,
         "PHY": 52
       },
-      "desempenhoTotal2026": 7.0
+      "desempenhoTotal2026": 7
     },
     {
       "id": 594428,
@@ -599,7 +599,7 @@
         "DEF": 55,
         "PHY": 66
       },
-      "desempenhoTotal2026": 6.0
+      "desempenhoTotal2026": 6
     },
     {
       "id": 844602,
@@ -634,7 +634,7 @@
         "DEF": 81,
         "PHY": 82
       },
-      "desempenhoTotal2026": 7.0
+      "desempenhoTotal2026": 7
     },
     {
       "id": 981019,
@@ -914,7 +914,7 @@
         "DEF": 65,
         "PHY": 73
       },
-      "desempenhoTotal2026": 6.0
+      "desempenhoTotal2026": 6
     },
     {
       "id": 790099,
@@ -1082,14 +1082,14 @@
         "TAC": 43
       },
       "cartinhaFifa": {
-        "PAC": 35,
-        "SHO": 5,
-        "PAS": 50,
-        "DRI": 10,
-        "DEF": 62,
-        "PHY": 68
+        "DIV": 62,
+        "HAN": 58,
+        "KIC": 55,
+        "REF": 65,
+        "SPD": 41,
+        "POS": 56
       },
-      "desempenhoTotal2026": 6.0
+      "desempenhoTotal2026": 6
     },
     {
       "id": 870902,
@@ -1117,12 +1117,12 @@
         "TAC": 50
       },
       "cartinhaFifa": {
-        "PAC": 30,
-        "SHO": 5,
-        "PAS": 46,
-        "DRI": 10,
-        "DEF": 64,
-        "PHY": 69
+        "DIV": 48,
+        "HAN": 45,
+        "KIC": 42,
+        "REF": 52,
+        "SPD": 29,
+        "POS": 43
       },
       "desempenhoTotal2026": 6.1
     },
@@ -1152,12 +1152,12 @@
         "TAC": 45
       },
       "cartinhaFifa": {
-        "PAC": 34,
-        "SHO": 5,
-        "PAS": 47,
-        "DRI": 10,
-        "DEF": 61,
-        "PHY": 70
+        "DIV": 45,
+        "HAN": 42,
+        "KIC": 39,
+        "REF": 49,
+        "SPD": 30,
+        "POS": 37
       },
       "desempenhoTotal2026": 5.9
     }

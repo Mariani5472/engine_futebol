@@ -166,7 +166,7 @@ async function main() {
       const goalkeeper = goalkeeperById.get(player.id);
       if (!goalkeeper) continue;
 
-      if (!isGoalkeeper(String(player.position ?? player.positionsDetailed?.[0] ?? ""))) {
+      if (!isGoalkeeper(String(player.position ?? ""))) {
         throw new Error(
           `ID ${player.id} (${String(player.name ?? "")}) está em golkeapers.json, mas não é goleiro na database principal.`,
         );

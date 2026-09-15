@@ -39,7 +39,7 @@
         "DEF": 20,
         "PHY": 76
       },
-      "desempenhoTotal2026": 7.0
+      "desempenhoTotal2026": 7
     },
     {
       "id": 872007,
@@ -109,7 +109,7 @@
         "DEF": 22,
         "PHY": 55
       },
-      "desempenhoTotal2026": 7.0
+      "desempenhoTotal2026": 7
     },
     {
       "id": 1105781,
@@ -704,7 +704,7 @@
         "DEF": 47,
         "PHY": 55
       },
-      "desempenhoTotal2026": 7.0
+      "desempenhoTotal2026": 7
     },
     {
       "id": 252781,
@@ -739,7 +739,7 @@
         "DEF": 45,
         "PHY": 52
       },
-      "desempenhoTotal2026": 6.0
+      "desempenhoTotal2026": 6
     },
     {
       "id": 867907,
@@ -1047,12 +1047,12 @@
         "TAC": 59
       },
       "cartinhaFifa": {
-        "PAC": 38,
-        "SHO": 5,
-        "PAS": 55,
-        "DRI": 9,
-        "DEF": 71,
-        "PHY": 73
+        "DIV": 70,
+        "HAN": 67,
+        "KIC": 59,
+        "REF": 74,
+        "SPD": 29,
+        "POS": 66
       },
       "desempenhoTotal2026": 7.2
     },
@@ -1082,12 +1082,12 @@
         "TAC": 48
       },
       "cartinhaFifa": {
-        "PAC": 38,
-        "SHO": 5,
-        "PAS": 43,
-        "DRI": 9,
-        "DEF": 60,
-        "PHY": 66
+        "DIV": 65,
+        "HAN": 63,
+        "KIC": 58,
+        "REF": 67,
+        "SPD": 42,
+        "POS": 61
       },
       "desempenhoTotal2026": 6.1
     },
@@ -1117,14 +1117,14 @@
         "TAC": 47
       },
       "cartinhaFifa": {
-        "PAC": 37,
-        "SHO": 5,
-        "PAS": 42,
-        "DRI": 9,
-        "DEF": 58,
-        "PHY": 65
+        "DIV": 48,
+        "HAN": 45,
+        "KIC": 42,
+        "REF": 52,
+        "SPD": 29,
+        "POS": 42
       },
-      "desempenhoTotal2026": 6.0
+      "desempenhoTotal2026": 6
     },
     {
       "id": 329225,
@@ -1152,12 +1152,12 @@
         "TAC": 45
       },
       "cartinhaFifa": {
-        "PAC": 38,
-        "SHO": 5,
-        "PAS": 40,
-        "DRI": 9,
-        "DEF": 55,
-        "PHY": 62
+        "DIV": 58,
+        "HAN": 54,
+        "KIC": 50,
+        "REF": 61,
+        "SPD": 40,
+        "POS": 52
       },
       "desempenhoTotal2026": 5.8
     }

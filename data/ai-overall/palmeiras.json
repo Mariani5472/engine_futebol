@@ -74,7 +74,7 @@
         "DEF": 24,
         "PHY": 86
       },
-      "desempenhoTotal2026": 8.0
+      "desempenhoTotal2026": 8
     },
     {
       "id": 885179,
@@ -214,7 +214,7 @@
         "DEF": 15,
         "PHY": 50
       },
-      "desempenhoTotal2026": 5.0
+      "desempenhoTotal2026": 5
     },
     {
       "id": 844096,
@@ -284,7 +284,7 @@
         "DEF": 31,
         "PHY": 58
       },
-      "desempenhoTotal2026": 8.0
+      "desempenhoTotal2026": 8
     },
     {
       "id": 986233,
@@ -319,7 +319,7 @@
         "DEF": 26,
         "PHY": 53
       },
-      "desempenhoTotal2026": 7.0
+      "desempenhoTotal2026": 7
     },
     {
       "id": 152276,
@@ -564,7 +564,7 @@
         "DEF": 48,
         "PHY": 57
       },
-      "desempenhoTotal2026": 6.0
+      "desempenhoTotal2026": 6
     },
     {
       "id": 220833,
@@ -634,7 +634,7 @@
         "DEF": 75,
         "PHY": 63
       },
-      "desempenhoTotal2026": 7.0
+      "desempenhoTotal2026": 7
     },
     {
       "id": 881110,
@@ -942,12 +942,12 @@
         "TAC": 69
       },
       "cartinhaFifa": {
-        "PAC": 39,
-        "SHO": 5,
-        "PAS": 48,
-        "DRI": 10,
-        "DEF": 82,
-        "PHY": 86
+        "DIV": 80,
+        "HAN": 76,
+        "KIC": 63,
+        "REF": 82,
+        "SPD": 46,
+        "POS": 78
       },
       "desempenhoTotal2026": 7.2
     },
@@ -977,12 +977,12 @@
         "TAC": 62
       },
       "cartinhaFifa": {
-        "PAC": 35,
-        "SHO": 5,
-        "PAS": 43,
-        "DRI": 10,
-        "DEF": 76,
-        "PHY": 78
+        "DIV": 68,
+        "HAN": 71,
+        "KIC": 65,
+        "REF": 70,
+        "SPD": 29,
+        "POS": 72
       },
       "desempenhoTotal2026": 6.4
     },
@@ -1012,14 +1012,14 @@
         "TAC": 58
       },
       "cartinhaFifa": {
-        "PAC": 39,
-        "SHO": 5,
-        "PAS": 42,
-        "DRI": 10,
-        "DEF": 70,
-        "PHY": 75
+        "DIV": 67,
+        "HAN": 64,
+        "KIC": 56,
+        "REF": 69,
+        "SPD": 42,
+        "POS": 63
       },
-      "desempenhoTotal2026": 6.0
+      "desempenhoTotal2026": 6
     }
   ]
 }
