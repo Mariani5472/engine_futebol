@@ -1,0 +1,2732 @@
+[
+{
+"id": 1140986,
+"nome": "Agustín Rossi",
+"slug": "agustin-rossi",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 30,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 7,
+"CRE": 18,
+"TEC": 64,
+"DEF": 67,
+"TAC": 64
+},
+"cartinhaFifa": {
+"DIV": 84,
+"HAN": 80,
+"KIC": 72,
+"REF": 86,
+"SPD": 48,
+"POS": 82
+},
+"desempenhoTotal2026": 8
+},
+{
+"id": 340113,
+"nome": "Alex Muralha",
+"slug": "alex-muralha",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 36,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 50,
+"DEF": 49,
+"TAC": 48
+},
+"cartinhaFifa": {
+"DIV": 65,
+"HAN": 63,
+"KIC": 58,
+"REF": 67,
+"SPD": 42,
+"POS": 61
+},
+"desempenhoTotal2026": 6.1
+},
+{
+"id": 1017274,
+"nome": "Alexandre Fintelman",
+"slug": "alexandre-fintelman",
+"posicao": "G",
+"valorMercado": null,
+"idade": 25,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 13,
+"TEC": 50,
+"DEF": 48,
+"TAC": 40
+},
+"cartinhaFifa": {
+"DIV": 61,
+"HAN": 59,
+"KIC": 55,
+"REF": 63,
+"SPD": 40,
+"POS": 58
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 942061,
+"nome": "Anderson",
+"slug": "anderson",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 28,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 10,
+"CRE": 18,
+"TEC": 52,
+"DEF": 55,
+"TAC": 45
+},
+"cartinhaFifa": {
+"DIV": 67,
+"HAN": 64,
+"KIC": 61,
+"REF": 70,
+"SPD": 43,
+"POS": 65
+},
+"desempenhoTotal2026": 6.2
+},
+{
+"id": 947893,
+"nome": "Andrew",
+"slug": "andrew",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 25,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 7,
+"CRE": 18,
+"TEC": 61,
+"DEF": 63,
+"TAC": 62
+},
+"cartinhaFifa": {
+"DIV": 79,
+"HAN": 75,
+"KIC": 70,
+"REF": 81,
+"SPD": 47,
+"POS": 77
+},
+"desempenhoTotal2026": 7
+},
+{
+"id": 1106134,
+"nome": "Anthoni",
+"slug": "anthoni",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 24,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 50,
+"DEF": 51,
+"TAC": 47
+},
+"cartinhaFifa": {
+"DIV": 65,
+"HAN": 62,
+"KIC": 57,
+"REF": 68,
+"SPD": 42,
+"POS": 62
+},
+"desempenhoTotal2026": 6.5
+},
+{
+"id": 1174621,
+"nome": "Benassi",
+"slug": "benassi",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 22,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 17,
+"TEC": 49,
+"DEF": 54,
+"TAC": 42
+},
+"cartinhaFifa": {
+"DIV": 63,
+"HAN": 60,
+"KIC": 55,
+"REF": 66,
+"SPD": 41,
+"POS": 59
+},
+"desempenhoTotal2026": 5.7
+},
+{
+"id": 977079,
+"nome": "Bruno Bertinato",
+"slug": "bruno-bertinato",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 28,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 15,
+"TEC": 49,
+"DEF": 54,
+"TAC": 58
+},
+"cartinhaFifa": {
+"DIV": 67,
+"HAN": 64,
+"KIC": 56,
+"REF": 69,
+"SPD": 42,
+"POS": 63
+},
+"desempenhoTotal2026": 6
+},
+{
+"id": 800150,
+"nome": "Carlos Coronel",
+"slug": "carlos-coronel",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 29,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 17,
+"TEC": 57,
+"DEF": 57,
+"TAC": 55
+},
+"cartinhaFifa": {
+"DIV": 73,
+"HAN": 70,
+"KIC": 65,
+"REF": 76,
+"SPD": 44,
+"POS": 70
+},
+"desempenhoTotal2026": 6.8
+},
+{
+"id": 973738,
+"nome": "Carlos Miguel",
+"slug": "carlos-miguel",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 27,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 16,
+"TEC": 55,
+"DEF": 62,
+"TAC": 69
+},
+"cartinhaFifa": {
+"DIV": 80,
+"HAN": 76,
+"KIC": 63,
+"REF": 82,
+"SPD": 46,
+"POS": 78
+},
+"desempenhoTotal2026": 7.2
+},
+{
+"id": 27756,
+"nome": "Cássio",
+"slug": "cassio",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 39,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 18,
+"TEC": 59,
+"DEF": 66,
+"TAC": 55
+},
+"cartinhaFifa": {
+"DIV": 79,
+"HAN": 77,
+"KIC": 67,
+"REF": 80,
+"SPD": 39,
+"POS": 78
+},
+"desempenhoTotal2026": 7.2
+},
+{
+"id": 1831094,
+"nome": "Cléber Lucas",
+"slug": "cleber-lucas-chieppe-chagas",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 19,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 7,
+"CRE": 16,
+"TEC": 44,
+"DEF": 48,
+"TAC": 41
+},
+"cartinhaFifa": {
+"DIV": 57,
+"HAN": 54,
+"KIC": 49,
+"REF": 59,
+"SPD": 39,
+"POS": 53
+},
+"desempenhoTotal2026": 4.8
+},
+{
+"id": 844576,
+"nome": "Cleiton",
+"slug": "cleiton",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 28,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 7,
+"CRE": 17,
+"TEC": 58,
+"DEF": 65,
+"TAC": 62
+},
+"cartinhaFifa": {
+"DIV": 81,
+"HAN": 76,
+"KIC": 69,
+"REF": 83,
+"SPD": 47,
+"POS": 79
+},
+"desempenhoTotal2026": 7.2
+},
+{
+"id": 1470452,
+"nome": "Cristhian Loor",
+"slug": "cristhian-loor",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 20,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 18,
+"TEC": 48,
+"DEF": 52,
+"TAC": 45
+},
+"cartinhaFifa": {
+"DIV": 62,
+"HAN": 59,
+"KIC": 53,
+"REF": 65,
+"SPD": 41,
+"POS": 57
+},
+"desempenhoTotal2026": 5.2
+},
+{
+"id": 863276,
+"nome": "Daniel Fuzato",
+"slug": "daniel-fuzato",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 29,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 15,
+"TEC": 55,
+"DEF": 53,
+"TAC": 48
+},
+"cartinhaFifa": {
+"DIV": 67,
+"HAN": 63,
+"KIC": 64,
+"REF": 70,
+"SPD": 43,
+"POS": 64
+},
+"desempenhoTotal2026": 6.3
+},
+{
+"id": 1650025,
+"nome": "Diego Esser",
+"slug": "esser-diego",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 21,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 12,
+"TEC": 41,
+"DEF": 37,
+"TAC": 27
+},
+"cartinhaFifa": {
+"DIV": 49,
+"HAN": 46,
+"KIC": 43,
+"REF": 51,
+"SPD": 36,
+"POS": 44
+},
+"desempenhoTotal2026": 4.9
+},
+{
+"id": 1128754,
+"nome": "Diogenes",
+"slug": "diogenes",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 25,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 51,
+"DEF": 48,
+"TAC": 43
+},
+"cartinhaFifa": {
+"DIV": 62,
+"HAN": 58,
+"KIC": 54,
+"REF": 64,
+"SPD": 41,
+"POS": 56
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 1514629,
+"nome": "Dyogo Alves",
+"slug": "dyogo-alves",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 22,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 15,
+"TEC": 48,
+"DEF": 45,
+"TAC": 28
+},
+"cartinhaFifa": {
+"DIV": 55,
+"HAN": 51,
+"KIC": 49,
+"REF": 57,
+"SPD": 37,
+"POS": 49
+},
+"desempenhoTotal2026": 5.4
+},
+{
+"id": 870748,
+"nome": "Everson",
+"slug": "everson",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 36,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 12,
+"CRE": 29,
+"TEC": 74,
+"DEF": 76,
+"TAC": 67
+},
+"cartinhaFifa": {
+"DIV": 84,
+"HAN": 82,
+"KIC": 83,
+"REF": 86,
+"SPD": 52,
+"POS": 84
+},
+"desempenhoTotal2026": 7.4
+},
+{
+"id": 17785,
+"nome": "Fábio",
+"slug": "fabio",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 45,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 20,
+"TEC": 60,
+"DEF": 62,
+"TAC": 60
+},
+"cartinhaFifa": {
+"DIV": 86,
+"HAN": 84,
+"KIC": 79,
+"REF": 88,
+"SPD": 36,
+"POS": 87
+},
+"desempenhoTotal2026": 7.4
+},
+{
+"id": 1047208,
+"nome": "Fabrício",
+"slug": "fabricio",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 26,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 48,
+"DEF": 46,
+"TAC": 40
+},
+"cartinhaFifa": {
+"DIV": 59,
+"HAN": 56,
+"KIC": 52,
+"REF": 62,
+"SPD": 40,
+"POS": 54
+},
+"desempenhoTotal2026": 5.7
+},
+{
+"id": 1631898,
+"nome": "Felipe Gabriel Preis",
+"slug": "felipe-gabriel-preis",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 20,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 13,
+"TEC": 45,
+"DEF": 43,
+"TAC": 40
+},
+"cartinhaFifa": {
+"DIV": 56,
+"HAN": 52,
+"KIC": 48,
+"REF": 59,
+"SPD": 38,
+"POS": 50
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 1485272,
+"nome": "Felipe Longo",
+"slug": "felipe-longo",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 21,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 17,
+"TEC": 49,
+"DEF": 53,
+"TAC": 41
+},
+"cartinhaFifa": {
+"DIV": 63,
+"HAN": 59,
+"KIC": 55,
+"REF": 66,
+"SPD": 41,
+"POS": 58
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 2140167,
+"nome": "Fernando Costa",
+"slug": "pires-costa-fernando-henrique",
+"posicao": "G",
+"valorMercado": null,
+"idade": 22,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 47,
+"DEF": 44,
+"TAC": 39
+},
+"cartinhaFifa": {
+"DIV": 55,
+"HAN": 51,
+"KIC": 47,
+"REF": 58,
+"SPD": 38,
+"POS": 49
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 822526,
+"nome": "Gabriel Batista",
+"slug": "gabriel-batista",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 28,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 11,
+"CRE": 28,
+"TEC": 67,
+"DEF": 70,
+"TAC": 62
+},
+"cartinhaFifa": {
+"DIV": 78,
+"HAN": 75,
+"KIC": 72,
+"REF": 80,
+"SPD": 47,
+"POS": 77
+},
+"desempenhoTotal2026": 7.1
+},
+{
+"id": 905448,
+"nome": "Gabriel Brazão",
+"slug": "gabriel-brazao",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 25,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 16,
+"TEC": 57,
+"DEF": 54,
+"TAC": 53
+},
+"cartinhaFifa": {
+"DIV": 70,
+"HAN": 66,
+"KIC": 63,
+"REF": 73,
+"SPD": 44,
+"POS": 66
+},
+"desempenhoTotal2026": 6.6
+},
+{
+"id": 1117032,
+"nome": "Gabriel Delfim",
+"slug": "gabriel-delfim",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 24,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 10,
+"CRE": 25,
+"TEC": 63,
+"DEF": 70,
+"TAC": 61
+},
+"cartinhaFifa": {
+"DIV": 79,
+"HAN": 75,
+"KIC": 70,
+"REF": 82,
+"SPD": 46,
+"POS": 77
+},
+"desempenhoTotal2026": 7
+},
+{
+"id": 1111770,
+"nome": "Gabriel Grando",
+"slug": "gabriel-grando",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 26,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 15,
+"TEC": 51,
+"DEF": 51,
+"TAC": 39
+},
+"cartinhaFifa": {
+"DIV": 65,
+"HAN": 61,
+"KIC": 57,
+"REF": 68,
+"SPD": 42,
+"POS": 60
+},
+"desempenhoTotal2026": 6.1
+},
+{
+"id": 2152875,
+"nome": "Gabriel Menegon",
+"slug": "gabriel-menegon",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 17,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 4,
+"CRE": 11,
+"TEC": 39,
+"DEF": 34,
+"TAC": 19
+},
+"cartinhaFifa": {
+"DIV": 46,
+"HAN": 43,
+"KIC": 39,
+"REF": 48,
+"SPD": 34,
+"POS": 41
+},
+"desempenhoTotal2026": 5
+},
+{
+"id": 1175672,
+"nome": "Gabriel Werner",
+"slug": "gabriel-werner",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 23,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 16,
+"TEC": 48,
+"DEF": 51,
+"TAC": 39
+},
+"cartinhaFifa": {
+"DIV": 61,
+"HAN": 57,
+"KIC": 52,
+"REF": 63,
+"SPD": 40,
+"POS": 54
+},
+"desempenhoTotal2026": 5.2
+},
+{
+"id": 329225,
+"nome": "Georgemy",
+"slug": "georgemy",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 30,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 47,
+"DEF": 46,
+"TAC": 45
+},
+"cartinhaFifa": {
+"DIV": 58,
+"HAN": 54,
+"KIC": 50,
+"REF": 61,
+"SPD": 40,
+"POS": 52
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 248977,
+"nome": "Guido Herrera",
+"slug": "guido-herrera",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 34,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 16,
+"CRE": 43,
+"TEC": 75,
+"DEF": 80,
+"TAC": 72
+},
+"cartinhaFifa": {
+"DIV": 87,
+"HAN": 84,
+"KIC": 82,
+"REF": 89,
+"SPD": 49,
+"POS": 87
+},
+"desempenhoTotal2026": 7.6
+},
+{
+"id": 1881677,
+"nome": "Gustavo Reis",
+"slug": "gustavo-reis",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 21,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 48,
+"DEF": 48,
+"TAC": 40
+},
+"cartinhaFifa": {
+"DIV": 59,
+"HAN": 55,
+"KIC": 51,
+"REF": 62,
+"SPD": 39,
+"POS": 52
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 950454,
+"nome": "Hugo Souza",
+"slug": "hugo-souza",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 27,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 9,
+"CRE": 20,
+"TEC": 62,
+"DEF": 66,
+"TAC": 58
+},
+"cartinhaFifa": {
+"DIV": 81,
+"HAN": 77,
+"KIC": 69,
+"REF": 84,
+"SPD": 48,
+"POS": 80
+},
+"desempenhoTotal2026": 7.7
+},
+{
+"id": 795029,
+"nome": "Ivan",
+"slug": "ivan",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 29,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 15,
+"TEC": 52,
+"DEF": 48,
+"TAC": 43
+},
+"cartinhaFifa": {
+"DIV": 62,
+"HAN": 58,
+"KIC": 55,
+"REF": 65,
+"SPD": 41,
+"POS": 56
+},
+"desempenhoTotal2026": 6
+},
+{
+"id": 1656025,
+"nome": "João Fernandes",
+"slug": "joao-fernandes",
+"posicao": "G",
+"valorMercado": null,
+"idade": 22,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 47,
+"DEF": 44,
+"TAC": 40
+},
+"cartinhaFifa": {
+"DIV": 55,
+"HAN": 51,
+"KIC": 47,
+"REF": 58,
+"SPD": 38,
+"POS": 49
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 795177,
+"nome": "João Paulo",
+"slug": "joao-paulo",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 31,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 15,
+"TEC": 58,
+"DEF": 57,
+"TAC": 50
+},
+"cartinhaFifa": {
+"DIV": 72,
+"HAN": 68,
+"KIC": 64,
+"REF": 75,
+"SPD": 43,
+"POS": 69
+},
+"desempenhoTotal2026": 6.4
+},
+{
+"id": 2170349,
+"nome": "João Pedro de Borba Rodrigues",
+"slug": "joao-pedro-de-borba-rodrigues",
+"posicao": "G",
+"valorMercado": null,
+"idade": 16,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 10,
+"CRE": 15,
+"TEC": 22,
+"DEF": 12,
+"TAC": 35
+},
+"cartinhaFifa": {
+"DIV": 38,
+"HAN": 34,
+"KIC": 30,
+"REF": 40,
+"SPD": 31,
+"POS": 29
+},
+"desempenhoTotal2026": 4
+},
+{
+"id": 1485233,
+"nome": "Kauan",
+"slug": "kauan",
+"posicao": "G",
+"valorMercado": null,
+"idade": 23,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 12,
+"TEC": 43,
+"DEF": 40,
+"TAC": 30
+},
+"cartinhaFifa": {
+"DIV": 51,
+"HAN": 47,
+"KIC": 43,
+"REF": 54,
+"SPD": 37,
+"POS": 44
+},
+"desempenhoTotal2026": 5.2
+},
+{
+"id": 1382923,
+"nome": "Kauê",
+"slug": "kaue",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 22,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 17,
+"TEC": 48,
+"DEF": 51,
+"TAC": 40
+},
+"cartinhaFifa": {
+"DIV": 60,
+"HAN": 56,
+"KIC": 51,
+"REF": 63,
+"SPD": 39,
+"POS": 54
+},
+"desempenhoTotal2026": 5.5
+},
+  {
+"id": 840082,
+"nome": "Keiller",
+"slug": "keiller",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 29,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 18,
+"TEC": 53,
+"DEF": 58,
+"TAC": 45
+},
+"cartinhaFifa": {
+"DIV": 60,
+"HAN": 56,
+"KIC": 52,
+"REF": 64,
+"SPD": 39,
+"POS": 57
+},
+"desempenhoTotal2026": 6.3
+},
+{
+"id": 1488035,
+"nome": "Léo Aragão",
+"slug": "leo-aragao",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 24,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 17,
+"TEC": 53,
+"DEF": 56,
+"TAC": 44
+},
+"cartinhaFifa": {
+"DIV": 57,
+"HAN": 53,
+"KIC": 51,
+"REF": 61,
+"SPD": 38,
+"POS": 54
+},
+"desempenhoTotal2026": 5.9
+},
+{
+"id": 595598,
+"nome": "Léo Jardim",
+"slug": "leo-jardim",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 31,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 56,
+"DEF": 61,
+"TAC": 53
+},
+"cartinhaFifa": {
+"DIV": 80,
+"HAN": 75,
+"KIC": 68,
+"REF": 84,
+"SPD": 44,
+"POS": 79
+},
+"desempenhoTotal2026": 7.6
+},
+{
+"id": 166279,
+"nome": "Léo Vieira",
+"slug": "leo-vieira",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 35,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 12,
+"CRE": 29,
+"TEC": 58,
+"DEF": 62,
+"TAC": 42
+},
+"cartinhaFifa": {
+"DIV": 62,
+"HAN": 58,
+"KIC": 55,
+"REF": 66,
+"SPD": 34,
+"POS": 60
+},
+"desempenhoTotal2026": 6.2
+},
+{
+"id": 1883341,
+"nome": "Leonardo Nannetti",
+"slug": "leonardo-nannetti",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 18,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 12,
+"TEC": 42,
+"DEF": 38,
+"TAC": 19
+},
+"cartinhaFifa": {
+"DIV": 35,
+"HAN": 32,
+"KIC": 29,
+"REF": 38,
+"SPD": 27,
+"POS": 29
+},
+"desempenhoTotal2026": 5
+},
+{
+"id": 982558,
+"nome": "Lucas Arcanjo",
+"slug": "lucas-arcanjo",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 27,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 54,
+"DEF": 53,
+"TAC": 44
+},
+"cartinhaFifa": {
+"DIV": 58,
+"HAN": 54,
+"KIC": 50,
+"REF": 62,
+"SPD": 38,
+"POS": 53
+},
+"desempenhoTotal2026": 6.7
+},
+{
+"id": 34141,
+"nome": "Marcelo Lomba",
+"slug": "marcelo-lomba",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 39,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 15,
+"TEC": 52,
+"DEF": 58,
+"TAC": 62
+},
+"cartinhaFifa": {
+"DIV": 68,
+"HAN": 71,
+"KIC": 65,
+"REF": 70,
+"SPD": 29,
+"POS": 72
+},
+"desempenhoTotal2026": 6.4
+},
+{
+"id": 1093974,
+"nome": "Marcelo Pitaluga",
+"slug": "marcelo-pitaluga",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 23,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 48,
+"DEF": 45,
+"TAC": 31
+},
+"cartinhaFifa": {
+"DIV": 46,
+"HAN": 43,
+"KIC": 40,
+"REF": 50,
+"SPD": 32,
+"POS": 38
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 870902,
+"nome": "Marcelo Rangel",
+"slug": "marcelo-rangel",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 38,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 15,
+"TEC": 50,
+"DEF": 45,
+"TAC": 50
+},
+"cartinhaFifa": {
+"DIV": 48,
+"HAN": 45,
+"KIC": 42,
+"REF": 52,
+"SPD": 29,
+"POS": 43
+},
+"desempenhoTotal2026": 6.1
+},
+{
+"id": 922592,
+"nome": "Matheus",
+"slug": "matheus",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 27,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 9,
+"CRE": 17,
+"TEC": 51,
+"DEF": 54,
+"TAC": 42
+},
+"cartinhaFifa": {
+"DIV": 54,
+"HAN": 51,
+"KIC": 47,
+"REF": 58,
+"SPD": 37,
+"POS": 50
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 1105835,
+"nome": "Matheus Cunha",
+"slug": "matheus-cunha",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 25,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 15,
+"TEC": 55,
+"DEF": 57,
+"TAC": 58
+},
+"cartinhaFifa": {
+"DIV": 73,
+"HAN": 68,
+"KIC": 61,
+"REF": 77,
+"SPD": 42,
+"POS": 68
+},
+"desempenhoTotal2026": 7.2
+},
+{
+"id": 1485244,
+"nome": "Matheus Soares",
+"slug": "matheus-rocha",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 21,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 14,
+"CRE": 24,
+"TEC": 30,
+"DEF": 19,
+"TAC": 48
+},
+"cartinhaFifa": {
+"DIV": 32,
+"HAN": 29,
+"KIC": 27,
+"REF": 36,
+"SPD": 29,
+"POS": 25
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 1128850,
+"nome": "Mycael",
+"slug": "mycael",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 22,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 15,
+"CRE": 25,
+"TEC": 31,
+"DEF": 20,
+"TAC": 57
+},
+"cartinhaFifa": {
+"DIV": 67,
+"HAN": 61,
+"KIC": 45,
+"REF": 72,
+"SPD": 42,
+"POS": 57
+},
+"desempenhoTotal2026": 7.8
+},
+{
+"id": 1589358,
+"nome": "Otávio Costa",
+"slug": "otavio-eleodoro-rezende-costa",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 20,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 18,
+"TEC": 58,
+"DEF": 60,
+"TAC": 50
+},
+"cartinhaFifa": {
+"DIV": 57,
+"HAN": 53,
+"KIC": 51,
+"REF": 61,
+"SPD": 38,
+"POS": 55
+},
+"desempenhoTotal2026": 6.1
+},
+{
+"id": 1652393,
+"nome": "Pablo",
+"slug": "pablo",
+"posicao": "G",
+"valorMercado": null,
+"idade": 23,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 13,
+"TEC": 49,
+"DEF": 46,
+"TAC": 42
+},
+"cartinhaFifa": {
+"DIV": 44,
+"HAN": 41,
+"KIC": 38,
+"REF": 47,
+"SPD": 31,
+"POS": 37
+},
+"desempenhoTotal2026": 5.6
+},
+{
+"id": 1903241,
+"nome": "Pedro Cobra Rodrigues",
+"slug": "pedro-cobra-rodrigues",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 20,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 9,
+"CRE": 22,
+"TEC": 58,
+"DEF": 65,
+"TAC": 58
+},
+"cartinhaFifa": {
+"DIV": 58,
+"HAN": 54,
+"KIC": 51,
+"REF": 62,
+"SPD": 36,
+"POS": 55
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 1507616,
+"nome": "Pedro Morisco",
+"slug": "pedro-morisco",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 22,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 20,
+"TEC": 56,
+"DEF": 61,
+"TAC": 48
+},
+"cartinhaFifa": {
+"DIV": 64,
+"HAN": 60,
+"KIC": 55,
+"REF": 69,
+"SPD": 40,
+"POS": 59
+},
+"desempenhoTotal2026": 6.9
+},
+{
+"id": 1092614,
+"nome": "Pedro Rangel",
+"slug": "pedro-rangel",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 26,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 9,
+"CRE": 21,
+"TEC": 61,
+"DEF": 66,
+"TAC": 55
+},
+"cartinhaFifa": {
+"DIV": 70,
+"HAN": 65,
+"KIC": 59,
+"REF": 74,
+"SPD": 39,
+"POS": 65
+},
+"desempenhoTotal2026": 7.1
+},
+{
+"id": 33132,
+"nome": "Rafael",
+"slug": "rafael",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 37,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 16,
+"TEC": 53,
+"DEF": 54,
+"TAC": 60
+},
+"cartinhaFifa": {
+"DIV": 67,
+"HAN": 70,
+"KIC": 63,
+"REF": 70,
+"SPD": 30,
+"POS": 71
+},
+"desempenhoTotal2026": 6.7
+},
+{
+"id": 108480,
+"nome": "Rafael Santos",
+"slug": "rafael-santos",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 37,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 18,
+"TEC": 55,
+"DEF": 58,
+"TAC": 38
+},
+"cartinhaFifa": {
+"DIV": 55,
+"HAN": 52,
+"KIC": 49,
+"REF": 59,
+"SPD": 29,
+"POS": 53
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 1819829,
+"nome": "Rhyan Carvalho",
+"slug": "rhyan",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 20,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 8,
+"CRE": 17,
+"TEC": 46,
+"DEF": 50,
+"TAC": 43
+},
+"cartinhaFifa": {
+"DIV": 44,
+"HAN": 41,
+"KIC": 37,
+"REF": 47,
+"SPD": 31,
+"POS": 38
+},
+"desempenhoTotal2026": 5
+},
+{
+"id": 1633621,
+"nome": "Robert Alves",
+"slug": "robert-pinto-alves-assuncao",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 21,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 9,
+"CRE": 22,
+"TEC": 57,
+"DEF": 64,
+"TAC": 57
+},
+"cartinhaFifa": {
+"DIV": 58,
+"HAN": 54,
+"KIC": 50,
+"REF": 62,
+"SPD": 35,
+"POS": 53
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 1589458,
+"nome": "Rodrigo Falcão",
+"slug": "rodrigo-plazezwski-falcao",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 21,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 49,
+"DEF": 46,
+"TAC": 41
+},
+"cartinhaFifa": {
+"DIV": 43,
+"HAN": 40,
+"KIC": 37,
+"REF": 46,
+"SPD": 30,
+"POS": 35
+},
+"desempenhoTotal2026": 5.6
+},
+{
+"id": 840106,
+"nome": "Ronaldo",
+"slug": "ronaldo",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 29,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 15,
+"CRE": 34,
+"TEC": 67,
+"DEF": 68,
+"TAC": 59
+},
+"cartinhaFifa": {
+"DIV": 76,
+"HAN": 71,
+"KIC": 67,
+"REF": 80,
+"SPD": 43,
+"POS": 73
+},
+"desempenhoTotal2026": 7
+},
+{
+"id": 166491,
+"nome": "Santos",
+"slug": "santos",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 36,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 15,
+"CRE": 22,
+"TEC": 30,
+"DEF": 20,
+"TAC": 54
+},
+"cartinhaFifa": {
+"DIV": 70,
+"HAN": 74,
+"KIC": 64,
+"REF": 73,
+"SPD": 30,
+"POS": 73
+},
+"desempenhoTotal2026": 6.7
+},
+{
+"id": 581060,
+"nome": "Sergio Rochet",
+"slug": "sergio-rochet",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 33,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 14,
+"TEC": 51,
+"DEF": 50,
+"TAC": 47
+},
+"cartinhaFifa": {
+"DIV": 62,
+"HAN": 58,
+"KIC": 55,
+"REF": 66,
+"SPD": 34,
+"POS": 57
+},
+"desempenhoTotal2026": 6.6
+},
+{
+"id": 1607287,
+"nome": "Thiago Beltrame",
+"slug": "thiago-beltrame",
+"posicao": "G",
+"valorMercado": null,
+"idade": 23,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 13,
+"TEC": 45,
+"DEF": 43,
+"TAC": 32
+},
+"cartinhaFifa": {
+"DIV": 40,
+"HAN": 37,
+"KIC": 34,
+"REF": 43,
+"SPD": 29,
+"POS": 33
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 870929,
+"nome": "Thomazella",
+"slug": "thomazella",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 35,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 49,
+"DEF": 48,
+"TAC": 47
+},
+"cartinhaFifa": {
+"DIV": 48,
+"HAN": 45,
+"KIC": 42,
+"REF": 52,
+"SPD": 29,
+"POS": 42
+},
+"desempenhoTotal2026": 6
+},
+{
+"id": 243509,
+"nome": "Tiago Volpi",
+"slug": "tiago-volpi",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 35,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 16,
+"TEC": 55,
+"DEF": 56,
+"TAC": 47
+},
+"cartinhaFifa": {
+"DIV": 63,
+"HAN": 58,
+"KIC": 57,
+"REF": 67,
+"SPD": 32,
+"POS": 57
+},
+"desempenhoTotal2026": 6.6
+},
+{
+"id": 1640599,
+"nome": "Victor",
+"slug": "victor",
+"posicao": "G",
+"valorMercado": null,
+"idade": null,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 10,
+"CRE": 24,
+"TEC": 45,
+"DEF": 52,
+"TAC": 36
+},
+"cartinhaFifa": {
+"DIV": 42,
+"HAN": 39,
+"KIC": 36,
+"REF": 45,
+"SPD": 27,
+"POS": 35
+},
+"desempenhoTotal2026": 5
+},
+{
+"id": 1609530,
+"nome": "Victor Nascimento",
+"slug": "victor-dos-santos-nascimento",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 20,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 10,
+"CRE": 25,
+"TEC": 48,
+"DEF": 55,
+"TAC": 38
+},
+"cartinhaFifa": {
+"DIV": 48,
+"HAN": 44,
+"KIC": 41,
+"REF": 52,
+"SPD": 31,
+"POS": 43
+},
+"desempenhoTotal2026": 5.5
+},
+{
+"id": 927666,
+"nome": "Vitor Eudes",
+"slug": "vitor-eudes",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 27,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 49,
+"DEF": 46,
+"TAC": 33
+},
+"cartinhaFifa": {
+"DIV": 43,
+"HAN": 40,
+"KIC": 37,
+"REF": 47,
+"SPD": 31,
+"POS": 35
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 329055,
+"nome": "Walter",
+"slug": "walter",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 38,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 58,
+"DEF": 57,
+"TAC": 59
+},
+"cartinhaFifa": {
+"DIV": 70,
+"HAN": 67,
+"KIC": 59,
+"REF": 74,
+"SPD": 29,
+"POS": 66
+},
+"desempenhoTotal2026": 7.2
+},
+{
+"id": 861071,
+"nome": "Warleson",
+"slug": "warleson",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 29,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 10,
+"CRE": 24,
+"TEC": 61,
+"DEF": 64,
+"TAC": 57
+},
+"cartinhaFifa": {
+"DIV": 70,
+"HAN": 65,
+"KIC": 59,
+"REF": 74,
+"SPD": 40,
+"POS": 65
+},
+"desempenhoTotal2026": 6.7
+},
+{
+"id": 243529,
+"nome": "Weverton",
+"slug": "weverton",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 38,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 7,
+"CRE": 17,
+"TEC": 57,
+"DEF": 63,
+"TAC": 65
+},
+"cartinhaFifa": {
+"DIV": 82,
+"HAN": 79,
+"KIC": 75,
+"REF": 85,
+"SPD": 39,
+"POS": 84
+},
+"desempenhoTotal2026": 7.4
+},
+{
+"id": 922569,
+"nome": "Ygor Vinhas",
+"slug": "ygor-vinhas",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 32,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 6,
+"CRE": 15,
+"TEC": 51,
+"DEF": 47,
+"TAC": 45
+},
+"cartinhaFifa": {
+"DIV": 45,
+"HAN": 42,
+"KIC": 39,
+"REF": 49,
+"SPD": 30,
+"POS": 37
+},
+"desempenhoTotal2026": 5.9
+},
+{
+"id": 1116957,
+"nome": "Young",
+"slug": "young",
+"posicao": "G",
+"valorMercado": null,
+"idade": 24,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 14,
+"TEC": 48,
+"DEF": 46,
+"TAC": 45
+},
+"cartinhaFifa": {
+"DIV": 43,
+"HAN": 40,
+"KIC": 37,
+"REF": 46,
+"SPD": 31,
+"POS": 35
+},
+"desempenhoTotal2026": 5.8
+},
+{
+"id": 905464,
+"nome": "Yuri Sena",
+"slug": "yuri-sena",
+"posicao": "GK",
+"valorMercado": null,
+"idade": 25,
+"sofascoreOriginal": {
+"ATT": null,
+"CRE": null,
+"TEC": null,
+"DEF": null,
+"TAC": null,
+"SAV": null,
+"ANT": null,
+"DIS": null,
+"AER": null
+},
+"sofascoreVazia": {
+"ATT": 5,
+"CRE": 13,
+"TEC": 48,
+"DEF": 46,
+"TAC": 39
+},
+"cartinhaFifa": {
+"DIV": 40,
+"HAN": 37,
+"KIC": 34,
+"REF": 43,
+"SPD": 30,
+"POS": 33
+},
+"desempenhoTotal2026": 5.3
+}
+]
