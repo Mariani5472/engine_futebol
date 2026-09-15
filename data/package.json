@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "enrich:attributes": "tsx enrich-player-attributes.ts"
+    "enrich:attributes": "tsx enrich-player-attributes.ts",
+    "generate:ai-overall": "tsx generate-ai-overall-input.ts"
   },
   "keywords": [],
   "author": "",
