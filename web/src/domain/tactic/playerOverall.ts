@@ -24,13 +24,10 @@ const MIN_OVERALL = 50;
 const MAX_OVERALL = 94;
 
 /**
- * Converte valor de mercado em um nível de força compatível com a escala do jogo.
+ * Valor de mercado em milhões de euros -> OVR.
  *
- * O valor usa uma curva logarítmica porque passar de €1M para €5M representa
- * uma diferença muito maior de nível do que passar de €30M para €34M.
- *
- * Os pontos abaixo são âncoras da escala do Brasileirão e são interpolados
- * em log10(valor + 0.1), evitando que jogadores baratos fiquem todos iguais.
+ * A curva é logarítmica: aumentar de €1M para €5M tem muito mais impacto
+ * do que aumentar de €30M para €34M.
  */
 const MARKET_ANCHORS = [
   { value: 0, overall: 52 },
@@ -55,20 +52,22 @@ function normalizeRole(position: string): TacticalRole {
 
   if (normalized === "G" || normalized === "GK") return "GK";
   if (normalized === "D" || normalized.startsWith("D")) return "D";
-  if (normalized === "M" || normalized.startsWith("M") || normalized.startsWith("AM")) {
+  if (
+    normalized === "M" ||
+    normalized.startsWith("M") ||
+    normalized.startsWith("AM")
+  ) {
     return "M";
   }
 
   return "F";
 }
 
-/**
- * Valor de mercado em milhões de euros -> OVR.
- */
-export function marketValueToOverall(marketValue: number | null | undefined) {
-  if (!marketValue || marketValue <= 0) {
-    return 52;
-  }
+/** Converte valor de mercado em OVR. */
+export function marketValueToOverall(
+  marketValue: number | null | undefined,
+) {
+  if (!marketValue || marketValue <= 0) return 52;
 
   const valueInMillions = marketValue / 1_000_000;
   const x = Math.log10(valueInMillions + 0.1);
@@ -92,10 +91,8 @@ export function marketValueToOverall(marketValue: number | null | undefined) {
 }
 
 /**
- * Idade deve influenciar pouco o OVR atual.
- *
- * Não usamos idade para transformar um jogador de 18 anos em craque apenas
- * porque ele tem potencial. Ela representa somente maturidade/declínio leve.
+ * Idade é somente um pequeno ajuste de maturidade.
+ * Não representa potencial: um jogador jovem não recebe OVR artificialmente alto.
  */
 export function ageModifier(age: number | null | undefined) {
   if (age == null || !Number.isFinite(age)) return 0;
@@ -112,7 +109,13 @@ export function ageModifier(age: number | null | undefined) {
 
 const OUTFIELD_WEIGHTS: Record<
   Exclude<TacticalRole, "GK">,
-  Record<keyof Pick<OverallAttributes, "attacking" | "technical" | "tactical" | "defending" | "creativity">, number>
+  Record<
+    keyof Pick<
+      OverallAttributes,
+      "attacking" | "technical" | "tactical" | "defending" | "creativity"
+    >,
+    number
+  >
 > = {
   D: {
     attacking: 0.10,
@@ -138,10 +141,11 @@ const OUTFIELD_WEIGHTS: Record<
 };
 
 /**
- * Calcula o componente de atributos sem assumir que todos os cinco campos
- * sempre estarão presentes.
+ * Transforma os cinco atributos do SofaScore em um OVR de atributos.
  *
- * Para goleiros, os cinco indicadores específicos recebem o mesmo peso.
+ * Goleiros usam os cinco indicadores específicos com peso igual.
+ * Jogadores de linha usam pesos diferentes por função, mas nenhum atributo
+ * é ignorado completamente.
  */
 export function attributesToOverall(
   attributes: OverallAttributes | null | undefined,
@@ -180,62 +184,65 @@ export function attributesToOverall(
 }
 
 /**
- * Calculadora principal.
+ * Calculadora principal do OVR.
  *
- * Pesos:
- * - 50% SofaScore: principal indicador de qualidade atual.
- * - 30% mercado: força/reputação/nível percebido pelo mercado.
- * - 15% atributos: perfil técnico/tático do jogador.
- * - 5% idade: maturidade/declínio leve.
+ * Ordem de importância:
+ * - 50%: overall do SofaScore
+ * - 30%: valor de mercado
+ * - 20%: atributos do SofaScore
+ * - idade: pequeno ajuste de -2 a +2 pontos
  *
- * Quando atributos não existem, os pesos são redistribuídos entre os outros
- * componentes. Isso é importante enquanto o banco ainda estiver sendo enriquecido.
+ * Se um dado não existir, ele não derruba o jogador para um valor arbitrário:
+ * os pesos dos dados disponíveis são redistribuídos automaticamente.
  */
 export function calculatePlayerOverall(input: PlayerOverallInput) {
-  const sofascore = input.sofascoreOverall != null
-    ? clamp(input.sofascoreOverall, 1, 99)
-    : null;
-
-  const market = marketValueToOverall(input.marketValue);
-  const attributes = attributesToOverall(input.attributes, input.position);
-  const age = ageModifier(input.age);
-
   const components: Array<{ value: number; weight: number }> = [];
 
-  if (sofascore != null) {
-    components.push({ value: sofascore, weight: 0.50 });
+  if (
+    input.sofascoreOverall != null &&
+    Number.isFinite(input.sofascoreOverall)
+  ) {
+    components.push({
+      value: clamp(input.sofascoreOverall, 1, 99),
+      weight: 0.50,
+    });
   }
 
-  components.push({ value: market, weight: 0.30 });
+  components.push({
+    value: marketValueToOverall(input.marketValue),
+    weight: 0.30,
+  });
 
-  if (attributes != null) {
-    components.push({ value: attributes, weight: 0.15 });
+  const attributeOverall = attributesToOverall(
+    input.attributes,
+    input.position,
+  );
+
+  if (attributeOverall != null) {
+    components.push({
+      value: attributeOverall,
+      weight: 0.20,
+    });
   }
 
-  if (input.age != null) {
-    // Idade é um modificador, não um OVR independente.
-    components.push({ value: age, weight: 0.05 });
-  }
+  const weightTotal = components.reduce(
+    (sum, component) => sum + component.weight,
+    0,
+  );
 
-  const weightTotal = components.reduce((sum, component) => sum + component.weight, 0);
-  const weightedScore = components.reduce(
+  const qualityOverall = components.reduce(
     (sum, component) => sum + component.value * component.weight,
     0,
   ) / weightTotal;
 
-  // A idade foi tratada como modificador. Por isso removemos a parcela base
-  // usada para neutralizar o peso de 5% e aplicamos somente o bônus/penalidade.
-  const ageBase = input.age != null ? 60 * 0.05 : 0;
-  const ageAdjustment = input.age != null ? age * 0.05 : 0;
-
-  const overall = weightedScore - ageBase + ageAdjustment;
+  // Idade influencia pouco. O máximo real é ±2 pontos.
+  const age = ageModifier(input.age);
+  const overall = qualityOverall + age;
 
   return Math.round(clamp(overall, MIN_OVERALL, MAX_OVERALL));
 }
 
-/**
- * OVR do jogador para a tela/elenco.
- */
+/** OVR base do jogador. */
 export function getPlayerOverall(player: {
   age: number | null;
   marketValue: number | null;
@@ -254,8 +261,7 @@ export function getPlayerOverall(player: {
 
 /**
  * Penalidade por atuar fora da função natural.
- * É propositalmente separada do OVR base: o jogador continua sendo o mesmo,
- * mas sua eficiência cai quando colocado em uma função inadequada.
+ * O OVR base não muda; somente a eficiência naquela posição muda.
  */
 export function getPositionPenalty(
   playerPosition: string,
