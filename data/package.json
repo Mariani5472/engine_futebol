@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "enrich:attributes": "tsx enrich-player-attributes.ts",
     "generate:ai-overall": "tsx generate-ai-overall-input.ts",
-    "apply:ai-overall": "tsx apply-ai-overall.ts"
+    "apply:ai-overall": "tsx apply-ai-overall.ts",
+    "apply:goalkeepers": "tsx apply-goalkeepers.ts"
   },
   "keywords": [],
   "author": "",
