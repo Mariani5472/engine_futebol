@@ -1,4 +1,7 @@
-import { MatchEvent } from "@/domain/match/types";
+import type {
+  MatchEvent,
+  MatchStats,
+} from "@/domain/match/types";
 import type {
   Fixture,
   PlayerStat,
@@ -73,6 +76,8 @@ export type GameState = {
     minute: number;
 
     events: MatchEvent[];
+
+    stats: MatchStats;
   };
 };
 

@@ -1,0 +1,1882 @@
+[
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 2408644,
+    "playerName": "Joao Camargo",
+    "playerSlug": "joao-camargo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-camargo/2408644",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2408644/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 1459764,
+    "playerName": "Lorran",
+    "playerSlug": "lorran",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/lorran/1459764",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1459764/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 1883287,
+    "playerName": "Caio Joshua",
+    "playerSlug": "caio-joshua-de-andrade",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/caio-joshua-de-andrade/1883287",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1883287/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 1883345,
+    "playerName": "Luiz Felipe",
+    "playerSlug": "luiz-felipe-mariano",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/luiz-felipe-mariano/1883345",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1883345/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 1485196,
+    "playerName": "Caio Garcia",
+    "playerSlug": "caio-vinicius",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/caio-vinicius/1485196",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1485196/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 2063998,
+    "playerName": "Johnny Goes",
+    "playerSlug": "johnny-goes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/johnny-goes/2063998",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2063998/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 2456574,
+    "playerName": "Daniel Thuram",
+    "playerSlug": "marinho-da-silva-daniel-carvalho",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/marinho-da-silva-daniel-carvalho/2456574",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2456574/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 2747674,
+    "playerName": "Douglas Costa Telles",
+    "playerSlug": "douglas-costa-telles",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/douglas-costa-telles/2747674",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2747674/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 1883289,
+    "playerName": "Daniel Carvalho Marinho",
+    "playerSlug": "daniel-carvalho-marinho",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/daniel-carvalho-marinho/1883289",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1883289/attribute-overviews"
+  },
+  {
+    "teamId": 5981,
+    "teamName": "Flamengo",
+    "teamSlug": "flamengo",
+    "playerId": 1514629,
+    "playerName": "Dyogo Alves",
+    "playerSlug": "dyogo-alves",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/dyogo-alves/1514629",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1514629/attribute-overviews"
+  },
+  {
+    "teamId": 1963,
+    "teamName": "Palmeiras",
+    "teamSlug": "palmeiras",
+    "playerId": 885179,
+    "playerName": "Paulinho",
+    "playerSlug": "paulinho",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/paulinho/885179",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/885179/attribute-overviews"
+  },
+  {
+    "teamId": 1963,
+    "teamName": "Palmeiras",
+    "teamSlug": "palmeiras",
+    "playerId": 2551774,
+    "playerName": "Miguel Cinoncelli Bilong",
+    "playerSlug": "miguel-cinoncelli-bilong",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/miguel-cinoncelli-bilong/2551774",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2551774/attribute-overviews"
+  },
+  {
+    "teamId": 1963,
+    "teamName": "Palmeiras",
+    "teamSlug": "palmeiras",
+    "playerId": 34141,
+    "playerName": "Marcelo Lomba",
+    "playerSlug": "marcelo-lomba",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/marcelo-lomba/34141",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/34141/attribute-overviews"
+  },
+  {
+    "teamId": 1963,
+    "teamName": "Palmeiras",
+    "teamSlug": "palmeiras",
+    "playerId": 977079,
+    "playerName": "Bruno Bertinato",
+    "playerSlug": "bruno-bertinato",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/bruno-bertinato/977079",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/977079/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 1459787,
+    "playerName": "Renan Viana",
+    "playerSlug": "renan-viana",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/renan-viana/1459787",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1459787/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 1546666,
+    "playerName": "Daniel Troiano",
+    "playerSlug": "daniel-caue-troiano-farias",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/daniel-caue-troiano-farias/1546666",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1546666/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2754297,
+    "playerName": "Nicolás Ezequiel Azambuja Vargas",
+    "playerSlug": "nicolas-ezequiel-azambuja-vargas",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/nicolas-ezequiel-azambuja-vargas/2754297",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2754297/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2411095,
+    "playerName": "Bryan Sant Ana",
+    "playerSlug": "bryan-sant-ana",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/bryan-sant-ana/2411095",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2411095/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 1464519,
+    "playerName": "Isaac",
+    "playerSlug": "isaac",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/isaac/1464519",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1464519/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 912291,
+    "playerName": "Alejandro García",
+    "playerSlug": "alejandro-garcia",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/alejandro-garcia/912291",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/912291/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2631968,
+    "playerName": "Caio Mozart Martins Varanda",
+    "playerSlug": "caio-mozart-martins-varanda",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/caio-mozart-martins-varanda/2631968",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2631968/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2752039,
+    "playerName": "Pedro Wisniewski Carraro",
+    "playerSlug": "pedro-wisniewski-carraro",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/pedro-wisniewski-carraro/2752039",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2752039/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 360940,
+    "playerName": "Léo",
+    "playerSlug": "leo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/leo/360940",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/360940/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 1633871,
+    "playerName": "Claudinho",
+    "playerSlug": "claudio-henrique-de-jesus-passos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/claudio-henrique-de-jesus-passos/1633871",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1633871/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2754334,
+    "playerName": "Fábio Lucas Ferreira Santos",
+    "playerSlug": "fabio-lucas-ferreira-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/fabio-lucas-ferreira-santos/2754334",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2754334/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2752037,
+    "playerName": "Enzo Bernardo Freitas de Souza",
+    "playerSlug": "enzo-bernardo-freitas-de-souza",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/enzo-bernardo-freitas-de-souza/2752037",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2752037/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 1128850,
+    "playerName": "Mycael",
+    "playerSlug": "mycael",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/mycael/1128850",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1128850/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 1485244,
+    "playerName": "Matheus Soares",
+    "playerSlug": "matheus-rocha",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/matheus-rocha/1485244",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1485244/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2170349,
+    "playerName": "João Pedro de Borba Rodrigues",
+    "playerSlug": "joao-pedro-de-borba-rodrigues",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-pedro-de-borba-rodrigues/2170349",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2170349/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 1804705,
+    "playerName": "Kauê Sestrem",
+    "playerSlug": "kaue-sestrem",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kaue-sestrem/1804705",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1804705/attribute-overviews"
+  },
+  {
+    "teamId": 1967,
+    "teamName": "Athletico",
+    "teamSlug": "athletico",
+    "playerId": 2754746,
+    "playerName": "Kauan Augusto",
+    "playerSlug": "kauan-augusto",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kauan-augusto/2754746",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2754746/attribute-overviews"
+  },
+  {
+    "teamId": 1955,
+    "teamName": "Bahia",
+    "teamSlug": "bahia",
+    "playerId": 871705,
+    "playerName": "Kanu",
+    "playerSlug": "kanu",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kanu/871705",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/871705/attribute-overviews"
+  },
+  {
+    "teamId": 1955,
+    "teamName": "Bahia",
+    "teamSlug": "bahia",
+    "playerId": 1634148,
+    "playerName": "Luiz Gustavo",
+    "playerSlug": "gustavo-luiz",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gustavo-luiz/1634148",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1634148/attribute-overviews"
+  },
+  {
+    "teamId": 1955,
+    "teamName": "Bahia",
+    "teamSlug": "bahia",
+    "playerId": 1476894,
+    "playerName": "José Guilherme",
+    "playerSlug": "jose-guilherme",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/jose-guilherme/1476894",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1476894/attribute-overviews"
+  },
+  {
+    "teamId": 1955,
+    "teamName": "Bahia",
+    "teamSlug": "bahia",
+    "playerId": 1609530,
+    "playerName": "Victor Nascimento",
+    "playerSlug": "victor-dos-santos-nascimento",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/victor-dos-santos-nascimento/1609530",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1609530/attribute-overviews"
+  },
+  {
+    "teamId": 1955,
+    "teamName": "Bahia",
+    "teamSlug": "bahia",
+    "playerId": 1640599,
+    "playerName": "Victor",
+    "playerSlug": "victor",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/victor/1640599",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1640599/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1483339,
+    "playerName": "Matheus Reis",
+    "playerSlug": "reis-matheus",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/reis-matheus/1483339",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1483339/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1884803,
+    "playerName": "Riquelme Felipe",
+    "playerSlug": "riquelme-felipe-silva",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/riquelme-felipe-silva/1884803",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1884803/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1518961,
+    "playerName": "Yago",
+    "playerSlug": "yago",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/yago/1518961",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1518961/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1862245,
+    "playerName": "Ruan Sales",
+    "playerSlug": "ruan-sales",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ruan-sales/1862245",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1862245/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1485285,
+    "playerName": "Luis Fernando",
+    "playerSlug": "luis-fernando",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/luis-fernando/1485285",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1485285/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 753662,
+    "playerName": "Igor Rabello",
+    "playerSlug": "igor-rabello",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/igor-rabello/753662",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/753662/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1561524,
+    "playerName": "Júlio Fidelis",
+    "playerSlug": "julio-fidelis",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/julio-fidelis/1561524",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1561524/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1631686,
+    "playerName": "Léo Jance",
+    "playerSlug": "leonardo-de-oliveira-jance",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/leonardo-de-oliveira-jance/1631686",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1631686/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 1093974,
+    "playerName": "Marcelo Pitaluga",
+    "playerSlug": "marcelo-pitaluga",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/marcelo-pitaluga/1093974",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1093974/attribute-overviews"
+  },
+  {
+    "teamId": 1961,
+    "teamName": "Fluminense",
+    "teamSlug": "fluminense",
+    "playerId": 927666,
+    "playerName": "Vitor Eudes",
+    "playerSlug": "vitor-eudes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/vitor-eudes/927666",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/927666/attribute-overviews"
+  },
+  {
+    "teamId": 1954,
+    "teamName": "Cruzeiro",
+    "teamSlug": "cruzeiro",
+    "playerId": 1116954,
+    "playerName": "Marquinhos",
+    "playerSlug": "marquinhos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/marquinhos/1116954",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1116954/attribute-overviews"
+  },
+  {
+    "teamId": 1954,
+    "teamName": "Cruzeiro",
+    "teamSlug": "cruzeiro",
+    "playerId": 1386893,
+    "playerName": "Fabrizio Peralta",
+    "playerSlug": "fabrizio-peralta",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/fabrizio-peralta/1386893",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1386893/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 2155474,
+    "playerName": "Mamady Cissé",
+    "playerSlug": "mamady-cisse",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/mamady-cisse/2155474",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2155474/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 1829023,
+    "playerName": "Índio",
+    "playerSlug": "hendel-dos-santos-nascimento",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/hendel-dos-santos-nascimento/1829023",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1829023/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 2671648,
+    "playerName": "Gutte",
+    "playerSlug": "gutte",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gutte/2671648",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2671648/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 2270350,
+    "playerName": "Pedro Tocantins",
+    "playerSlug": "pedro-tocantins",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/pedro-tocantins/2270350",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2270350/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 2726134,
+    "playerName": "Pedro Henrique Lemos Barbosa",
+    "playerSlug": "lemos-barbosa-pedro-henrique",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/lemos-barbosa-pedro-henrique/2726134",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2726134/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 1117032,
+    "playerName": "Gabriel Delfim",
+    "playerSlug": "gabriel-delfim",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel-delfim/1117032",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1117032/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 1633621,
+    "playerName": "Robert Alves",
+    "playerSlug": "robert-pinto-alves-assuncao",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/robert-pinto-alves-assuncao/1633621",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1633621/attribute-overviews"
+  },
+  {
+    "teamId": 1977,
+    "teamName": "Atlético Mineiro",
+    "teamSlug": "atletico-mineiro",
+    "playerId": 1903241,
+    "playerName": "Pedro Cobra Rodrigues",
+    "playerSlug": "pedro-cobra-rodrigues",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/pedro-cobra-rodrigues/1903241",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1903241/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 989091,
+    "playerName": "Rodrigo Rodrigues",
+    "playerSlug": "rodrigo-rodrigues",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/rodrigo-rodrigues/989091",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/989091/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 2429936,
+    "playerName": "Paulo Roberto",
+    "playerSlug": "paulo-roberto",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/paulo-roberto/2429936",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2429936/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 1588326,
+    "playerName": "Eberth Araujo Nogueira",
+    "playerSlug": "nogueira-eberth-araujo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/nogueira-eberth-araujo/1588326",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1588326/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 897617,
+    "playerName": "Richard",
+    "playerSlug": "richard-candido",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/richard-candido/897617",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/897617/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 1099747,
+    "playerName": "Gustavo",
+    "playerSlug": "gustavo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gustavo/1099747",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1099747/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 1864296,
+    "playerName": "Vitor Gonçalves Tissi",
+    "playerSlug": "vitor-goncalves-tissi",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/vitor-goncalves-tissi/1864296",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1864296/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 72080,
+    "playerName": "Rodrigo Moledo",
+    "playerSlug": "rodrigo-moledo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/rodrigo-moledo/72080",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/72080/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 1465499,
+    "playerName": "Rodrigo Gelado",
+    "playerSlug": "rodrigo-gelado",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/rodrigo-gelado/1465499",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1465499/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 840082,
+    "playerName": "Keiller",
+    "playerSlug": "keiller",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/keiller/840082",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/840082/attribute-overviews"
+  },
+  {
+    "teamId": 1982,
+    "teamName": "Coritiba",
+    "teamSlug": "coritiba",
+    "playerId": 1174621,
+    "playerName": "Benassi",
+    "playerSlug": "benassi",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/benassi/1174621",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1174621/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1466084,
+    "playerName": "Wallace Yan",
+    "playerSlug": "wallace",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/wallace/1466084",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1466084/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 911195,
+    "playerName": "Fernando",
+    "playerSlug": "fernando",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/fernando/911195",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/911195/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1868441,
+    "playerName": "Bruno Goncalves",
+    "playerSlug": "bruno-goncalves",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/bruno-goncalves/1868441",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1868441/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 882854,
+    "playerName": "Gabriel Novaes",
+    "playerSlug": "gabriel-novaes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel-novaes/882854",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/882854/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1046800,
+    "playerName": "Kawê",
+    "playerSlug": "kawe",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kawe/1046800",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1046800/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1485290,
+    "playerName": "Patrick",
+    "playerSlug": "patrick-silva",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/patrick-silva/1485290",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1485290/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1018093,
+    "playerName": "Bruno Praxedes",
+    "playerSlug": "bruno-praxedes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/bruno-praxedes/1018093",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1018093/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 2032806,
+    "playerName": "Davi Gomes",
+    "playerSlug": "davi-gomes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/davi-gomes/2032806",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2032806/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1485603,
+    "playerName": "Marcelinho Braz",
+    "playerSlug": "marcelinho-braz",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/marcelinho-braz/1485603",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1485603/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1067640,
+    "playerName": "Vanderlan",
+    "playerSlug": "vanderlan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/vanderlan/1067640",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1067640/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 997239,
+    "playerName": "Guzmán Rodríguez",
+    "playerSlug": "guzman-rodriguez",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/guzman-rodriguez/997239",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/997239/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 925189,
+    "playerName": "Eduardo Santos",
+    "playerSlug": "eduardo-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/eduardo-santos/925189",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/925189/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 2026380,
+    "playerName": "Ryan Augusto",
+    "playerSlug": "ryan-augusto-tavares-da-silva",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ryan-augusto-tavares-da-silva/2026380",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2026380/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1881677,
+    "playerName": "Gustavo Reis",
+    "playerSlug": "gustavo-reis",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gustavo-reis/1881677",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1881677/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 1047208,
+    "playerName": "Fabrício",
+    "playerSlug": "fabricio",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/fabricio/1047208",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1047208/attribute-overviews"
+  },
+  {
+    "teamId": 1999,
+    "teamName": "Red Bull Bragantino",
+    "teamSlug": "red-bull-bragantino",
+    "playerId": 2140167,
+    "playerName": "Fernando Costa",
+    "playerSlug": "pires-costa-fernando-henrique",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/pires-costa-fernando-henrique/2140167",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2140167/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 1170767,
+    "playerName": "Andrey Quintino",
+    "playerSlug": "andrey-quintino",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/andrey-quintino/1170767",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1170767/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 1590315,
+    "playerName": "Enzo Duscov Boer",
+    "playerSlug": "enzo-duscov-boer",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/enzo-duscov-boer/1590315",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1590315/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 2550839,
+    "playerName": "Samuel Mendes",
+    "playerSlug": "samuel-mendes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/samuel-mendes/2550839",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2550839/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 883205,
+    "playerName": "Alexis Duarte",
+    "playerSlug": "alexis-duarte",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/alexis-duarte/883205",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/883205/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 795177,
+    "playerName": "João Paulo",
+    "playerSlug": "joao-paulo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-paulo/795177",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/795177/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 1128754,
+    "playerName": "Diogenes",
+    "playerSlug": "diogenes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/diogenes/1128754",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1128754/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 1589458,
+    "playerName": "Rodrigo Falcão",
+    "playerSlug": "rodrigo-plazezwski-falcao",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/rodrigo-plazezwski-falcao/1589458",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1589458/attribute-overviews"
+  },
+  {
+    "teamId": 1968,
+    "teamName": "Santos",
+    "teamSlug": "santos",
+    "playerId": 1656025,
+    "playerName": "João Fernandes",
+    "playerSlug": "joao-fernandes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-fernandes/1656025",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1656025/attribute-overviews"
+  },
+  {
+    "teamId": 1981,
+    "teamName": "São Paulo",
+    "teamSlug": "sao-paulo",
+    "playerId": 1631904,
+    "playerName": "Ryan Francisco",
+    "playerSlug": "ryan-francisco-rodrigues-dos-santos-silva",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ryan-francisco-rodrigues-dos-santos-silva/1631904",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1631904/attribute-overviews"
+  },
+  {
+    "teamId": 1981,
+    "teamName": "São Paulo",
+    "teamSlug": "sao-paulo",
+    "playerId": 1466551,
+    "playerName": "Matheus Belém",
+    "playerSlug": "matheus-belem",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/matheus-belem/1466551",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1466551/attribute-overviews"
+  },
+  {
+    "teamId": 1981,
+    "teamName": "São Paulo",
+    "teamSlug": "sao-paulo",
+    "playerId": 1116957,
+    "playerName": "Young",
+    "playerSlug": "young",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/young/1116957",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1116957/attribute-overviews"
+  },
+  {
+    "teamId": 1981,
+    "teamName": "São Paulo",
+    "teamSlug": "sao-paulo",
+    "playerId": 800150,
+    "playerName": "Carlos Coronel",
+    "playerSlug": "carlos-coronel",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/carlos-coronel/800150",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/800150/attribute-overviews"
+  },
+  {
+    "teamId": 1981,
+    "teamName": "São Paulo",
+    "teamSlug": "sao-paulo",
+    "playerId": 1631898,
+    "playerName": "Felipe Gabriel Preis",
+    "playerSlug": "felipe-gabriel-preis",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/felipe-gabriel-preis/1631898",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1631898/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 2441013,
+    "playerName": "Anderson Pato",
+    "playerSlug": "anderson-pato",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/anderson-pato/2441013",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2441013/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 1469058,
+    "playerName": "Rúben Ramos Ismael",
+    "playerSlug": "ruben-ramos-ismael",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ruben-ramos-ismael/1469058",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1469058/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 1896090,
+    "playerName": "José Breno",
+    "playerSlug": "jose-breno",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/jose-breno/1896090",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1896090/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 2613161,
+    "playerName": "Cauan Farias",
+    "playerSlug": "cauan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/cauan/2613161",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2613161/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 2731072,
+    "playerName": "Hiago Santos",
+    "playerSlug": "hiago-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/hiago-santos/2731072",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2731072/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 989715,
+    "playerName": "Edu",
+    "playerSlug": "edu",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/edu/989715",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/989715/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 927166,
+    "playerName": "Riccieli",
+    "playerSlug": "riccieli",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/riccieli/927166",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/927166/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 1959800,
+    "playerName": "Darlan",
+    "playerSlug": "darlan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/darlan/1959800",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1959800/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 1017274,
+    "playerName": "Alexandre Fintelman",
+    "playerSlug": "alexandre-fintelman",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/alexandre-fintelman/1017274",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1017274/attribute-overviews"
+  },
+  {
+    "teamId": 1962,
+    "teamName": "Vitória",
+    "teamSlug": "vitoria",
+    "playerId": 905464,
+    "playerName": "Yuri Sena",
+    "playerSlug": "yuri-sena",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/yuri-sena/905464",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/905464/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 1411152,
+    "playerName": "Kayke Ferrari",
+    "playerSlug": "kayke-ferrari",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kayke-ferrari/1411152",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1411152/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 358166,
+    "playerName": "Alex Santana",
+    "playerSlug": "alex-santana",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/alex-santana/358166",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/358166/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 1017827,
+    "playerName": "Hugo",
+    "playerSlug": "hugo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/hugo/1017827",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1017827/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 1170769,
+    "playerName": "Léo Mana",
+    "playerSlug": "leo-mana",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/leo-mana/1170769",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1170769/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 1411159,
+    "playerName": "Renato Santos",
+    "playerSlug": "renato-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/renato-santos/1411159",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1411159/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 1883368,
+    "playerName": "Yago Melo",
+    "playerSlug": "yago-vitor-veloso",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/yago-vitor-veloso/1883368",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1883368/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 1485272,
+    "playerName": "Felipe Longo",
+    "playerSlug": "felipe-longo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/felipe-longo/1485272",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1485272/attribute-overviews"
+  },
+  {
+    "teamId": 1957,
+    "teamName": "Corinthians",
+    "teamSlug": "corinthians",
+    "playerId": 1382923,
+    "playerName": "Kauê",
+    "playerSlug": "kaue",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kaue/1382923",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1382923/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 2282985,
+    "playerName": "Kadir Barría",
+    "playerSlug": "jose-kadir",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/jose-kadir/2282985",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2282985/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 2083516,
+    "playerName": "Lucas Emanuel",
+    "playerSlug": "lucas-emanuel-jales",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/lucas-emanuel-jales/2083516",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2083516/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 2428433,
+    "playerName": "Arthur Izaque",
+    "playerSlug": "arthur-izaque",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/arthur-izaque/2428433",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2428433/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1884816,
+    "playerName": "Wallace Davi",
+    "playerSlug": "wallace-davi-nunes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/wallace-davi-nunes/1884816",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1884816/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 2081972,
+    "playerName": "Victor Hugo",
+    "playerSlug": "victor-hugo-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/victor-hugo-santos/2081972",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2081972/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 990193,
+    "playerName": "Kaio Pantaleão",
+    "playerSlug": "kaio",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kaio/990193",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/990193/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1482359,
+    "playerName": "Jhoan Hernandez",
+    "playerSlug": "hernandez-jhoan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/hernandez-jhoan/1482359",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1482359/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1843325,
+    "playerName": "Kadu Santos",
+    "playerSlug": "kadu-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kadu-santos/1843325",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1843325/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1512551,
+    "playerName": "Ythallo",
+    "playerSlug": "ythallo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ythallo/1512551",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1512551/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1809800,
+    "playerName": "Anthony",
+    "playerSlug": "anthony",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/anthony/1809800",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1809800/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1191406,
+    "playerName": "Kawan Thomaz",
+    "playerSlug": "kawan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kawan/1191406",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1191406/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 2084595,
+    "playerName": "Gabriel Abdias",
+    "playerSlug": "gabriel-da-silva-abdias",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel-da-silva-abdias/2084595",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2084595/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 2081002,
+    "playerName": "Herick",
+    "playerSlug": "herick-neves",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/herick-neves/2081002",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2081002/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1470452,
+    "playerName": "Cristhian Loor",
+    "playerSlug": "cristhian-loor",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/cristhian-loor/1470452",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1470452/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1819829,
+    "playerName": "Rhyan Carvalho",
+    "playerSlug": "rhyan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/rhyan/1819829",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1819829/attribute-overviews"
+  },
+  {
+    "teamId": 1958,
+    "teamName": "Botafogo",
+    "teamSlug": "botafogo",
+    "playerId": 1831094,
+    "playerName": "Cléber Lucas",
+    "playerSlug": "cleber-lucas-chieppe-chagas",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/cleber-lucas-chieppe-chagas/1831094",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1831094/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 842076,
+    "playerName": "Zé Roberto",
+    "playerSlug": "ze-roberto",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ze-roberto/842076",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/842076/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 1459623,
+    "playerName": "Japa",
+    "playerSlug": "joao-wellington-japa",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-wellington-japa/1459623",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1459623/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 1090716,
+    "playerName": "Luiz Filipe",
+    "playerSlug": "luiz-filipe",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/luiz-filipe/1090716",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1090716/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 1465498,
+    "playerName": "Gabriel Knesowitsch",
+    "playerSlug": "gabriel",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel/1465498",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1465498/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 1470509,
+    "playerName": "Wesley Santos",
+    "playerSlug": "wesley-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/wesley-santos/1470509",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1470509/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 340113,
+    "playerName": "Alex Muralha",
+    "playerSlug": "alex-muralha",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/alex-muralha/340113",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/340113/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 870929,
+    "playerName": "Thomazella",
+    "playerSlug": "thomazella",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/thomazella/870929",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/870929/attribute-overviews"
+  },
+  {
+    "teamId": 21982,
+    "teamName": "Mirassol",
+    "teamSlug": "mirassol",
+    "playerId": 329225,
+    "playerName": "Georgemy",
+    "playerSlug": "georgemy",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/georgemy/329225",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/329225/attribute-overviews"
+  },
+  {
+    "teamId": 5926,
+    "teamName": "Grêmio",
+    "teamSlug": "gremio",
+    "playerId": 1139775,
+    "playerName": "Mathias Villasanti",
+    "playerSlug": "mathias-villasanti",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/mathias-villasanti/1139775",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1139775/attribute-overviews"
+  },
+  {
+    "teamId": 5926,
+    "teamName": "Grêmio",
+    "teamSlug": "gremio",
+    "playerId": 1634619,
+    "playerName": "Riquelme Freitas",
+    "playerSlug": "riquelme-freitas-dos-santos",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/riquelme-freitas-dos-santos/1634619",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1634619/attribute-overviews"
+  },
+  {
+    "teamId": 5926,
+    "teamName": "Grêmio",
+    "teamSlug": "gremio",
+    "playerId": 605528,
+    "playerName": "João Pedro",
+    "playerSlug": "joao-pedro",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-pedro/605528",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/605528/attribute-overviews"
+  },
+  {
+    "teamId": 5926,
+    "teamName": "Grêmio",
+    "teamSlug": "gremio",
+    "playerId": 1843731,
+    "playerName": "Wallace",
+    "playerSlug": "wallace",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/wallace/1843731",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1843731/attribute-overviews"
+  },
+  {
+    "teamId": 5926,
+    "teamName": "Grêmio",
+    "teamSlug": "gremio",
+    "playerId": 1111770,
+    "playerName": "Gabriel Grando",
+    "playerSlug": "gabriel-grando",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel-grando/1111770",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1111770/attribute-overviews"
+  },
+  {
+    "teamId": 5926,
+    "teamName": "Grêmio",
+    "teamSlug": "gremio",
+    "playerId": 1607287,
+    "playerName": "Thiago Beltrame",
+    "playerSlug": "thiago-beltrame",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/thiago-beltrame/1607287",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1607287/attribute-overviews"
+  },
+  {
+    "teamId": 5926,
+    "teamName": "Grêmio",
+    "teamSlug": "gremio",
+    "playerId": 2152875,
+    "playerName": "Gabriel Menegon",
+    "playerSlug": "gabriel-menegon",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel-menegon/2152875",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2152875/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 268419,
+    "playerName": "Jair",
+    "playerSlug": "jair",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/jair/268419",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/268419/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 1634144,
+    "playerName": "Guilherme Estrella",
+    "playerSlug": "estrella-guilherme",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/estrella-guilherme/1634144",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1634144/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 1391962,
+    "playerName": "Mateus Carvalho",
+    "playerSlug": "mateus-carvalho",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/mateus-carvalho/1391962",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1391962/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 2075165,
+    "playerName": "João Vitor Silva",
+    "playerSlug": "joao-vitor-cardoso-silva",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-vitor-cardoso-silva/2075165",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2075165/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 1644844,
+    "playerName": "Euder",
+    "playerSlug": "euder",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/euder/1644844",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1644844/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 1016905,
+    "playerName": "Riquelme",
+    "playerSlug": "riquelme",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/riquelme/1016905",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1016905/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 2028691,
+    "playerName": "Walace Falcão",
+    "playerSlug": "walace",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/walace/2028691",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2028691/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 863276,
+    "playerName": "Daniel Fuzato",
+    "playerSlug": "daniel-fuzato",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/daniel-fuzato/863276",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/863276/attribute-overviews"
+  },
+  {
+    "teamId": 1974,
+    "teamName": "Vasco da Gama",
+    "teamSlug": "vasco-da-gama",
+    "playerId": 1652393,
+    "playerName": "Pablo",
+    "playerSlug": "pablo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/pablo/1652393",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1652393/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 1888163,
+    "playerName": "Raykkonen Pereira Soares",
+    "playerSlug": "raykkonen-pereira-soares",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/raykkonen-pereira-soares/1888163",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1888163/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 2677478,
+    "playerName": "Fabricio",
+    "playerSlug": "fabricio",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/fabricio/2677478",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2677478/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 1835793,
+    "playerName": "Yago Noal",
+    "playerSlug": "yago",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/yago/1835793",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1835793/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 2027868,
+    "playerName": "Benjamin Arhin",
+    "playerSlug": "benjamin-arhin",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/benjamin-arhin/2027868",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2027868/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 1890696,
+    "playerName": "Alisson Rodrigues de Melo",
+    "playerSlug": "alisson-rodrigues-de-melo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/alisson-rodrigues-de-melo/1890696",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1890696/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 1922592,
+    "playerName": "João Victor Alves de Morais Francisco",
+    "playerSlug": "joao-victor-francisco",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/joao-victor-francisco/1922592",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1922592/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 2677474,
+    "playerName": "Gabriel Vinicius",
+    "playerSlug": "gabriel-vinicius",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel-vinicius/2677474",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2677474/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 2726135,
+    "playerName": "Kempes",
+    "playerSlug": "kempes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kempes/2726135",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2726135/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 1485233,
+    "playerName": "Kauan",
+    "playerSlug": "kauan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kauan/1485233",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1485233/attribute-overviews"
+  },
+  {
+    "teamId": 1966,
+    "teamName": "Internacional",
+    "teamSlug": "internacional",
+    "playerId": 1650025,
+    "playerName": "Diego Esser",
+    "playerSlug": "esser-diego",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/esser-diego/1650025",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1650025/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 1018777,
+    "playerName": "Eduardo Melo",
+    "playerSlug": "eduardo-melo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/eduardo-melo/1018777",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1018777/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 2055917,
+    "playerName": "Tico",
+    "playerSlug": "tico",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/tico/2055917",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2055917/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 1089140,
+    "playerName": "Franco Catarozzi",
+    "playerSlug": "franco-catarozzi",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/franco-catarozzi/1089140",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1089140/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 790099,
+    "playerName": "Cristian Gonzalez",
+    "playerSlug": "cristian-gonzalez",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/cristian-gonzalez/790099",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/790099/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 1588988,
+    "playerName": "Caio Pereira Magalhães",
+    "playerSlug": "caio-pereira-magalhaes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/caio-pereira-magalhaes/1588988",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1588988/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 1587951,
+    "playerName": "Edson Kauã",
+    "playerSlug": "edson-kaua-ribeiro-alves",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/edson-kaua-ribeiro-alves/1587951",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1587951/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 795029,
+    "playerName": "Ivan",
+    "playerSlug": "ivan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ivan/795029",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/795029/attribute-overviews"
+  },
+  {
+    "teamId": 2012,
+    "teamName": "Remo",
+    "teamSlug": "remo",
+    "playerId": 922569,
+    "playerName": "Ygor Vinhas",
+    "playerSlug": "ygor-vinhas",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/ygor-vinhas/922569",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/922569/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1609859,
+    "playerName": "Tulio Eduardo",
+    "playerSlug": "tulio-eduardo-silva-de-oliveira",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/tulio-eduardo-silva-de-oliveira/1609859",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1609859/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 2660881,
+    "playerName": "Kassio",
+    "playerSlug": "kassio",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kassio/2660881",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2660881/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1065976,
+    "playerName": "Vinicius Balieiro",
+    "playerSlug": "vinicius-balieiro",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/vinicius-balieiro/1065976",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1065976/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1184312,
+    "playerName": "Miguel Carvalho",
+    "playerSlug": "miguel-carvalho",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/miguel-carvalho/1184312",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1184312/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1470928,
+    "playerName": "Rubens Tadeu",
+    "playerSlug": "rubens-tadeu",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/rubens-tadeu/1470928",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1470928/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 924131,
+    "playerName": "Bruno Matias",
+    "playerSlug": "bruno-matias",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/bruno-matias/924131",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/924131/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 2083032,
+    "playerName": "David Antunes",
+    "playerSlug": "david-antunes",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/david-antunes/2083032",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2083032/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 2083035,
+    "playerName": "Juan Ferreira Leite",
+    "playerSlug": "juan-ferreira",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/juan-ferreira/2083035",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2083035/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1473223,
+    "playerName": "Gustavo Talles",
+    "playerSlug": "gustavo-talles",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gustavo-talles/1473223",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1473223/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1108007,
+    "playerName": "Mancha",
+    "playerSlug": "mancha",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/mancha/1108007",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1108007/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1198003,
+    "playerName": "Kauan",
+    "playerSlug": "kauan",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/kauan/1198003",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1198003/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 2083027,
+    "playerName": "Vinícius Eduardo de Almeida",
+    "playerSlug": "vinicius-eduardo",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/vinicius-eduardo/2083027",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2083027/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1463319,
+    "playerName": "Fernando Carlos da Silva Filho",
+    "playerSlug": "da-silva",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/da-silva/1463319",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1463319/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 2723955,
+    "playerName": "Luciano",
+    "playerSlug": "luciano",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/luciano/2723955",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/2723955/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 942061,
+    "playerName": "Anderson",
+    "playerSlug": "anderson",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/anderson/942061",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/942061/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 922592,
+    "playerName": "Matheus",
+    "playerSlug": "matheus",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/matheus/922592",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/922592/attribute-overviews"
+  },
+  {
+    "teamId": 21845,
+    "teamName": "Chapecoense",
+    "teamSlug": "chapecoense",
+    "playerId": 1175672,
+    "playerName": "Gabriel Werner",
+    "playerSlug": "gabriel-werner",
+    "playerUrl": "https://www.sofascore.com/pt/football/player/gabriel-werner/1175672",
+    "attributeUrl": "https://www.sofascore.com/api/v1/player/1175672/attribute-overviews"
+  }
+]
