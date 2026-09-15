@@ -81,7 +81,7 @@ type AiPlayerInput = {
 };
 
 const SOURCE_FILE = path.resolve(process.cwd(), "brasileirao-2026.json");
-const OUTPUT_DIR = path.resolve(process.cwd(), "ai-overall");
+const OUTPUT_DIR = path.resolve(process.cwd(), "ai-overall-base");
 const SOFASCORE = "https://www.sofascore.com";
 
 function sleep(ms: number) {

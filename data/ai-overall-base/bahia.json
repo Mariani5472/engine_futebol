@@ -1,0 +1,1165 @@
+{
+  "time": {
+    "id": 1955,
+    "nome": "Bahia",
+    "slug": "bahia"
+  },
+  "temporada": 2026,
+  "jogadores": [
+    {
+      "id": 1104070,
+      "nome": "Erick Pulga",
+      "slug": "erick-pulga",
+      "posicao": "LW",
+      "valorMercado": null,
+      "idade": 25,
+      "sofascoreOriginal": {
+        "ATT": 62,
+        "CRE": 51,
+        "TEC": 58,
+        "DEF": 35,
+        "TAC": 45,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1116987,
+      "nome": "Alejo Véliz",
+      "slug": "alejo-veliz",
+      "posicao": "ST",
+      "valorMercado": null,
+      "idade": 22,
+      "sofascoreOriginal": {
+        "ATT": 65,
+        "CRE": 41,
+        "TEC": 46,
+        "DEF": 35,
+        "TAC": 59,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 123223,
+      "nome": "Willian José",
+      "slug": "willian-jose",
+      "posicao": "ST",
+      "valorMercado": null,
+      "idade": 34,
+      "sofascoreOriginal": {
+        "ATT": 67,
+        "CRE": 52,
+        "TEC": 57,
+        "DEF": 32,
+        "TAC": 56,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 2050427,
+      "nome": "Dell",
+      "slug": "dell",
+      "posicao": "ST",
+      "valorMercado": null,
+      "idade": 18,
+      "sofascoreOriginal": {
+        "ATT": 61,
+        "CRE": 39,
+        "TEC": 58,
+        "DEF": 32,
+        "TAC": 48,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 386212,
+      "nome": "Everaldo",
+      "slug": "everaldo",
+      "posicao": "ST",
+      "valorMercado": null,
+      "idade": 35,
+      "sofascoreOriginal": {
+        "ATT": 61,
+        "CRE": 43,
+        "TEC": 46,
+        "DEF": 34,
+        "TAC": 53,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1068987,
+      "nome": "Cristian Olivera",
+      "slug": "cristian-olivera",
+      "posicao": "RW",
+      "valorMercado": null,
+      "idade": 24,
+      "sofascoreOriginal": {
+        "ATT": 61,
+        "CRE": 53,
+        "TEC": 54,
+        "DEF": 35,
+        "TAC": 38,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 922546,
+      "nome": "Ademir",
+      "slug": "ademir",
+      "posicao": "RW",
+      "valorMercado": null,
+      "idade": 31,
+      "sofascoreOriginal": {
+        "ATT": 65,
+        "CRE": 57,
+        "TEC": 59,
+        "DEF": 39,
+        "TAC": 47,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1640604,
+      "nome": "Roger Gabriel",
+      "slug": "roger",
+      "posicao": "ST",
+      "valorMercado": null,
+      "idade": 19,
+      "sofascoreOriginal": {
+        "ATT": 56,
+        "CRE": 52,
+        "TEC": 61,
+        "DEF": 35,
+        "TAC": 40,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 145063,
+      "nome": "Everton Ribeiro",
+      "slug": "everton-ribeiro",
+      "posicao": "MC/AM",
+      "valorMercado": null,
+      "idade": 37,
+      "sofascoreOriginal": {
+        "ATT": 57,
+        "CRE": 69,
+        "TEC": 58,
+        "DEF": 41,
+        "TAC": 45,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 927975,
+      "nome": "Jean Lucas",
+      "slug": "jean-lucas",
+      "posicao": "MC",
+      "valorMercado": null,
+      "idade": 28,
+      "sofascoreOriginal": {
+        "ATT": 55,
+        "CRE": 55,
+        "TEC": 53,
+        "DEF": 42,
+        "TAC": 46,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 905461,
+      "nome": "Rodrigo Nestor",
+      "slug": "rodrigo-nestor",
+      "posicao": "MC/LW",
+      "valorMercado": null,
+      "idade": 25,
+      "sofascoreOriginal": {
+        "ATT": 60,
+        "CRE": 63,
+        "TEC": 62,
+        "DEF": 43,
+        "TAC": 43,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1008832,
+      "nome": "Caio Alexandre",
+      "slug": "caio-alexandre",
+      "posicao": "MC/DM",
+      "valorMercado": null,
+      "idade": 27,
+      "sofascoreOriginal": {
+        "ATT": 51,
+        "CRE": 56,
+        "TEC": 53,
+        "DEF": 40,
+        "TAC": 43,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1633616,
+      "nome": "Ruan Pablo",
+      "slug": "ruan-pablo-barbosa-sousa",
+      "posicao": "RW",
+      "valorMercado": null,
+      "idade": 18,
+      "sofascoreOriginal": {
+        "ATT": 54,
+        "CRE": 46,
+        "TEC": 58,
+        "DEF": 36,
+        "TAC": 32,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 924857,
+      "nome": "Michel Araújo",
+      "slug": "michel-araujo",
+      "posicao": "LW/RW",
+      "valorMercado": null,
+      "idade": 29,
+      "sofascoreOriginal": {
+        "ATT": 52,
+        "CRE": 51,
+        "TEC": 54,
+        "DEF": 43,
+        "TAC": 36,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 959620,
+      "nome": "Nicolás Acevedo",
+      "slug": "nicolas-acevedo",
+      "posicao": "MC/DM",
+      "valorMercado": null,
+      "idade": 27,
+      "sofascoreOriginal": {
+        "ATT": 49,
+        "CRE": 51,
+        "TEC": 52,
+        "DEF": 53,
+        "TAC": 52,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 874063,
+      "nome": "Erick",
+      "slug": "erick",
+      "posicao": "MC/DM",
+      "valorMercado": null,
+      "idade": 28,
+      "sofascoreOriginal": {
+        "ATT": 50,
+        "CRE": 48,
+        "TEC": 53,
+        "DEF": 53,
+        "TAC": 53,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1182233,
+      "nome": "Mateo Sanabria",
+      "slug": "mateo-sanabria",
+      "posicao": "LW",
+      "valorMercado": null,
+      "idade": 22,
+      "sofascoreOriginal": {
+        "ATT": 57,
+        "CRE": 50,
+        "TEC": 63,
+        "DEF": 31,
+        "TAC": 34,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1469518,
+      "nome": "Vitinho",
+      "slug": "vitinho",
+      "posicao": "MR",
+      "valorMercado": null,
+      "idade": 22,
+      "sofascoreOriginal": {
+        "ATT": 53,
+        "CRE": 48,
+        "TEC": 61,
+        "DEF": 33,
+        "TAC": 31,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1402669,
+      "nome": "Lautaro López",
+      "slug": "lautaro-lopez",
+      "posicao": "MC",
+      "valorMercado": null,
+      "idade": 21,
+      "sofascoreOriginal": {
+        "ATT": 45,
+        "CRE": 48,
+        "TEC": 49,
+        "DEF": 46,
+        "TAC": 37,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1017264,
+      "nome": "Luciano Juba",
+      "slug": "luciano-juba",
+      "posicao": "DL",
+      "valorMercado": null,
+      "idade": 26,
+      "sofascoreOriginal": {
+        "ATT": 50,
+        "CRE": 61,
+        "TEC": 57,
+        "DEF": 59,
+        "TAC": 56,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 810715,
+      "nome": "David Duarte",
+      "slug": "david-duarte",
+      "posicao": "DC",
+      "valorMercado": null,
+      "idade": 31,
+      "sofascoreOriginal": {
+        "ATT": 38,
+        "CRE": 38,
+        "TEC": 43,
+        "DEF": 73,
+        "TAC": 61,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 871705,
+      "nome": "Kanu",
+      "slug": "kanu",
+      "posicao": "DC",
+      "valorMercado": null,
+      "idade": 29,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": null,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1634148,
+      "nome": "Luiz Gustavo",
+      "slug": "gustavo-luiz",
+      "posicao": "DC",
+      "valorMercado": null,
+      "idade": 20,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": null,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1807816,
+      "nome": "Román Gómez",
+      "slug": "gomez-roman",
+      "posicao": "DR",
+      "valorMercado": null,
+      "idade": 22,
+      "sofascoreOriginal": {
+        "ATT": 39,
+        "CRE": 42,
+        "TEC": 51,
+        "DEF": 70,
+        "TAC": 56,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1174196,
+      "nome": "Marcos Victor",
+      "slug": "marcos-victor",
+      "posicao": "DC",
+      "valorMercado": null,
+      "idade": 24,
+      "sofascoreOriginal": {
+        "ATT": 35,
+        "CRE": 38,
+        "TEC": 48,
+        "DEF": 77,
+        "TAC": 60,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1476894,
+      "nome": "José Guilherme",
+      "slug": "jose-guilherme",
+      "posicao": "DL",
+      "valorMercado": null,
+      "idade": 21,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": null,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 2031382,
+      "nome": "Fredi Gomes",
+      "slug": "frederico-lippert-neto-gomes",
+      "posicao": "DC",
+      "valorMercado": null,
+      "idade": 20,
+      "sofascoreOriginal": {
+        "ATT": 36,
+        "CRE": 38,
+        "TEC": 45,
+        "DEF": 54,
+        "TAC": 50,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 997094,
+      "nome": "Marco Moreno",
+      "slug": "marco-moreno",
+      "posicao": "DC",
+      "valorMercado": null,
+      "idade": 25,
+      "sofascoreOriginal": {
+        "ATT": 34,
+        "CRE": 36,
+        "TEC": 42,
+        "DEF": 67,
+        "TAC": 55,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 840106,
+      "nome": "Ronaldo",
+      "slug": "ronaldo",
+      "posicao": "GK",
+      "valorMercado": null,
+      "idade": 29,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": 53,
+        "SAV": 66,
+        "ANT": 50,
+        "DIS": 63,
+        "AER": 60
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 166279,
+      "nome": "Léo Vieira",
+      "slug": "leo-vieira",
+      "posicao": "GK",
+      "valorMercado": null,
+      "idade": 35,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": 35,
+        "SAV": 61,
+        "ANT": 40,
+        "DIS": 55,
+        "AER": 60
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 248977,
+      "nome": "Guido Herrera",
+      "slug": "guido-herrera",
+      "posicao": "GK",
+      "valorMercado": null,
+      "idade": 34,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": 70,
+        "SAV": 74,
+        "ANT": 53,
+        "DIS": 69,
+        "AER": 72
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1609530,
+      "nome": "Victor Nascimento",
+      "slug": "victor-dos-santos-nascimento",
+      "posicao": "GK",
+      "valorMercado": null,
+      "idade": 20,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": null,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    },
+    {
+      "id": 1640599,
+      "nome": "Victor",
+      "slug": "victor",
+      "posicao": "G",
+      "valorMercado": null,
+      "idade": null,
+      "sofascoreOriginal": {
+        "ATT": null,
+        "CRE": null,
+        "TEC": null,
+        "DEF": null,
+        "TAC": null,
+        "SAV": null,
+        "ANT": null,
+        "DIS": null,
+        "AER": null
+      },
+      "sofascoreVazia": {
+        "ATT": 0,
+        "CRE": 0,
+        "TEC": 0,
+        "DEF": 0,
+        "TAC": 0
+      },
+      "cartinhaFifa": {
+        "PAC": 0,
+        "SHO": 0,
+        "PAS": 0,
+        "DRI": 0,
+        "DEF": 0,
+        "PHY": 0
+      },
+      "desempenhoTotal2026": 0
+    }
+  ]
+}
