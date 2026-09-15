@@ -82,7 +82,7 @@ export function MatchPage() {
 
     const timer = window.setTimeout(() => {
       simulateMatchTick();
-    }, 300);
+    }, 170);
 
     return () => window.clearTimeout(timer);
   }, [phase, minute, simulateMatchTick, finishMatch]);

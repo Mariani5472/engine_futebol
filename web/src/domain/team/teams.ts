@@ -1,4 +1,4 @@
-import data from "@/database/game-database.json";
+import data from "../../../database/game-database.json";
 import {
   calculateAttributeOverall,
   getCurrentPlayerAttributeOverview,

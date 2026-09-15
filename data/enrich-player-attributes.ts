@@ -59,6 +59,7 @@ async function saveDatabase(data: Database) {
 
 async function main() {
   const sourceFile = DATABASE_FILES[0];
+  if (!sourceFile) return;
   const raw = await fs.readFile(sourceFile, "utf-8");
   const data = JSON.parse(raw) as Database;
 
