@@ -1,5 +1,9 @@
 import type { Athlete } from "@/domain/team/teams";
-import { getPlayerPositionLabel, getPlayerOverall } from "@/domain/tactic/playerOverall";
+import { getNaturalRole, getAttributeKeys } from "@/domain/player/attributes";
+import {
+  getPlayerPositionLabel,
+  getPlayerOverall,
+} from "@/domain/tactic/playerOverall";
 
 type Props = {
   player: Athlete | undefined;
@@ -18,6 +22,30 @@ function formatDate(date: string | null) {
   return parsed.toLocaleDateString("pt-BR");
 }
 
+function getAttributeOverview(player: Athlete) {
+  const naturalRole = getNaturalRole(
+    player.position,
+    player.positionsDetailed,
+  );
+
+  const source =
+    player.attributes.length > 0
+      ? player.attributes
+      : player.positionAverageAttributes;
+
+  const current = source.filter((attribute) => attribute.yearShift === 0);
+
+  return (
+    current.find(
+      (attribute) => {
+        const position = attribute.position.toUpperCase();
+        if (naturalRole === "GK") return position === "G" || position === "GK";
+        return position === naturalRole;
+      },
+    ) ?? current[0] ?? source[0]
+  );
+}
+
 export function PlayerDetails({ player }: Props) {
   if (!player) {
     return (
@@ -33,6 +61,17 @@ export function PlayerDetails({ player }: Props) {
   }
 
   const overall = getPlayerOverall(player);
+  const attributeOverview = getAttributeOverview(player);
+  const naturalRole = getNaturalRole(
+    player.position,
+    player.positionsDetailed,
+  );
+  const attributes = attributeOverview
+    ? getAttributeKeys(attributeOverview, naturalRole).filter(
+        ([, value]) => typeof value === "number",
+      )
+    : [];
+  const isPositionAverage = player.attributes.length === 0;
 
   return (
     <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
@@ -55,7 +94,9 @@ export function PlayerDetails({ player }: Props) {
             </p>
           </div>
           <div className="rounded-lg bg-muted px-3 py-2 text-center">
-            <span className="block text-[10px] font-semibold uppercase text-muted-foreground">OVR</span>
+            <span className="block text-[10px] font-semibold uppercase text-muted-foreground">
+              OVR
+            </span>
             <strong className="text-xl">{overall}</strong>
           </div>
         </div>
@@ -67,38 +108,91 @@ export function PlayerDetails({ player }: Props) {
           </div>
           <div className="rounded-lg bg-muted/50 p-3">
             <dt className="text-xs text-muted-foreground">Idade</dt>
-            <dd className="mt-1 font-semibold">{player.age != null ? `${player.age} anos` : "—"}</dd>
+            <dd className="mt-1 font-semibold">
+              {player.age != null ? `${player.age} anos` : "—"}
+            </dd>
           </div>
           <div className="rounded-lg bg-muted/50 p-3">
             <dt className="text-xs text-muted-foreground">Altura</dt>
-            <dd className="mt-1 font-semibold">{player.heightCm ? `${player.heightCm} cm` : "—"}</dd>
+            <dd className="mt-1 font-semibold">
+              {player.heightCm ? `${player.heightCm} cm` : "—"}
+            </dd>
           </div>
           <div className="rounded-lg bg-muted/50 p-3">
             <dt className="text-xs text-muted-foreground">Peso</dt>
-            <dd className="mt-1 font-semibold">{player.weightKg ? `${player.weightKg} kg` : "—"}</dd>
+            <dd className="mt-1 font-semibold">
+              {player.weightKg ? `${player.weightKg} kg` : "—"}
+            </dd>
           </div>
           <div className="rounded-lg bg-muted/50 p-3">
             <dt className="text-xs text-muted-foreground">Pé dominante</dt>
-            <dd className="mt-1 font-semibold">{player.preferredFoot ?? "—"}</dd>
+            <dd className="mt-1 font-semibold">
+              {player.preferredFoot ?? "—"}
+            </dd>
           </div>
           <div className="rounded-lg bg-muted/50 p-3">
             <dt className="text-xs text-muted-foreground">Nacionalidade</dt>
-            <dd className="mt-1 truncate font-semibold">{player.nationality ?? "—"}</dd>
+            <dd className="mt-1 truncate font-semibold">
+              {player.nationality ?? "—"}
+            </dd>
           </div>
         </dl>
 
         <div className="mt-2 rounded-lg bg-muted/50 p-3 text-sm">
-          <span className="block text-xs text-muted-foreground">Nascimento</span>
+          <span className="block text-xs text-muted-foreground">
+            Nascimento
+          </span>
           <strong>{formatDate(player.dateOfBirth)}</strong>
         </div>
 
         <div className="mt-2 rounded-lg bg-muted/50 p-3 text-sm">
-          <span className="block text-xs text-muted-foreground">Valor de mercado</span>
+          <span className="block text-xs text-muted-foreground">
+            Valor de mercado
+          </span>
           <strong>{formatMarketValue(player.marketValue)}</strong>
         </div>
 
+        {attributes.length > 0 && (
+          <div className="mt-4 rounded-xl border p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {isPositionAverage ? "Perfil da posição" : "Atributos"}
+                </p>
+                {isPositionAverage && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Média da posição no banco atual.
+                  </p>
+                )}
+              </div>
+              <span className="rounded-md bg-muted px-2 py-1 text-xs font-bold">
+                {attributeOverview?.position ?? naturalRole}
+              </span>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {attributes.map(([label, value]) => (
+                <div key={label}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{label}</span>
+                    <strong>{value}</strong>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${Math.min(100, Number(value))}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 rounded-lg border border-dashed p-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Status
+          </p>
           <p className="mt-1 text-sm font-medium">Disponível</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Lesões, suspensões, fadiga e moral entram no estado do jogo nas próximas versões.
