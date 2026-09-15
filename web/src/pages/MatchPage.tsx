@@ -1,8 +1,41 @@
-import { useEffect, CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useGame } from "@/context/GameContext";
 import { getTeamById } from "@/domain/team/teams";
+
+function formatCapacity(capacity: number | null) {
+  if (!capacity) return null;
+  return `${capacity.toLocaleString("pt-BR")} lugares`;
+}
+
+function TeamMatchMeta({
+  teamName,
+  manager,
+  venue,
+  align = "left",
+}: {
+  teamName: string;
+  manager: string | null;
+  venue: string | null;
+  align?: "left" | "right";
+}) {
+  return (
+    <div className={align === "right" ? "text-right" : "text-left"}>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {teamName}
+      </p>
+      <p className="mt-1 text-sm">
+        Técnico: <strong>{manager ?? "Não informado"}</strong>
+      </p>
+      {venue && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {venue}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function MatchPage() {
   const {
@@ -33,25 +66,14 @@ export function MatchPage() {
     ? getTeamById(awayTeamId)
     : undefined;
 
-  /*
-   * Se entrarmos na página sem uma partida carregada,
-   * buscamos automaticamente a próxima.
-   */
   useEffect(() => {
     if (phase === "idle") {
       getNextMatch();
     }
   }, [phase, getNextMatch]);
 
-  /*
-   * Simulação automática.
-   *
-   * Cada 500ms representa 1 minuto da partida.
-   */
   useEffect(() => {
-    if (phase !== "playing") {
-      return;
-    }
+    if (phase !== "playing") return;
 
     if (minute >= 90) {
       finishMatch();
@@ -62,40 +84,23 @@ export function MatchPage() {
       simulateMatchTick();
     }, 300);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [
-    phase,
-    minute,
-    simulateMatchTick,
-    finishMatch,
-  ]);
+    return () => window.clearTimeout(timer);
+  }, [phase, minute, simulateMatchTick, finishMatch]);
 
   if (!homeTeam || !awayTeam) {
     return (
-      <div className="rounded-xl border bg-card p-8 text-center" style={
-  {
-    "--home-primary":
-      homeTeam?.colors.primary ??
-      "#ffffff",
-
-    "--home-secondary":
-      homeTeam?.colors.secondary ??
-      "#000000",
-
-    "--away-primary":
-      awayTeam?.colors.primary ??
-      "#ffffff",
-
-    "--away-secondary":
-      awayTeam?.colors.secondary ??
-      "#000000",
-  } as CSSProperties
-}>
-        <p className="text-muted-foreground">
-          Nenhuma partida encontrada.
-        </p>
+      <div
+        className="rounded-xl border bg-card p-8 text-center"
+        style={
+          {
+            "--home-primary": homeTeam?.colors.primary ?? "#ffffff",
+            "--home-secondary": homeTeam?.colors.secondary ?? "#000000",
+            "--away-primary": awayTeam?.colors.primary ?? "#ffffff",
+            "--away-secondary": awayTeam?.colors.secondary ?? "#000000",
+          } as CSSProperties
+        }
+      >
+        <p className="text-muted-foreground">Nenhuma partida encontrada.</p>
 
         <button
           type="button"
@@ -108,9 +113,6 @@ export function MatchPage() {
     );
   }
 
-  /*
-   * PRÉ-JOGO
-   */
   if (phase === "pre-match") {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
@@ -137,19 +139,12 @@ export function MatchPage() {
                 className="mx-auto h-24 w-24 object-contain"
               />
 
-              <h2 className="mt-4 text-xl font-bold">
-                {homeTeam.name}
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Mandante
-              </p>
+              <h2 className="mt-4 text-xl font-bold">{homeTeam.name}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Mandante</p>
             </div>
 
             <div className="text-center">
-              <span className="text-2xl font-bold">
-                VS
-              </span>
+              <span className="text-2xl font-bold">VS</span>
             </div>
 
             <div className="text-center">
@@ -159,14 +154,42 @@ export function MatchPage() {
                 className="mx-auto h-24 w-24 object-contain"
               />
 
-              <h2 className="mt-4 text-xl font-bold">
-                {awayTeam.name}
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Visitante
-              </p>
+              <h2 className="mt-4 text-xl font-bold">{awayTeam.name}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Visitante</p>
             </div>
+          </div>
+
+          <div className="mt-8 grid gap-3 border-t pt-6 sm:grid-cols-2">
+            <div className="rounded-xl bg-muted/40 p-4">
+              <TeamMatchMeta
+                teamName={homeTeam.name}
+                manager={homeTeam.manager?.name ?? null}
+                venue={homeTeam.venue?.name ?? null}
+              />
+            </div>
+
+            <div className="rounded-xl bg-muted/40 p-4">
+              <TeamMatchMeta
+                teamName={awayTeam.name}
+                manager={awayTeam.manager?.name ?? null}
+                venue={awayTeam.venue?.name ?? null}
+                align="right"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border p-4 text-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Estádio da partida
+            </p>
+            <p className="mt-1 font-bold">
+              {homeTeam.venue?.name ?? "Estádio não informado"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {[homeTeam.venue?.city, formatCapacity(homeTeam.venue?.capacity ?? null)]
+                .filter(Boolean)
+                .join(" • ") || "Informações do estádio não disponíveis"}
+            </p>
           </div>
 
           <div className="mt-8 flex justify-center">
@@ -183,9 +206,6 @@ export function MatchPage() {
     );
   }
 
-  /*
-   * PARTIDA EM ANDAMENTO
-   */
   if (phase === "playing") {
     const recentEvents = events.slice(-8).reverse();
 
@@ -200,15 +220,8 @@ export function MatchPage() {
             <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-6">
               <div className="text-right">
                 <div className="flex items-center justify-end gap-3">
-                  <span className="font-bold">
-                    {homeTeam.name}
-                  </span>
-
-                  <img
-                    src={homeTeam.logoUrl}
-                    alt=""
-                    className="h-12 w-12 object-contain"
-                  />
+                  <span className="font-bold">{homeTeam.name}</span>
+                  <img src={homeTeam.logoUrl} alt="" className="h-12 w-12 object-contain" />
                 </div>
               </div>
 
@@ -216,7 +229,6 @@ export function MatchPage() {
                 <div className="text-4xl font-black">
                   {homeScore} - {awayScore}
                 </div>
-
                 <div className="mt-1 text-sm font-bold text-muted-foreground">
                   {minute}'
                 </div>
@@ -224,26 +236,24 @@ export function MatchPage() {
 
               <div className="text-left">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={awayTeam.logoUrl}
-                    alt=""
-                    className="h-12 w-12 object-contain"
-                  />
-
-                  <span className="font-bold">
-                    {awayTeam.name}
-                  </span>
+                  <img src={awayTeam.logoUrl} alt="" className="h-12 w-12 object-contain" />
+                  <span className="font-bold">{awayTeam.name}</span>
                 </div>
               </div>
             </div>
+
+            {homeTeam.venue && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                {homeTeam.venue.name}
+                {homeTeam.venue.city ? ` • ${homeTeam.venue.city}` : ""}
+              </p>
+            )}
           </div>
         </div>
 
         <section className="rounded-xl border bg-card shadow-sm">
           <div className="border-b p-4">
-            <h2 className="font-bold">
-              Acontecimentos
-            </h2>
+            <h2 className="font-bold">Acontecimentos</h2>
           </div>
 
           <div className="divide-y">
@@ -253,23 +263,19 @@ export function MatchPage() {
               </p>
             ) : (
               recentEvents.map((event, index) => {
-                const isHome = event.teamId == gameState.match.homeTeamId;
+                const isHome = event.teamId === gameState.match.homeTeamId;
+
                 return (
                   <div
                     key={`${event.minute}-${event.playerId}-${index}`}
                     className={
                       isHome
-                      ? "match-event match-event-home"
-                      : "match-event match-event-away"
+                        ? "match-event match-event-home"
+                        : "match-event match-event-away"
                     }
                   >
-                    <span className="match-event-minute">
-                      {event.minute}'
-                    </span>
-
-                    <span className="match-event-text">
-                      {event.text}
-                    </span>
+                    <span className="match-event-minute">{event.minute}'</span>
+                    <span className="match-event-text">{event.text}</span>
                   </div>
                 );
               })
@@ -280,9 +286,6 @@ export function MatchPage() {
     );
   }
 
-  /*
-   * FIM DE JOGO
-   */
   if (phase === "finished") {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
@@ -290,24 +293,14 @@ export function MatchPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Fim de jogo
           </p>
-
-          <h1 className="mt-2 text-3xl font-bold">
-            Resultado final
-          </h1>
+          <h1 className="mt-2 text-3xl font-bold">Resultado final</h1>
         </div>
 
         <div className="rounded-2xl border bg-card p-8 shadow-sm">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-6">
             <div className="text-center">
-              <img
-                src={homeTeam.logoUrl}
-                alt=""
-                className="mx-auto h-20 w-20 object-contain"
-              />
-
-              <p className="mt-3 font-bold">
-                {homeTeam.name}
-              </p>
+              <img src={homeTeam.logoUrl} alt="" className="mx-auto h-20 w-20 object-contain" />
+              <p className="mt-3 font-bold">{homeTeam.name}</p>
             </div>
 
             <div className="text-5xl font-black">
@@ -315,22 +308,27 @@ export function MatchPage() {
             </div>
 
             <div className="text-center">
-              <img
-                src={awayTeam.logoUrl}
-                alt=""
-                className="mx-auto h-20 w-20 object-contain"
-              />
-
-              <p className="mt-3 font-bold">
-                {awayTeam.name}
-              </p>
+              <img src={awayTeam.logoUrl} alt="" className="mx-auto h-20 w-20 object-contain" />
+              <p className="mt-3 font-bold">{awayTeam.name}</p>
             </div>
           </div>
 
+          <div className="mt-6 grid gap-3 border-t pt-6 sm:grid-cols-2">
+            <TeamMatchMeta
+              teamName={homeTeam.name}
+              manager={homeTeam.manager?.name ?? null}
+              venue={homeTeam.venue?.name ?? null}
+            />
+            <TeamMatchMeta
+              teamName={awayTeam.name}
+              manager={awayTeam.manager?.name ?? null}
+              venue={awayTeam.venue?.name ?? null}
+              align="right"
+            />
+          </div>
+
           <div className="mt-8 border-t pt-6">
-            <h2 className="font-bold">
-              Acontecimentos
-            </h2>
+            <h2 className="font-bold">Acontecimentos</h2>
 
             <div className="mt-3 space-y-2">
               {events.length === 0 ? (
@@ -342,8 +340,8 @@ export function MatchPage() {
                   .slice()
                   .reverse()
                   .map((event, index) => {
-                    const isHome = event.teamId == gameState.match.homeTeamId;
-                    console.log(event.teamId)
+                    const isHome = event.teamId === gameState.match.homeTeamId;
+
                     return (
                       <div
                         key={`${event.minute}-${event.playerId}-${index}`}
@@ -353,16 +351,11 @@ export function MatchPage() {
                             : "match-event match-event-away"
                         }
                       >
-                        <span className="match-event-minute">
-                          {event.minute}'
-                        </span>
-
-                        <span className="match-event-text">
-                          {event.text}
-                        </span>
+                        <span className="match-event-minute">{event.minute}'</span>
+                        <span className="match-event-text">{event.text}</span>
                       </div>
                     );
-                })
+                  })
               )}
             </div>
           </div>
