@@ -8,7 +8,15 @@ import { useGame } from "@/context/GameContext";
 import type { Formation } from "@/context/GameState";
 import { getTeamById } from "@/domain/team/teams";
 import type { Athlete } from "@/domain/team/teams";
-import { getPlayerPositionLabel, getPositionOverall } from "@/domain/tactic/playerOverall";
+import {
+  getAttributeKeys,
+  getCurrentPlayerAttributeOverview,
+  getNaturalRole,
+} from "@/domain/player/attributes";
+import {
+  getPlayerPositionLabel,
+  getPositionOverall,
+} from "@/domain/tactic/playerOverall";
 import { buildInitialSquad } from "@/domain/tactic/squad";
 
 function isGoalkeeper(player: Athlete) {
@@ -31,7 +39,10 @@ export function TacticPage() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const team = gameState.player.teamId ? getTeamById(gameState.player.teamId) : undefined;
+  const team = gameState.player.teamId
+    ? getTeamById(gameState.player.teamId)
+    : undefined;
+
   const playersById = useMemo(
     () => new Map((team?.athletes ?? []).map((player) => [player.id, player])),
     [team],
@@ -140,6 +151,20 @@ export function TacticPage() {
     ? getPositionOverall(selectedPlayer, selectedRole)
     : null;
 
+  const selectedAttributes = selectedPlayer
+    ? getCurrentPlayerAttributeOverview(
+        selectedPlayer.attributes,
+        getNaturalRole(selectedPlayer.position, selectedPlayer.positionsDetailed),
+      )
+    : undefined;
+
+  const selectedAttributeRows = selectedAttributes
+    ? getAttributeKeys(
+        selectedAttributes,
+        getNaturalRole(selectedPlayer!.position, selectedPlayer!.positionsDetailed),
+      ).filter(([, value]) => typeof value === "number")
+    : [];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -217,18 +242,43 @@ export function TacticPage() {
                     <strong>{selectedRole}</strong>
                   </div>
                   <div className="rounded-lg bg-muted/60 p-3">
-                    <span className="block text-xs text-muted-foreground">OVR</span>
+                    <span className="block text-xs text-muted-foreground">OVR na função</span>
                     <strong>{selectedOverall}</strong>
+                  </div>
+                  <div className="rounded-lg bg-muted/60 p-3">
+                    <span className="block text-xs text-muted-foreground">OVR base</span>
+                    <strong>{selectedPlayer.overall}</strong>
                   </div>
                   <div className="rounded-lg bg-muted/60 p-3">
                     <span className="block text-xs text-muted-foreground">Idade</span>
                     <strong>{selectedPlayer.age ?? "—"}</strong>
                   </div>
-                  <div className="rounded-lg bg-muted/60 p-3">
-                    <span className="block text-xs text-muted-foreground">Camisa</span>
-                    <strong>{selectedPlayer.jersey ?? "—"}</strong>
-                  </div>
                 </div>
+
+                {selectedAttributeRows.length > 0 && (
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Atributos
+                    </p>
+
+                    <div className="mt-3 space-y-2.5">
+                      {selectedAttributeRows.map(([label, value]) => (
+                        <div key={label}>
+                          <div className="mb-1 flex justify-between text-xs">
+                            <span className="text-muted-foreground">{label}</span>
+                            <strong>{value}</strong>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${Math.min(100, Number(value))}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {gameState.squad.bench.includes(selectedPlayer.id) && (
                   <p className="text-xs text-muted-foreground">
