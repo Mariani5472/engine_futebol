@@ -4,6 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { teams } from "@/domain/team/teams";
 import { useGame } from "@/context/GameContext";
 
+function formatCapacity(capacity: number | null) {
+  if (!capacity) return null;
+  return `${capacity.toLocaleString("pt-BR")} lugares`;
+}
+
 export function TeamSelectionPage() {
   const navigate = useNavigate();
   const { setTeam } = useGame();
@@ -14,9 +19,7 @@ export function TeamSelectionPage() {
   );
 
   function handleConfirm() {
-    if (!selectedTeamId) {
-      return;
-    }
+    if (!selectedTeamId) return;
 
     setTeam(selectedTeamId);
     navigate("/game/season");
@@ -42,6 +45,7 @@ export function TeamSelectionPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {sortedTeams.map((team) => {
             const isSelected = selectedTeamId === team.id;
+            const capacity = formatCapacity(team.venue?.capacity ?? null);
 
             return (
               <button
@@ -49,7 +53,7 @@ export function TeamSelectionPage() {
                 type="button"
                 onClick={() => setSelectedTeamId(team.id)}
                 className={[
-                  "flex min-h-40 flex-col items-center justify-center gap-4 rounded-xl border p-6 transition",
+                  "flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl border p-5 text-left transition",
                   "hover:border-primary hover:bg-accent",
                   isSelected
                     ? "border-primary bg-accent ring-2 ring-primary"
@@ -62,9 +66,25 @@ export function TeamSelectionPage() {
                   className="h-20 w-20 object-contain"
                 />
 
-                <span className="text-center font-semibold">
-                  {team.name}
-                </span>
+                <div className="w-full text-center">
+                  <span className="block font-semibold">
+                    {team.name}
+                  </span>
+
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Técnico: {team.manager?.name ?? "Não informado"}
+                  </span>
+
+                  <span className="mt-1 block truncate text-xs text-muted-foreground">
+                    {team.venue?.name ?? "Estádio não informado"}
+                  </span>
+
+                  {capacity && (
+                    <span className="mt-1 block text-[11px] text-muted-foreground">
+                      {capacity}
+                    </span>
+                  )}
+                </div>
               </button>
             );
           })}
