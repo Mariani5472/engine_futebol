@@ -50,6 +50,7 @@ interface PlayerData {
   country: unknown;
 
   averageAttributeOverviews?: unknown;
+  lastYearSummary?: unknown;
 }
 
 interface TeamData {
@@ -102,7 +103,7 @@ async function getJson<T>(
   url: string
 ): Promise<T> {
 
-  console.log(`\n🌐 Acessando API:`);
+  console.log(`\n🌐 Acessando API: `);
   console.log(url);
 
   await driver.get(url);
@@ -115,17 +116,18 @@ async function getJson<T>(
   const text = await body.getText();
 
   if (!text) {
-    throw new Error(`Resposta vazia da API: ${url}`);
+    throw new Error(`Resposta vazia da API: ${url} `);
   }
 
   try {
     return JSON.parse(text) as T;
+
   } catch {
     console.error("\n❌ Resposta não é JSON:");
     console.error(text.substring(0, 1000));
 
     throw new Error(
-      `Não foi possível converter resposta em JSON: ${url}`
+      `Não foi possível converter resposta em JSON: ${url} `
     );
   }
 }
@@ -143,7 +145,7 @@ async function saveJson(data: FinalData): Promise<void> {
     "utf-8"
   );
 
-  console.log(`\n💾 JSON salvo em:`);
+  console.log(`\n💾 JSON salvo em: `);
   console.log(OUTPUT_FILE);
 }
 
@@ -191,10 +193,11 @@ async function getStandings(
   console.log("✅ Página do Brasileirão carregada.");
 
   // Depois acessamos a API pelo navegador.
-  const response = await getJson<StandingsResponse>(
-    driver,
-    STANDINGS_API
-  );
+  const response =
+    await getJson<StandingsResponse>(
+      driver,
+      STANDINGS_API
+    );
 
   const standing = response.standings?.[0];
 
@@ -209,24 +212,25 @@ async function getStandings(
     name: standing.tournament.name
   };
 
-  const teams: TeamBasic[] = standing.rows.map(
-    row => ({
-      country: row.team.country,
-      gender: row.team.gender,
-      id: row.team.id,
-      name: row.team.name,
-      nameCode: row.team.nameCode,
-      national: row.team.national,
-      shortName: row.team.shortName,
-      slug: row.team.slug,
-      teamColors: row.team.teamColors
-    })
-  );
+  const teams: TeamBasic[] =
+    standing.rows.map(
+      row => ({
+        country: row.team.country,
+        gender: row.team.gender,
+        id: row.team.id,
+        name: row.team.name,
+        nameCode: row.team.nameCode,
+        national: row.team.national,
+        shortName: row.team.shortName,
+        slug: row.team.slug,
+        teamColors: row.team.teamColors
+      })
+    );
 
-  console.log(`\n🏆 Torneio: ${tournament.name}`);
-  console.log(`🆔 ID: ${tournament.id}`);
+  console.log(`\n🏆 Torneio: ${tournament.name} `);
+  console.log(`🆔 ID: ${tournament.id} `);
 
-  console.log(`\n⚽ Times encontrados: ${teams.length}`);
+  console.log(`\n⚽ Times encontrados: ${teams.length} `);
 
   for (const team of teams) {
     console.log(
@@ -272,12 +276,13 @@ async function getTeam(
 ): Promise<TeamResult> {
 
   console.log("\n========================================");
-  console.log(`⚽ TIME: ${basicTeam.name}`);
-  console.log(`🆔 ${basicTeam.id}`);
+  console.log(`⚽ TIME: ${basicTeam.name} `);
+  console.log(`🆔 ${basicTeam.id} `);
   console.log("========================================");
 
   const teamPage =
     `${SOFASCORE}/pt/football/team/${basicTeam.slug}/${basicTeam.id}`;
+
 
   // ----------------------------------------------------------
   // PÁGINA DO TIME
@@ -290,6 +295,7 @@ async function getTeam(
   await sleep(1500);
 
   console.log("✅ Página carregada.");
+
 
   // ----------------------------------------------------------
   // /team/{id}
@@ -320,6 +326,7 @@ async function getTeam(
 
   console.log(`\n✅ Dados do time obtidos.`);
 
+
   // ----------------------------------------------------------
   // /unique-tournaments
   // ----------------------------------------------------------
@@ -338,6 +345,7 @@ async function getTeam(
   console.log(
     `✅ ${uniqueTournaments.length} torneios encontrados.`
   );
+
 
   // ----------------------------------------------------------
   // /players
@@ -376,6 +384,7 @@ async function getTeam(
   console.log(
     `✅ ${players.length} jogadores encontrados.`
   );
+
 
   // ----------------------------------------------------------
   // RESULTADO INICIAL DO TIME
@@ -416,6 +425,7 @@ async function getPlayerAttributes(
     `\n   👤 ${player.name} (${player.id})`
   );
 
+
   // ----------------------------------------------------------
   // PÁGINA DO JOGADOR
   // ----------------------------------------------------------
@@ -426,6 +436,7 @@ async function getPlayerAttributes(
 
   // Pequena espera para a página começar a carregar.
   await sleep(1500);
+
 
   // ----------------------------------------------------------
   // SCROLL ATÉ O FINAL
@@ -438,9 +449,10 @@ async function getPlayerAttributes(
 
   while (attemptsWithoutChange < 3) {
 
-    const currentHeight = await driver.executeScript(
-      "return document.body.scrollHeight"
-    ) as number;
+    const currentHeight =
+      await driver.executeScript(
+        "return document.body.scrollHeight"
+      ) as number;
 
     await driver.executeScript(
       "window.scrollTo(0, document.body.scrollHeight)"
@@ -448,12 +460,14 @@ async function getPlayerAttributes(
 
     await sleep(800);
 
-    const newHeight = await driver.executeScript(
-      "return document.body.scrollHeight"
-    ) as number;
+    const newHeight =
+      await driver.executeScript(
+        "return document.body.scrollHeight"
+      ) as number;
 
     if (newHeight === previousHeight) {
       attemptsWithoutChange++;
+
     } else {
       attemptsWithoutChange = 0;
     }
@@ -468,6 +482,7 @@ async function getPlayerAttributes(
   }
 
   console.log("      ✅ Final da página alcançado.");
+
 
   // ----------------------------------------------------------
   // ATTRIBUTE OVERVIEWS
@@ -492,6 +507,49 @@ async function getPlayerAttributes(
 
 
 // ============================================================
+// LAST YEAR SUMMARY
+// ============================================================
+
+interface PlayerLastYearSummaryResponse {
+  summary: unknown;
+}
+
+
+async function getPlayerLastYearSummary(
+  driver: WebDriver,
+  player: PlayerData
+): Promise<unknown> {
+
+  const apiUrl =
+    `${SOFASCORE}/api/v1/player/${player.id}/last-year-summary`;
+
+  console.log(
+    "      📈 Buscando last-year-summary..."
+  );
+
+  const response =
+    await getJson<PlayerLastYearSummaryResponse>(
+      driver,
+      apiUrl
+    );
+
+  if (!response.summary) {
+    console.warn(
+      "      ⚠️ summary não encontrado."
+    );
+
+    return null;
+  }
+
+  console.log(
+    "      ✅ last-year-summary obtido."
+  );
+
+  return response.summary;
+}
+
+
+// ============================================================
 // PROCESSAR JOGADORES
 // ============================================================
 
@@ -507,11 +565,17 @@ async function processPlayers(
   for (let i = 0; i < team.players.length; i++) {
 
     const player = team.players[i];
+
     if (!player) continue;
 
     console.log(
       `\n   [${i + 1}/${team.players.length}]`
     );
+
+
+    // --------------------------------------------------------
+    // ATTRIBUTE OVERVIEWS
+    // --------------------------------------------------------
 
     try {
 
@@ -524,13 +588,36 @@ async function processPlayers(
     } catch (error) {
 
       console.error(
-        `\n      ❌ Erro no jogador ${player.name}:`
+        `\n      ❌ Erro no attribute-overviews de ${player.name}:`
       );
 
       console.error(error);
 
-      // Não derruba o scraper inteiro.
       player.averageAttributeOverviews = null;
+    }
+
+
+    // --------------------------------------------------------
+    // LAST YEAR SUMMARY
+    // --------------------------------------------------------
+
+    try {
+
+      player.lastYearSummary =
+        await getPlayerLastYearSummary(
+          driver,
+          player
+        );
+
+    } catch (error) {
+
+      console.error(
+        `\n      ❌ Erro no last-year-summary de ${player.name}:`
+      );
+
+      console.error(error);
+
+      player.lastYearSummary = null;
     }
   }
 }
@@ -564,45 +651,60 @@ async function main(): Promise<void> {
 
     console.log("✅ Edge iniciado.");
 
+
     // ========================================================
     // 1 → 5
     // ========================================================
 
-    const standings = await getStandings(driver);
+    const standings =
+      await getStandings(driver);
 
     const data: FinalData = {
       tournament: standings.tournament,
       teams: []
     };
 
+
     // Salva imediatamente.
     await saveJson(data);
+
 
     // ========================================================
     // 6 → PROCESSAR 20 TIMES
     // ========================================================
 
-    for (let i = 0; i < standings.teams.length; i++) {
+    for (
+      let i = 0;
+      i < standings.teams.length;
+      i++
+    ) {
 
       const basicTeam = standings.teams[i];
+
       if (!basicTeam) continue;
 
       console.log("\n\n");
       console.log("########################################");
+
       console.log(
         `🏟️ TIME ${i + 1}/${standings.teams.length}`
       );
+
       console.log(
         `${basicTeam.name}`
       );
+
       console.log("########################################");
+
 
       try {
 
-        const team = await getTeam(
-          driver,
-          basicTeam
-        );
+        const team =
+          await getTeam(
+            driver,
+            basicTeam
+          );
+
 
         // ----------------------------------------------------
         // 7 → JOGADORES
@@ -613,11 +715,13 @@ async function main(): Promise<void> {
           team
         );
 
+
         // ----------------------------------------------------
         // ADICIONA AO RESULTADO
         // ----------------------------------------------------
 
         data.teams.push(team);
+
 
         // ----------------------------------------------------
         // CHECKPOINT
@@ -641,6 +745,7 @@ async function main(): Promise<void> {
       }
     }
 
+
     // ========================================================
     // FINAL
     // ========================================================
@@ -661,10 +766,10 @@ async function main(): Promise<void> {
 
     console.log(
       `👥 Jogadores: ${data.teams.reduce(
-        (total, team) => total + team.players.length,
+        (total, team) =>
+          total + team.players.length,
         0
-      )
-      }`
+      )}`
     );
 
     console.log(
@@ -695,3 +800,4 @@ async function main(): Promise<void> {
 // ============================================================
 
 main();
+
