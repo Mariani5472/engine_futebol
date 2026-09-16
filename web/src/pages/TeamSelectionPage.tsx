@@ -22,7 +22,7 @@ export function TeamSelectionPage() {
     if (!selectedTeamId) return;
 
     setTeam(selectedTeamId);
-    navigate("/game/season");
+    navigate("/game/squad");
   }
 
   return (
