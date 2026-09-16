@@ -5,6 +5,11 @@ import {
   getNaturalRole,
   type PlayerAttributeOverview,
 } from "@/domain/player/attributes";
+import {
+  getPlayerOverall,
+  getPositionOverall,
+  type OverallData,
+} from "@/domain/tactic/playerOverall"
 
 type RawCountry = {
   alpha2?: string | null;
@@ -63,6 +68,7 @@ type RawPlayer = {
   country?: RawCountry | null;
   averageAttributeOverviews?: PlayerAttributeOverview[] | null;
   playerAttributeOverviews?: PlayerAttributeOverview[] | null;
+  overallData?: OverallData | null;
 };
 
 type RawTeam = {
@@ -212,17 +218,16 @@ function mapPlayer(player: RawPlayer): Athlete {
   const attributes = player.playerAttributeOverviews ?? [];
   const positionAverageAttributes = player.averageAttributeOverviews ?? [];
   const naturalRole = getNaturalRole(player.position, positionsDetailed);
-  const currentAttributes = getCurrentPlayerAttributeOverview(
-    attributes,
-    naturalRole,
-  );
-
-  const attributeOverall = calculateAttributeOverall(
-    currentAttributes,
-    naturalRole,
-  );
 
   const marketValue = player.proposedMarketValueRaw?.value ?? null;
+
+  const overall = getPlayerOverall({
+    age: calculateAge(player.dateOfBirth),
+    marketValue,
+    position: player.position,
+    overallData: player.overallData,
+  })
+
   const jersey = player.jerseyNumber ?? player.shirtNumber;
 
   return {
@@ -247,7 +252,7 @@ function mapPlayer(player: RawPlayer): Athlete {
     photoUrl: `https://img.sofascore.com/api/v1/player/${player.id}/image`,
     attributes,
     positionAverageAttributes,
-    overall: attributeOverall ?? marketValueOverall(marketValue),
+    overall,
   };
 }
 
