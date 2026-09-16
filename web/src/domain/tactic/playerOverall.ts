@@ -18,7 +18,6 @@ export type SofaScoreAiAttributes = {
   TEC?: number;
   DEF?: number;
   TAC?: number;
-
   SAV?: number;
   ANT?: number;
   DIS?: number;
@@ -32,7 +31,6 @@ export type FifaAttributes = {
   DRI?: number;
   DEF?: number;
   PHY?: number;
-
   DIV?: number;
   HAN?: number;
   KIC?: number;
@@ -42,61 +40,24 @@ export type FifaAttributes = {
 };
 
 export type OverallData = {
-  sofascoreOriginal?: number | null;
-
+  sofascoreOriginal?: SofaScoreAiAttributes | null;
   sofascoreVazia?: SofaScoreAiAttributes | null;
-
   cartinhaFifa?: FifaAttributes | null;
-
   desempenhoTotal2026?: number | null;
 };
 
 export type PlayerOverallInput = {
   age: number | null | undefined;
-
-  /**
-   * Nota original do SofaScore.
-   * Ex: 6.8, 7.1, 7.5...
-   */
   sofascoreOverall: number | null | undefined;
-
-  /**
-   * Dados gerados pela IA.
-   */
   overallData?: OverallData | null;
-
-  /**
-   * Mantidos por compatibilidade com o restante do projeto.
-   * Não participam mais diretamente do OVR.
-   */
   marketValue?: number | null | undefined;
-
   position: string;
-
-  /**
-   * Mantido por compatibilidade.
-   */
   attributes?: OverallAttributes | null;
 };
 
 const MIN_OVERALL = 50;
 const MAX_OVERALL = 94;
 
-/**
- * Pesos da composição final.
- *
- * SofaScore original:
- * representa a avaliação geral observada pelo SofaScore.
- *
- * SofaScore IA:
- * complementa o que a nota geral não explica.
- *
- * FIFA IA:
- * representa as características do jogador no modelo FIFA.
- *
- * Desempenho:
- * representa o rendimento na temporada de 2026.
- */
 const OVERALL_WEIGHTS = {
   sofascore: 0.30,
   sofascoreAttributes: 0.25,
@@ -143,20 +104,6 @@ function normalizeRole(position: string): TacticalRole {
   return "F";
 }
 
-/**
- * Converte uma nota do SofaScore para uma escala FIFA.
- *
- * Exemplos aproximados:
- *
- * 6.0 -> 62
- * 6.5 -> 70
- * 7.0 -> 78
- * 7.5 -> 85
- * 8.0 -> 91
- *
- * A curva evita que pequenas diferenças nas notas mais altas
- * produzam OVRs absurdamente diferentes.
- */
 export function sofascoreToOverall(
   sofascore: number | null | undefined,
 ) {
@@ -194,9 +141,6 @@ export function sofascoreToOverall(
   return 94;
 }
 
-/**
- * Média ponderada dos atributos disponíveis.
- */
 function weightedAverage(
   values: Array<[number | null | undefined, number]>,
 ) {
@@ -216,20 +160,64 @@ function weightedAverage(
 }
 
 /**
- * ============================================================
- * SOFASCORE IA
- * ============================================================
+ * Calcula o OVR diretamente dos atributos originais do SofaScore.
  *
- * A IA produziu:
+ * sofascoreOriginal não é uma nota 5-9. É um conjunto de atributos
+ * de 0-100 já extraídos do SofaScore:
+ * ATT / CRE / TEC / DEF / TAC / SAV / ANT / DIS / AER.
  *
- * Linha:
- * ATT / CRE / TEC / DEF / TAC
- *
- * Goleiro:
- * SAV / ANT / TAC / DIS / AER
- *
- * Os pesos mudam de acordo com a posição.
+ * Por isso ele não deve passar por sofascoreToOverall().
  */
+export function sofascoreOriginalToOverall(
+  attributes: SofaScoreAiAttributes | null | undefined,
+  position: string,
+) {
+  if (!attributes) return null;
+
+  const role = normalizeRole(position);
+
+  if (role === "GK") {
+    return weightedAverage([
+      [attributes.SAV, 0.30],
+      [attributes.ANT, 0.20],
+      [attributes.TAC, 0.15],
+      [attributes.DIS, 0.15],
+      [attributes.AER, 0.20],
+    ]);
+  }
+
+  if (role === "D") {
+    return weightedAverage([
+      [attributes.DEF, 0.30],
+      [attributes.TAC, 0.25],
+      [attributes.TEC, 0.15],
+      [attributes.AER, 0.15],
+      [attributes.CRE, 0.10],
+      [attributes.ATT, 0.05],
+    ]);
+  }
+
+  if (role === "M") {
+    return weightedAverage([
+      [attributes.CRE, 0.25],
+      [attributes.TEC, 0.25],
+      [attributes.TAC, 0.20],
+      [attributes.ATT, 0.15],
+      [attributes.DEF, 0.10],
+      [attributes.AER, 0.05],
+    ]);
+  }
+
+  return weightedAverage([
+    [attributes.ATT, 0.30],
+    [attributes.TEC, 0.25],
+    [attributes.CRE, 0.20],
+    [attributes.TAC, 0.10],
+    [attributes.DEF, 0.05],
+    [attributes.AER, 0.10],
+  ]);
+}
+
 export function sofascoreAttributesToOverall(
   attributes: SofaScoreAiAttributes | null | undefined,
   position: string,
@@ -280,17 +268,6 @@ export function sofascoreAttributesToOverall(
   ]);
 }
 
-/**
- * ============================================================
- * FIFA IA
- * ============================================================
- *
- * Linha:
- * PAC / SHO / PAS / DRI / DEF / PHY
- *
- * Goleiro:
- * DIV / HAN / KIC / REF / SPD / POS
- */
 export function fifaAttributesToOverall(
   attributes: FifaAttributes | null | undefined,
   position: string,
@@ -342,21 +319,6 @@ export function fifaAttributesToOverall(
   ]);
 }
 
-/**
- * ============================================================
- * DESEMPENHO 2026
- * ============================================================
- *
- * A IA fornece uma nota de 0 a 10.
- *
- * Não queremos:
- *
- * 10 -> 100
- *
- * porque isso faria desempenho dominar os atributos.
- *
- * A escala é deliberadamente comprimida.
- */
 export function performanceToOverall(
   performance: number | null | undefined,
 ) {
@@ -364,15 +326,6 @@ export function performanceToOverall(
 
   const value = clamp(performance, 0, 10);
 
-  /**
-   * 4.0 -> 60
-   * 5.0 -> 65
-   * 6.0 -> 70
-   * 7.0 -> 78
-   * 8.0 -> 85
-   * 9.0 -> 91
-   * 10  -> 94
-   */
   const anchors = [
     { rating: 0, overall: 50 },
     { rating: 4, overall: 60 },
@@ -402,16 +355,6 @@ export function performanceToOverall(
   return 94;
 }
 
-/**
- * ============================================================
- * COMPATIBILIDADE
- * ============================================================
- *
- * Mantemos essa função porque outras partes do projeto podem
- * utilizá-la.
- *
- * Agora ela representa somente os atributos genéricos antigos.
- */
 export function attributesToOverall(
   attributes: OverallAttributes | null | undefined,
   position: string,
@@ -459,11 +402,6 @@ export function attributesToOverall(
   ]);
 }
 
-/**
- * ============================================================
- * OVR PRINCIPAL
- * ============================================================
- */
 export function calculatePlayerOverall(
   input: PlayerOverallInput,
 ) {
@@ -474,12 +412,10 @@ export function calculatePlayerOverall(
     weight: number;
   }> = [];
 
-  /**
-   * 1. SofaScore original
-   */
-  const sofascoreOverall = sofascoreToOverall(
-    data?.sofascoreOriginal ?? input.sofascoreOverall,
-  );
+  const sofascoreOverall = sofascoreOriginalToOverall(
+    data?.sofascoreOriginal,
+    input.position,
+  ) ?? sofascoreToOverall(input.sofascoreOverall);
 
   if (sofascoreOverall != null) {
     components.push({
@@ -488,9 +424,6 @@ export function calculatePlayerOverall(
     });
   }
 
-  /**
-   * 2. Atributos SofaScore gerados pela IA
-   */
   const sofascoreAttributes = sofascoreAttributesToOverall(
     data?.sofascoreVazia,
     input.position,
@@ -503,9 +436,6 @@ export function calculatePlayerOverall(
     });
   }
 
-  /**
-   * 3. Cartinha FIFA gerada pela IA
-   */
   const fifaAttributes = fifaAttributesToOverall(
     data?.cartinhaFifa,
     input.position,
@@ -518,9 +448,6 @@ export function calculatePlayerOverall(
     });
   }
 
-  /**
-   * 4. Desempenho total de 2026
-   */
   const performance = performanceToOverall(
     data?.desempenhoTotal2026,
   );
@@ -532,16 +459,10 @@ export function calculatePlayerOverall(
     });
   }
 
-  /**
-   * Se nenhuma fonte existir, temos um fallback.
-   */
   if (components.length === 0) {
     return MIN_OVERALL;
   }
 
-  /**
-   * Redistribui os pesos caso alguma fonte esteja ausente.
-   */
   const weightTotal = components.reduce(
     (sum, component) => sum + component.weight,
     0,
@@ -563,9 +484,6 @@ export function calculatePlayerOverall(
   );
 }
 
-/**
- * OVR base do jogador.
- */
 export function getPlayerOverall(
   player: {
     age: number | null;
@@ -586,13 +504,6 @@ export function getPlayerOverall(
   });
 }
 
-/**
- * Penalidade por atuar fora da função natural.
- *
- * O OVR base não muda.
- * A penalidade só é aplicada quando o jogador é utilizado
- * em outra função.
- */
 export function getPositionPenalty(
   playerPosition: string,
   requestedRole: string,
@@ -603,8 +514,7 @@ export function getPositionPenalty(
   if (naturalRole === targetRole) return 0;
 
   if (
-    naturalRole === "GK" ||
-    targetRole === "GK"
+    naturalRole === "GK" || targetRole === "GK"
   ) {
     return -15;
   }
@@ -656,6 +566,5 @@ export function getPlayerPositionLabel(
     return player.positionLabel || "Jogador";
   }
 
-  return `${player.positionLabel || "Jogador"
-    } (${player.positionsDetailed.join("/")})`;
+  return `${player.positionLabel || "Jogador"} (${player.positionsDetailed.join("/")})`;
 }
