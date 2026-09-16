@@ -89,6 +89,7 @@ export function SquadTable({ players, sortBy, onSort, selectedPlayerId, onSelect
           <tbody className="divide-y">
             {sortedPlayers.map((player) => {
               const selected = selectedPlayerId === player.id;
+              console.log(player.name)
               const overall = getPlayerOverall(player);
 
               return (

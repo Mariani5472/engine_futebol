@@ -1,13 +1,12 @@
 import data from "../../../database/game-database.json";
 import {
-  calculateAttributeOverall,
-  getCurrentPlayerAttributeOverview,
-  getNaturalRole,
   type PlayerAttributeOverview,
 } from "@/domain/player/attributes";
 import {
+  FifaAttributes,
   getPlayerOverall,
-  getPositionOverall,
+  SofaScoreAiAttributes,
+  TacticalRole,
   type OverallData,
 } from "@/domain/tactic/playerOverall"
 
@@ -68,7 +67,10 @@ type RawPlayer = {
   country?: RawCountry | null;
   averageAttributeOverviews?: PlayerAttributeOverview[] | null;
   playerAttributeOverviews?: PlayerAttributeOverview[] | null;
-  overallData?: OverallData | null;
+  sofascoreOriginal?: SofaScoreAiAttributes | null;
+  sofascoreVazia?: SofaScoreAiAttributes | null;
+  cartinhaFifa?: FifaAttributes | null;
+  desempenhoTotal2026?: number | null;
 };
 
 type RawTeam = {
@@ -169,9 +171,13 @@ export type Athlete = {
   marketValue: number | null;
   marketValueCurrency: string | null;
   photoUrl: string;
+
   attributes: PlayerAttributeOverview[];
   positionAverageAttributes: PlayerAttributeOverview[];
+
   overall: number;
+
+  overallData: OverallData | null;
 };
 
 const rawData = data as RawData;
@@ -205,19 +211,76 @@ function getPositionLabel(position: string, positionsDetailed: string[]) {
   return positionsDetailed[0] ?? "Jogador";
 }
 
-function marketValueOverall(marketValue: number | null) {
-  if (!marketValue || marketValue <= 0) return 58;
+function calculateSofaScoreAttributeOverall(
+  attributes: SofaScoreAiAttributes | null | undefined,
+  role: TacticalRole
+): number | null {
+  if (!attributes) return null;
 
-  const overall = 60 + 11.5 * Math.log10(marketValue / 100_000);
+  const weights: Record<TacticalRole, Partial<Record<keyof SofaScoreAiAttributes, number>>> = {
+    GK: {
+      SAV: 0.30,
+      ANT: 0.20,
+      TAC: 0.15,
+      DIS: 0.15,
+      AER: 0.20,
+    },
+    D: {
+      DEF: 0.30,
+      TAC: 0.25,
+      TEC: 0.15,
+      AER: 0.15,
+      CRE: 0.10,
+      ATT: 0.05,
+    },
+    M: {
+      CRE: 0.25,
+      TEC: 0.25,
+      TAC: 0.20,
+      ATT: 0.15,
+      DEF: 0.10,
+      AER: 0.05,
+    },
+    F: {
+      ATT: 0.30,
+      TEC: 0.25,
+      CRE: 0.20,
+      TAC: 0.10,
+      DEF: 0.05,
+      AER: 0.10,
+    },
+  };
 
-  return Math.round(Math.max(45, Math.min(91, overall)));
+  const roleWeights = weights[role];
+
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (const [attribute, weight] of Object.entries(roleWeights)) {
+    const value = attributes[attribute as keyof SofaScoreAiAttributes];
+
+    if (
+      typeof value !== "number" ||
+      !Number.isFinite(value) ||
+      value < 1 ||
+      value > 99
+    ) {
+      continue;
+    }
+
+    weightedSum += value * weight;
+    totalWeight += weight;
+  }
+
+  if (totalWeight === 0) return null;
+
+  return Math.round(weightedSum / totalWeight);
 }
 
 function mapPlayer(player: RawPlayer): Athlete {
   const positionsDetailed = player.positionsDetailed ?? [];
   const attributes = player.playerAttributeOverviews ?? [];
   const positionAverageAttributes = player.averageAttributeOverviews ?? [];
-  const naturalRole = getNaturalRole(player.position, positionsDetailed);
 
   const marketValue = player.proposedMarketValueRaw?.value ?? null;
 
@@ -225,7 +288,12 @@ function mapPlayer(player: RawPlayer): Athlete {
     age: calculateAge(player.dateOfBirth),
     marketValue,
     position: player.position,
-    overallData: player.overallData,
+    overallData: {
+      sofascoreOriginal: player.sofascoreOriginal,
+      sofascoreVazia: player.sofascoreVazia,
+      cartinhaFifa: player.cartinhaFifa,
+      desempenhoTotal2026: player.desempenhoTotal2026
+    },
   })
 
   const jersey = player.jerseyNumber ?? player.shirtNumber;
@@ -253,6 +321,12 @@ function mapPlayer(player: RawPlayer): Athlete {
     attributes,
     positionAverageAttributes,
     overall,
+    overallData: {
+      sofascoreOriginal: player.sofascoreOriginal,
+      sofascoreVazia: player.sofascoreVazia,
+      cartinhaFifa: player.cartinhaFifa,
+      desempenhoTotal2026: player.desempenhoTotal2026,
+    },
   };
 }
 
