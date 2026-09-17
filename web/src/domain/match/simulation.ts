@@ -49,8 +49,12 @@ function getGoalChanceByPosition(player: Athlete): number {
   }
 }
 
-function ensureStats(stats?: MatchStats): MatchStats {
-  return stats ? { ...stats } : { ...INITIAL_MATCH_STATS };
+function ensureStats(stats: MatchStats): MatchStats {
+  return { ...stats };
+}
+
+function addEvent(events: MatchEvent[], event: MatchEvent) {
+  events.push(event);
 }
 
 export function simulateMatchTick(
@@ -59,12 +63,15 @@ export function simulateMatchTick(
   awayTeam: DomainTeam,
   homeStarterIds: string[],
   awayStarterIds: string[],
+  maxMinute = 90,
 ): MatchSimulationState {
-  if (state.minute >= 90) return state;
+  if (state.minute >= maxMinute) return state;
 
   const minute = state.minute + 1;
+  let homeScore = state.homeScore;
+  let awayScore = state.awayScore;
   const events: MatchEvent[] = [...state.events];
-  const stats = ensureStats(state.stats);
+  const stats = ensureStats(state.stats ?? INITIAL_MATCH_STATS);
 
   const homeStrength = getTeamStrength(homeTeam, homeStarterIds);
   const awayStrength = getTeamStrength(awayTeam, awayStarterIds);
@@ -78,11 +85,20 @@ export function simulateMatchTick(
   stats.homePossession = Math.round(homePossession);
   stats.awayPossession = 100 - stats.homePossession;
 
-  const pressure = Math.random();
-  const eventChance = 0.09 + Math.abs(homeStrength - awayStrength) / 5000;
+  // Stoppage time is slightly more event-heavy without becoming a second half.
+  const stoppageMultiplier = minute > 90 ? 1.25 : 1;
+  const eventChance =
+    (0.09 + Math.abs(homeStrength - awayStrength) / 5000) * stoppageMultiplier;
 
-  if (pressure >= eventChance) {
-    return { ...state, minute, stats };
+  if (Math.random() >= eventChance) {
+    return {
+      ...state,
+      minute,
+      homeScore,
+      awayScore,
+      events,
+      stats,
+    };
   }
 
   const homeAttacks = Math.random() < homeStrength / totalStrength;
@@ -94,7 +110,16 @@ export function simulateMatchTick(
   const goalkeepers = getGoalkeepers(defendingTeam, defendingIds);
   const player = pickRandom(attackers);
 
-  if (!player) return { ...state, minute, stats };
+  if (!player) {
+    return {
+      ...state,
+      minute,
+      homeScore,
+      awayScore,
+      events,
+      stats,
+    };
+  }
 
   const teamId = attackingTeam.id;
   const isHome = homeAttacks;
@@ -105,6 +130,7 @@ export function simulateMatchTick(
     else stats.awayShots += 1;
 
     const shotOnTarget = Math.random() < 0.46;
+
     if (shotOnTarget) {
       if (isHome) stats.homeShotsOnTarget += 1;
       else stats.awayShotsOnTarget += 1;
@@ -116,18 +142,25 @@ export function simulateMatchTick(
       : 0.035;
 
     if (Math.random() < goalProbability) {
-      if (isHome) state = { ...state, homeScore: state.homeScore + 1 };
-      else state = { ...state, awayScore: state.awayScore + 1 };
+      if (isHome) homeScore += 1;
+      else awayScore += 1;
 
-      events.push({
+      const assistingPlayer = pickRandom(
+        attackers.filter((candidate) => candidate.id !== player.id),
+      );
+
+      addEvent(events, {
         minute,
         teamId,
         type: "goal",
         playerId: player.id,
-        text: `GOOOL! ${player.name} marca para ${attackingTeam.name}.`,
+        assistPlayerId: assistingPlayer?.id,
+        text: assistingPlayer
+          ? `GOOOL! ${player.name} marca para ${attackingTeam.name}, após passe de ${assistingPlayer.name}.`
+          : `GOOOL! ${player.name} marca para ${attackingTeam.name}.`,
       });
     } else if (shotOnTarget && goalkeeper) {
-      events.push({
+      addEvent(events, {
         minute,
         teamId: defendingTeam.id,
         type: "save",
@@ -135,7 +168,7 @@ export function simulateMatchTick(
         text: `${goalkeeper.name} defende a finalização de ${player.name}.`,
       });
     } else {
-      events.push({
+      addEvent(events, {
         minute,
         teamId,
         type: "shot",
@@ -147,7 +180,7 @@ export function simulateMatchTick(
     if (isHome) stats.homeFouls += 1;
     else stats.awayFouls += 1;
 
-    events.push({
+    addEvent(events, {
       minute,
       teamId: defendingTeam.id,
       type: "foul",
@@ -156,11 +189,12 @@ export function simulateMatchTick(
     });
   } else {
     const cardChance = Math.random();
+
     if (cardChance < 0.16) {
       if (isHome) stats.homeYellowCards += 1;
       else stats.awayYellowCards += 1;
 
-      events.push({
+      addEvent(events, {
         minute,
         teamId,
         type: "yellow",
@@ -168,7 +202,7 @@ export function simulateMatchTick(
         text: `Cartão amarelo para ${player.name}.`,
       });
     } else {
-      events.push({
+      addEvent(events, {
         minute,
         teamId,
         type: "chance",
@@ -181,6 +215,8 @@ export function simulateMatchTick(
   return {
     ...state,
     minute,
+    homeScore,
+    awayScore,
     events,
     stats,
   };

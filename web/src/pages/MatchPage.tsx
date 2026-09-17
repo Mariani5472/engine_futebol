@@ -9,6 +9,11 @@ function formatCapacity(capacity: number | null) {
   return `${capacity.toLocaleString("pt-BR")} lugares`;
 }
 
+function formatMinute(minute: number) {
+  if (minute <= 90) return `${minute}'`;
+  return `90+${minute - 90}'`;
+}
+
 function TeamMatchMeta({
   teamName,
   manager,
@@ -29,9 +34,7 @@ function TeamMatchMeta({
         Técnico: <strong>{manager ?? "Não informado"}</strong>
       </p>
       {venue && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {venue}
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{venue}</p>
       )}
     </div>
   );
@@ -55,16 +58,14 @@ export function MatchPage() {
     homeScore,
     awayScore,
     minute,
+    addedTime,
+    scheduledEndMinute,
     events,
+    stats,
   } = gameState.match;
 
-  const homeTeam = homeTeamId
-    ? getTeamById(homeTeamId)
-    : undefined;
-
-  const awayTeam = awayTeamId
-    ? getTeamById(awayTeamId)
-    : undefined;
+  const homeTeam = homeTeamId ? getTeamById(homeTeamId) : undefined;
+  const awayTeam = awayTeamId ? getTeamById(awayTeamId) : undefined;
 
   useEffect(() => {
     if (phase === "idle") {
@@ -75,7 +76,7 @@ export function MatchPage() {
   useEffect(() => {
     if (phase !== "playing") return;
 
-    if (minute >= 90) {
+    if (minute >= scheduledEndMinute) {
       finishMatch();
       return;
     }
@@ -85,7 +86,7 @@ export function MatchPage() {
     }, 170);
 
     return () => window.clearTimeout(timer);
-  }, [phase, minute, simulateMatchTick, finishMatch]);
+  }, [phase, minute, scheduledEndMinute, simulateMatchTick, finishMatch]);
 
   if (!homeTeam || !awayTeam) {
     return (
@@ -121,9 +122,7 @@ export function MatchPage() {
             Pré-jogo
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold">
-            Campeonato Brasileiro
-          </h1>
+          <h1 className="mt-2 text-3xl font-bold">Campeonato Brasileiro</h1>
 
           <p className="mt-1 text-sm text-muted-foreground">
             Rodada {gameState.season.currentRound}
@@ -138,7 +137,6 @@ export function MatchPage() {
                 alt=""
                 className="mx-auto h-24 w-24 object-contain"
               />
-
               <h2 className="mt-4 text-xl font-bold">{homeTeam.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">Mandante</p>
             </div>
@@ -153,7 +151,6 @@ export function MatchPage() {
                 alt=""
                 className="mx-auto h-24 w-24 object-contain"
               />
-
               <h2 className="mt-4 text-xl font-bold">{awayTeam.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">Visitante</p>
             </div>
@@ -230,8 +227,13 @@ export function MatchPage() {
                   {homeScore} - {awayScore}
                 </div>
                 <div className="mt-1 text-sm font-bold text-muted-foreground">
-                  {minute}'
+                  {formatMinute(minute)}
                 </div>
+                {addedTime > 0 && (
+                  <div className="mt-1 text-[10px] text-muted-foreground">
+                    Acréscimos: +{addedTime} min
+                  </div>
+                )}
               </div>
 
               <div className="text-left">
@@ -274,13 +276,29 @@ export function MatchPage() {
                         : "match-event match-event-away"
                     }
                   >
-                    <span className="match-event-minute">{event.minute}'</span>
+                    <span className="match-event-minute">{formatMinute(event.minute)}</span>
                     <span className="match-event-text">{event.text}</span>
                   </div>
                 );
               })
             )}
           </div>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-4">
+          {[
+            ["Finalizações", `${stats.homeShots} - ${stats.awayShots}`],
+            ["No alvo", `${stats.homeShotsOnTarget} - ${stats.awayShotsOnTarget}`],
+            ["Escanteios", `${stats.homeCorners} - ${stats.awayCorners}`],
+            ["Faltas", `${stats.homeFouls} - ${stats.awayFouls}`],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border bg-card p-4 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {label}
+              </p>
+              <p className="mt-1 font-bold">{value}</p>
+            </div>
+          ))}
         </section>
       </div>
     );
@@ -311,6 +329,10 @@ export function MatchPage() {
               <img src={awayTeam.logoUrl} alt="" className="mx-auto h-20 w-20 object-contain" />
               <p className="mt-3 font-bold">{awayTeam.name}</p>
             </div>
+          </div>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            90 minutos + {addedTime} de acréscimos
           </div>
 
           <div className="mt-6 grid gap-3 border-t pt-6 sm:grid-cols-2">
@@ -351,7 +373,7 @@ export function MatchPage() {
                             : "match-event match-event-away"
                         }
                       >
-                        <span className="match-event-minute">{event.minute}'</span>
+                        <span className="match-event-minute">{formatMinute(event.minute)}</span>
                         <span className="match-event-text">{event.text}</span>
                       </div>
                     );

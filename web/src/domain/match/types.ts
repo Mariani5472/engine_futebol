@@ -1,5 +1,11 @@
 import type { TeamId } from "@/domain/team/types";
 
+export type MatchPhase =
+  | "idle"
+  | "pre-match"
+  | "playing"
+  | "finished";
+
 export type MatchEventType =
   | "goal"
   | "shot"
@@ -14,6 +20,7 @@ export interface MatchEvent {
   teamId: TeamId;
   type: MatchEventType;
   playerId?: string;
+  assistPlayerId?: string;
   text: string;
 }
 
@@ -39,7 +46,7 @@ export interface MatchSimulationState {
   homeScore: number;
   awayScore: number;
   events: MatchEvent[];
-  stats?: MatchStats;
+  stats: MatchStats;
 }
 
 export const INITIAL_MATCH_STATS: MatchStats = {

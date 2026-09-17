@@ -1,6 +1,7 @@
 import {
   INITIAL_MATCH_STATS,
   type MatchEvent,
+  type MatchPhase,
   type MatchStats,
 } from "@/domain/match/types";
 import type {
@@ -8,6 +9,11 @@ import type {
   PlayerStat,
   TeamStanding,
 } from "@/domain/season/types";
+import type { PlayerStatus } from "@/domain/player/status";
+import type { Formation, TacticalPosition } from "@/domain/tactic/types";
+
+export type { Formation, TacticalPosition } from "@/domain/tactic/types";
+export type { MatchPhase } from "@/domain/match/types";
 
 export type GameStatus =
   | "idle"
@@ -15,30 +21,12 @@ export type GameStatus =
   | "playing"
   | "finished";
 
-export type Formation =
-  | "4-3-3"
-  | "4-4-2"
-  | "4-2-3-1"
-  | "3-5-2"
-  | "3-4-3"
-  | "5-3-2";
-
-export type TacticalPosition = {
-  playerId: string;
-  x: number;
-  y: number;
-};
-
-export type MatchPhase =
-  | "idle"
-  | "pre-match"
-  | "playing"
-  | "finished";
-
 export type GameState = {
   saveVersion: number;
   status: GameStatus;
-  player: { teamId: string | null };
+  player: {
+    teamId: string | null;
+  };
   season: {
     year: number;
     currentRound: number;
@@ -49,6 +37,7 @@ export type GameState = {
   squad: {
     starters: string[];
     bench: string[];
+    statuses: Record<string, PlayerStatus>;
   };
   tactic: {
     formation: Formation;
@@ -62,6 +51,8 @@ export type GameState = {
     homeScore: number;
     awayScore: number;
     minute: number;
+    addedTime: number;
+    scheduledEndMinute: number;
     events: MatchEvent[];
     stats: MatchStats;
   };
@@ -70,7 +61,9 @@ export type GameState = {
 export const INITIAL_GAME_STATE: GameState = {
   saveVersion: 1,
   status: "idle",
-  player: { teamId: null },
+  player: {
+    teamId: null,
+  },
   season: {
     year: 2026,
     currentRound: 1,
@@ -81,6 +74,7 @@ export const INITIAL_GAME_STATE: GameState = {
   squad: {
     starters: [],
     bench: [],
+    statuses: {},
   },
   tactic: {
     formation: "4-3-3",
@@ -94,6 +88,8 @@ export const INITIAL_GAME_STATE: GameState = {
     homeScore: 0,
     awayScore: 0,
     minute: 0,
+    addedTime: 0,
+    scheduledEndMinute: 90,
     events: [],
     stats: { ...INITIAL_MATCH_STATS },
   },
