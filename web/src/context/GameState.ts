@@ -1,6 +1,7 @@
-import type {
-  MatchEvent,
-  MatchStats,
+import {
+  INITIAL_MATCH_STATS,
+  type MatchEvent,
+  type MatchStats,
 } from "@/domain/match/types";
 import type {
   Fixture,
@@ -36,92 +37,64 @@ export type MatchPhase =
 
 export type GameState = {
   saveVersion: number;
-
   status: GameStatus;
-
-  player: {
-    teamId: string | null;
-  };
-
+  player: { teamId: string | null };
   season: {
     year: number;
     currentRound: number;
-
     fixtures: Fixture[];
     standings: TeamStanding[];
     playerStats: PlayerStat[];
   };
-
   squad: {
     starters: string[];
     bench: string[];
   };
-
   tactic: {
     formation: Formation;
     positions: TacticalPosition[];
   };
-
   match: {
     fixtureId: string | null;
-
     phase: MatchPhase;
-
     homeTeamId: string | null;
     awayTeamId: string | null;
-
     homeScore: number;
     awayScore: number;
-
     minute: number;
-
     events: MatchEvent[];
-
     stats: MatchStats;
   };
 };
 
 export const INITIAL_GAME_STATE: GameState = {
   saveVersion: 1,
-
   status: "idle",
-
-  player: {
-    teamId: null,
-  },
-
+  player: { teamId: null },
   season: {
     year: 2026,
     currentRound: 1,
-
     fixtures: [],
     standings: [],
     playerStats: [],
   },
-
   squad: {
     starters: [],
     bench: [],
   },
-
   tactic: {
     formation: "4-3-3",
     positions: [],
   },
-
   match: {
     fixtureId: null,
-
     phase: "idle",
-
     homeTeamId: null,
     awayTeamId: null,
-
     homeScore: 0,
     awayScore: 0,
-
     minute: 0,
-
     events: [],
+    stats: { ...INITIAL_MATCH_STATS },
   },
 };
