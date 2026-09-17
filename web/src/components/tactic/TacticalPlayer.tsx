@@ -1,5 +1,6 @@
 import type { Athlete } from "@/domain/team/teams";
 import { getPositionOverall } from "@/domain/tactic/playerOverall";
+import { DetailedPosition } from "@/domain/player/overall";
 
 type Props = {
   player: Athlete;
@@ -11,8 +12,8 @@ type Props = {
 };
 
 export function TacticalPlayer({ player, x, y, selected, onSelect, onDragStart }: Props) {
-  const role = y > 84 ? "GK" : y > 65 ? "D" : y > 42 ? "M" : "F";
-  const overall = getPositionOverall(player, role);
+  const detailedPosition = player.positionsDetailed[0] as DetailedPosition
+  const overall = getPositionOverall(player, detailedPosition);
 
   return (
     <button
