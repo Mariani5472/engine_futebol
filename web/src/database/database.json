@@ -1,7 +1,19 @@
 {
   "tournament": {
-    "id": 83,
-    "name": "Brasileirão Betano"
+    "id": 325,
+    "name":"Brasileirão Betano",
+    "primaryColorHex":"#C7FF00",
+    "secondaryColorHex":"#969696",
+    "isGroup":false,
+    "slug":"brasileirao-serie-a",
+    "country": {
+      "alpha2": "BR",
+      "alpha3": "BRA",
+      "name": "Brazil",
+      "slug": "brazil",
+      "id": 13,
+      "flag": "brazil"
+    }
   },
   "teams": [
     {

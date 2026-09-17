@@ -157,8 +157,14 @@ async function saveJson(data: FinalData): Promise<void> {
 interface StandingsResponse {
   standings: Array<{
     tournament: {
-      id: number;
-      name: string;
+      isGroup: boolean,
+      uniqueTournament: {
+        id: number,
+        name: string,
+        slug: string,
+        primaryColorHex: string,
+        secondaryColorHex: string,
+      }
     };
 
     rows: Array<{
@@ -208,8 +214,12 @@ async function getStandings(
   }
 
   const tournament = {
-    id: standing.tournament.id,
-    name: standing.tournament.name
+    id: standing.tournament.uniqueTournament.id,
+    name: standing.tournament.uniqueTournament.name,
+    slug: standing.tournament.uniqueTournament.slug,
+    isGroup: standing.tournament.isGroup,
+    primaryColorHex: standing.tournament.uniqueTournament.primaryColorHex,
+    secondaryColorHex: standing.tournament.uniqueTournament.secondaryColorHex,
   };
 
   const teams: TeamBasic[] =
