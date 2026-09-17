@@ -1,10 +1,5 @@
 import { getTeamById } from "@/domain/team/teams";
 import type { Fixture } from "@/domain/season/types";
-import { getExpectedGoalWeight } from "./simulation";
-
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 function simulateScore(homeStrength: number, awayStrength: number): number {
   const base = homeStrength / Math.max(1, awayStrength);
@@ -34,8 +29,8 @@ export function simulateFixture(fixture: Fixture): Fixture {
     };
   }
 
-  const homePlayers = home.athletes.filter((player) => player.position !== "G").slice(0, 10);
-  const awayPlayers = away.athletes.filter((player) => player.position !== "G").slice(0, 10);
+  const homePlayers = home.athletes.slice(0, 11);
+  const awayPlayers = away.athletes.slice(0, 11);
 
   const homeStrength = homePlayers.length
     ? homePlayers.reduce((sum, player) => sum + player.overall, 0) / homePlayers.length + 3
@@ -44,28 +39,15 @@ export function simulateFixture(fixture: Fixture): Fixture {
     ? awayPlayers.reduce((sum, player) => sum + player.overall, 0) / awayPlayers.length
     : 60;
 
-  const homeScore = simulateScore(homeStrength, awayStrength);
-  const awayScore = simulateScore(awayStrength, homeStrength + 3);
-
   return {
     ...fixture,
     result: {
-      homeScore,
-      awayScore,
+      homeScore: simulateScore(homeStrength, awayStrength),
+      awayScore: simulateScore(awayStrength, homeStrength + 3),
     },
   };
 }
 
 export function simulateAllUnplayedFixtures(fixtures: Fixture[]): Fixture[] {
   return fixtures.map(simulateFixture);
-}
-
-export function estimatePlayerGoalWeight(playerOverall: number): number {
-  return getExpectedGoalWeight({
-    overall: playerOverall,
-  } as never);
-}
-
-export function getRandomMatchMinute(): number {
-  return randomInt(1, 90);
 }
