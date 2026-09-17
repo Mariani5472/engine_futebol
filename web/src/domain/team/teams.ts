@@ -60,7 +60,9 @@ function toAthlete(player: DatabasePlayer): Athlete {
     slug: player.slug,
     position: player.position,
     positionsDetailed: player.positionsDetailed ?? [],
-    jersey: player.jerseyNumber || player.shirtNumber ? player.jerseyNumber : null,
+    jersey:
+      player.jerseyNumber ||
+      (player.shirtNumber != null ? String(player.shirtNumber) : null),
     shirtNumber: player.shirtNumber ?? null,
     heightCm: player.height ?? null,
     weightKg: null,
@@ -81,6 +83,8 @@ function toAthlete(player: DatabasePlayer): Athlete {
 }
 
 function toDomainTeam(entry: (typeof teamEntries)[number]): DomainTeam {
+  const venue = entry.team.venue;
+
   return {
     id: String(entry.id),
     databaseId: entry.id,
@@ -93,7 +97,14 @@ function toDomainTeam(entry: (typeof teamEntries)[number]): DomainTeam {
     country: entry.country,
     colors: entry.teamColors,
     manager: entry.team.manager,
-    venue: entry.team.venue,
+    venue: venue
+      ? {
+          id: venue.id,
+          name: venue.name,
+          capacity: venue.capacity,
+          city: venue.city.name,
+        }
+      : undefined,
     logoUrl: `https://img.sofascore.com/api/v1/team/${entry.id}/image`,
     athletes: entry.players.map(toAthlete),
   };
