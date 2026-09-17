@@ -42,7 +42,6 @@ export interface Tournament {
   fieldTranslations?: FieldTranslations;
   isGroup?: boolean;
   country?: Country;
-  isGroup?: boolean;
 }
 
 export interface Manager {
