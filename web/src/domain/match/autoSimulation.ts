@@ -1,49 +1,49 @@
 import { getTeamById } from "@/domain/team/teams";
+import { buildInitialSquad } from "@/domain/tactic/squad";
 import type { Fixture } from "@/domain/season/types";
 
 function simulateScore(homeStrength: number, awayStrength: number): number {
-  const base = homeStrength / Math.max(1, awayStrength);
-  const lambda = Math.max(0.2, Math.min(3.2, 1.25 * base));
+  const difference = homeStrength - awayStrength;
+  const base = 1.35 + difference * 0.045;
+  const lambda = Math.max(0.25, Math.min(3.2, base));
+
   let goals = 0;
 
-  for (let i = 0; i < 3; i += 1) {
-    if (Math.random() < lambda / (i + 4)) goals += 1;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const probability = lambda / (attempt + 5);
+    if (Math.random() < probability) goals += 1;
   }
 
   return Math.min(goals, 6);
 }
 
+function getTeamMatchStrength(teamId: string, homeBonus: number): number {
+  const team = getTeamById(teamId);
+  if (!team) return 60 + homeBonus;
+
+  const squad = buildInitialSquad(team.athletes);
+  const starters = squad.starters
+    .map((playerId) => team.athletes.find((player) => player.id === playerId))
+    .filter((player): player is NonNullable<typeof player> => Boolean(player));
+
+  const average = starters.length
+    ? starters.reduce((sum, player) => sum + player.overall, 0) / starters.length
+    : 60;
+
+  return average + homeBonus;
+}
+
 export function simulateFixture(fixture: Fixture): Fixture {
   if (fixture.result) return fixture;
 
-  const home = getTeamById(fixture.homeTeamId);
-  const away = getTeamById(fixture.awayTeamId);
-
-  if (!home || !away) {
-    return {
-      ...fixture,
-      result: {
-        homeScore: 0,
-        awayScore: 0,
-      },
-    };
-  }
-
-  const homePlayers = home.athletes.slice(0, 11);
-  const awayPlayers = away.athletes.slice(0, 11);
-
-  const homeStrength = homePlayers.length
-    ? homePlayers.reduce((sum, player) => sum + player.overall, 0) / homePlayers.length + 3
-    : 60;
-  const awayStrength = awayPlayers.length
-    ? awayPlayers.reduce((sum, player) => sum + player.overall, 0) / awayPlayers.length
-    : 60;
+  const homeStrength = getTeamMatchStrength(fixture.homeTeamId, 3);
+  const awayStrength = getTeamMatchStrength(fixture.awayTeamId, 0);
 
   return {
     ...fixture,
     result: {
       homeScore: simulateScore(homeStrength, awayStrength),
-      awayScore: simulateScore(awayStrength, homeStrength + 3),
+      awayScore: simulateScore(awayStrength, homeStrength),
     },
   };
 }
