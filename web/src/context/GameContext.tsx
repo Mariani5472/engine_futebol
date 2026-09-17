@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useState,
   type ReactNode,
@@ -10,13 +11,22 @@ import {
   type GameState,
   type TacticalPosition,
 } from "./GameState";
+import { DEFAULT_PLAYER_STATUS } from "@/domain/player/status";
 import { createFormationPositions } from "@/domain/tactic/formations";
-import { getTeamById, teams } from "@/domain/team/teams";
+import { buildInitialSquad } from "@/domain/tactic/squad";
+import { getTeamById, getTeamIds, getTeamNames } from "@/domain/team/teams";
 import { generateFixtures } from "@/domain/season/fixtures";
-import { calculateStandings, createInitialStandings } from "@/domain/season/standings";
+import { calculateStandings } from "@/domain/season/standings";
 import { getNextPlayerFixture } from "@/domain/match/nextMatch";
 import { simulateMatchTick as runSimulationTick } from "@/domain/match/simulation";
 import { simulateFixture } from "@/domain/match/autoSimulation";
+import { INITIAL_MATCH_STATS } from "@/domain/match/types";
+
+const MAX_ROUND = 38;
+
+function randomAddedTime(): number {
+  return Math.floor(Math.random() * 5) + 2;
+}
 
 type GameContextData = {
   gameState: GameState;
@@ -38,82 +48,87 @@ const GameContext = createContext<GameContextData | null>(null);
 export function GameProvider({ children }: { children: ReactNode }) {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
 
-  function setTeam(teamId: string) {
-    const teamIds = teams.map((team) => team.id);
+  const setTeam = useCallback((teamId: string) => {
+    const selectedTeam = getTeamById(teamId);
+    if (!selectedTeam) return;
 
+    const teamIds = getTeamIds();
     const fixtures = generateFixtures(teamIds);
+    const standings = calculateStandings(teamIds, fixtures, getTeamNames());
+    const initialSquad = buildInitialSquad(selectedTeam.athletes);
 
-    const standings = calculateStandings(
-      teamIds,
-      fixtures,
-      getTeamNames(),
+    const statuses = Object.fromEntries(
+      selectedTeam.athletes.map((player) => [
+        player.id,
+        { ...DEFAULT_PLAYER_STATUS },
+      ]),
     );
 
-    const selectedTeam = getTeamById(teamId);
+    const positions =
+      initialSquad.starters.length === 11
+        ? createFormationPositions("4-3-3", initialSquad.starters)
+        : [];
 
-    const starters = selectedTeam
-      ? getDefaultStarters(selectedTeam)
-      : [];
-
-    setGameState((current) => ({
-      ...current,
-
+    setGameState({
+      ...INITIAL_GAME_STATE,
+      status: "playing",
       player: {
-        ...current.player,
         teamId,
       },
-
-      status: "playing",
-
       season: {
-        ...current.season,
+        ...INITIAL_GAME_STATE.season,
         year: 2026,
         currentRound: 1,
         fixtures,
         standings,
         playerStats: [],
       },
-
       squad: {
-        starters,
-        bench: selectedTeam
-          ? selectedTeam.athletes
-              .filter((player) => !starters.includes(player.id))
-              .map((player) => player.id)
-          : [],
+        starters: initialSquad.starters,
+        bench: initialSquad.bench,
+        statuses,
       },
+      tactic: {
+        formation: "4-3-3",
+        positions,
+      },
+    });
+  }, []);
 
+  const setFormation = useCallback(
+    (formation: GameState["tactic"]["formation"]) => {
+      setGameState((current) => ({
+        ...current,
+        tactic: {
+          formation,
+          positions: createFormationPositions(
+            formation,
+            current.squad.starters,
+          ),
+        },
+      }));
+    },
+    [],
+  );
+
+  const setTacticalPositions = useCallback((positions: TacticalPosition[]) => {
+    setGameState((current) => ({
+      ...current,
       tactic: {
         ...current.tactic,
-        positions:
-          starters.length === 11
-            ? createFormationPositions(
-                current.tactic.formation,
-                starters,
-              )
-            : [],
+        positions,
       },
     }));
-  }
+  }, []);
 
-  function setFormation(formation: GameState["tactic"]["formation"]) {
+  const setSquad = useCallback((starters: string[], bench: string[]) => {
     setGameState((current) => ({
       ...current,
-      tactic: {
-        formation,
-        positions: createFormationPositions(formation, current.squad.starters),
+      squad: {
+        ...current.squad,
+        starters,
+        bench,
       },
-    }));
-  }
-
-  function setTacticalPositions(positions: TacticalPosition[]) {
-    setGameState((current) => ({ ...current, tactic: { ...current.tactic, positions } }));
-  }
-
-  function setSquad(starters: string[], bench: string[]) {
-    setGameState((current) => ({
-      ...current,
-      squad: { starters, bench },
       tactic: {
         ...current.tactic,
         positions:
@@ -122,42 +137,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
             : current.tactic.positions,
       },
     }));
-  }
+  }, []);
 
-  function getDefaultStarters(
-    team: ReturnType<typeof getTeamById>,
-  ) {
-    if (!team) return [];
-
-    const goalkeeper =
-      team.athletes.find(
-        (player) =>
-          player.position === "G",
-      );
-
-    const outfieldPlayers =
-      team.athletes.filter(
-        (player) =>
-          player.position !== "G",
-      );
-
-    return [
-      ...(goalkeeper
-        ? [goalkeeper.id]
-        : []),
-
-      ...outfieldPlayers
-        .slice(0, 10)
-        .map(
-          (player) => player.id,
-        ),
-    ];
-  }
-
-  function getNextMatch() {
+  const getNextMatch = useCallback(() => {
     setGameState((current) => {
       if (!current.player.teamId) return current;
 
+      // Never replace a match that is already in progress.
       if (
         current.match.phase === "pre-match" ||
         current.match.phase === "playing"
@@ -170,10 +156,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
         current.player.teamId,
       );
 
-      if (!fixture) return current;
+      if (!fixture) {
+        return current;
+      }
 
       return {
         ...current,
+        season: {
+          ...current.season,
+          currentRound: fixture.round,
+        },
         match: {
           fixtureId: fixture.id,
           phase: "pre-match",
@@ -182,24 +174,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
           homeScore: 0,
           awayScore: 0,
           minute: 0,
+          addedTime: 0,
+          scheduledEndMinute: 90,
           events: [],
+          stats: { ...INITIAL_MATCH_STATS },
         },
       };
     });
-  }
-  
-  function startMatch() {
-    setGameState((current) => ({
-      ...current,
+  }, []);
 
-      match: {
-        ...current.match,
-        phase: "playing",
-      },
-    }));
-  }
+  const startMatch = useCallback(() => {
+    setGameState((current) => {
+      if (current.match.phase !== "pre-match") return current;
 
-  function simulateMatchTick() {
+      const addedTime = randomAddedTime();
+
+      return {
+        ...current,
+        match: {
+          ...current.match,
+          phase: "playing",
+          addedTime,
+          scheduledEndMinute: 90 + addedTime,
+        },
+      };
+    });
+  }, []);
+
+  const simulateMatchTick = useCallback(() => {
     setGameState((current) => {
       if (
         current.match.phase !== "playing" ||
@@ -209,34 +211,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return current;
       }
 
-      const homeTeam = getTeamById(
-        current.match.homeTeamId,
-      );
-
-      const awayTeam = getTeamById(
-        current.match.awayTeamId,
-      );
-
-      if (!homeTeam || !awayTeam) {
+      if (current.match.minute >= current.match.scheduledEndMinute) {
         return current;
       }
 
-      /*
-      * Se for o time do jogador, usamos exatamente
-      * os titulares definidos na tática.
-      *
-      * Para o adversário, usamos uma escalação
-      * padrão temporária.
-      */
+      const homeTeam = getTeamById(current.match.homeTeamId);
+      const awayTeam = getTeamById(current.match.awayTeamId);
+
+      if (!homeTeam || !awayTeam) return current;
+
+      const homeSquad = buildInitialSquad(homeTeam.athletes);
+      const awaySquad = buildInitialSquad(awayTeam.athletes);
+
       const homeStarters =
         homeTeam.id === current.player.teamId
           ? current.squad.starters
-          : getDefaultStarters(homeTeam);
+          : homeSquad.starters;
 
       const awayStarters =
         awayTeam.id === current.player.teamId
           ? current.squad.starters
-          : getDefaultStarters(awayTeam);
+          : awaySquad.starters;
 
       const result = runSimulationTick(
         {
@@ -244,6 +239,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           homeScore: current.match.homeScore,
           awayScore: current.match.awayScore,
           events: current.match.events,
+          stats: current.match.stats,
         },
         homeTeam,
         awayTeam,
@@ -253,85 +249,67 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       return {
         ...current,
-
         match: {
           ...current.match,
-
           minute: result.minute,
-
           homeScore: result.homeScore,
           awayScore: result.awayScore,
-
           events: result.events,
+          stats: result.stats,
         },
       };
     });
-  }
+  }, []);
 
-  function getTeamNames() {
-    return Object.fromEntries(
-      teams.map((team) => [
-        team.id,
-        team.name,
-      ]),
-    );
-  }
-
-  function setSeasonRound(round: number) {
+  const setSeasonRound = useCallback((round: number) => {
     setGameState((current) => ({
       ...current,
       season: {
         ...current.season,
-        currentRound: Math.max(1, Math.min(38, round)),
+        currentRound: Math.max(1, Math.min(MAX_ROUND, round)),
       },
     }));
-  }
+  }, []);
 
-  function finishMatch() {
+  const finishMatch = useCallback(() => {
     setGameState((current) => {
       const fixtureId = current.match.fixtureId;
+      if (!fixtureId) return current;
 
-      if (!fixtureId) {
+      if (current.match.minute < current.match.scheduledEndMinute) {
         return current;
       }
 
-      /*
-      * 1. Salva o resultado da partida do jogador.
-      */
-      let fixtures = current.season.fixtures.map(
-        (fixture) =>
-          fixture.id === fixtureId
-            ? {
-                ...fixture,
-                result: {
-                  homeScore: current.match.homeScore,
-                  awayScore: current.match.awayScore,
-                },
-              }
-            : fixture,
-      );
-
-      /*
-      * 2. Descobre em qual rodada estamos.
-      */
-      const currentFixture = fixtures.find(
+      const currentFixture = current.season.fixtures.find(
         (fixture) => fixture.id === fixtureId,
       );
 
-      if (!currentFixture) {
-        return current;
+      if (!currentFixture || currentFixture.result) {
+        return {
+          ...current,
+          match: {
+            ...current.match,
+            phase: "finished",
+          },
+        };
       }
 
-      const currentRound =
-        currentFixture.round;
+      let fixtures = current.season.fixtures.map((fixture) =>
+        fixture.id === fixtureId
+          ? {
+              ...fixture,
+              result: {
+                homeScore: current.match.homeScore,
+                awayScore: current.match.awayScore,
+              },
+            }
+          : fixture,
+      );
 
-      /*
-      * 3. Simula instantaneamente todos os
-      * outros jogos da mesma rodada.
-      */
+      // All other matches in the player's round are resolved immediately.
       fixtures = fixtures.map((fixture) => {
         if (
-          fixture.round !== currentRound ||
+          fixture.round !== currentFixture.round ||
           fixture.result !== null
         ) {
           return fixture;
@@ -340,72 +318,64 @@ export function GameProvider({ children }: { children: ReactNode }) {
         return simulateFixture(fixture);
       });
 
-      /*
-      * 4. Recalcula a classificação.
-      */
-      const teamIds = teams.map(
-        (team) => team.id,
-      );
-
-      const teamNames = Object.fromEntries(
-        teams.map((team) => [
-          team.id,
-          team.name,
-        ]),
-      );
-
+      const teamIds = getTeamIds();
       const standings = calculateStandings(
         teamIds,
         fixtures,
-        teamNames,
+        getTeamNames(),
       );
 
-      /*
-      * 5. Descobre a próxima rodada.
-      */
-      
+      const nextRound = Math.min(
+        MAX_ROUND,
+        currentFixture.round + 1,
+      );
 
       return {
         ...current,
-
         season: {
           ...current.season,
+          currentRound: nextRound,
           fixtures,
           standings,
         },
-
         match: {
           ...current.match,
           phase: "finished",
         },
       };
     });
-  }
+  }, []);
 
-  function startGame() {
-    setGameState((current) => ({ ...current, status: "playing" }));
-  }
+  const startGame = useCallback(() => {
+    setGameState((current) => ({
+      ...current,
+      status: "playing",
+    }));
+  }, []);
 
-  function resetGame() {
-    setGameState(INITIAL_GAME_STATE);
-  }
+  const resetGame = useCallback(() => {
+    setGameState({
+      ...INITIAL_GAME_STATE,
+      match: {
+        ...INITIAL_GAME_STATE.match,
+        stats: { ...INITIAL_MATCH_STATS },
+      },
+    });
+  }, []);
 
   return (
-    <GameContext.Provider 
+    <GameContext.Provider
       value={{
         gameState,
-
         setTeam,
         setFormation,
         setTacticalPositions,
         setSquad,
         setSeasonRound,
-
         getNextMatch,
         startMatch,
         simulateMatchTick,
         finishMatch,
-
         startGame,
         resetGame,
       }}
@@ -417,6 +387,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
 export function useGame() {
   const context = useContext(GameContext);
-  if (!context) throw new Error("useGame must be used inside GameProvider");
+
+  if (!context) {
+    throw new Error("useGame must be used inside GameProvider");
+  }
+
   return context;
 }
