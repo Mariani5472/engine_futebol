@@ -72,9 +72,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setGameState({
       ...INITIAL_GAME_STATE,
       status: "playing",
-      player: {
-        teamId,
-      },
+      player: { teamId },
       season: {
         ...INITIAL_GAME_STATE.season,
         year: 2026,
@@ -101,10 +99,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         ...current,
         tactic: {
           formation,
-          positions: createFormationPositions(
-            formation,
-            current.squad.starters,
-          ),
+          positions: createFormationPositions(formation, current.squad.starters),
         },
       }));
     },
@@ -114,21 +109,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const setTacticalPositions = useCallback((positions: TacticalPosition[]) => {
     setGameState((current) => ({
       ...current,
-      tactic: {
-        ...current.tactic,
-        positions,
-      },
+      tactic: { ...current.tactic, positions },
     }));
   }, []);
 
   const setSquad = useCallback((starters: string[], bench: string[]) => {
     setGameState((current) => ({
       ...current,
-      squad: {
-        ...current.squad,
-        starters,
-        bench,
-      },
+      squad: { ...current.squad, starters, bench },
       tactic: {
         ...current.tactic,
         positions:
@@ -143,7 +131,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setGameState((current) => {
       if (!current.player.teamId) return current;
 
-      // Never replace a match that is already in progress.
       if (
         current.match.phase === "pre-match" ||
         current.match.phase === "playing"
@@ -156,9 +143,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         current.player.teamId,
       );
 
-      if (!fixture) {
-        return current;
-      }
+      if (!fixture) return current;
 
       return {
         ...current,
@@ -245,6 +230,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         awayTeam,
         homeStarters,
         awayStarters,
+        current.match.scheduledEndMinute,
       );
 
       return {
@@ -287,10 +273,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (!currentFixture || currentFixture.result) {
         return {
           ...current,
-          match: {
-            ...current.match,
-            phase: "finished",
-          },
+          match: { ...current.match, phase: "finished" },
         };
       }
 
@@ -306,7 +289,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
           : fixture,
       );
 
-      // All other matches in the player's round are resolved immediately.
       fixtures = fixtures.map((fixture) => {
         if (
           fixture.round !== currentFixture.round ||
@@ -325,10 +307,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         getTeamNames(),
       );
 
-      const nextRound = Math.min(
-        MAX_ROUND,
-        currentFixture.round + 1,
-      );
+      const nextRound = Math.min(MAX_ROUND, currentFixture.round + 1);
 
       return {
         ...current,
@@ -347,10 +326,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const startGame = useCallback(() => {
-    setGameState((current) => ({
-      ...current,
-      status: "playing",
-    }));
+    setGameState((current) => ({ ...current, status: "playing" }));
   }, []);
 
   const resetGame = useCallback(() => {
