@@ -1,0 +1,8 @@
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: tactic-manager-web
+    ports:
+      - "5173:5173"
